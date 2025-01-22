@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/21 20:18:26 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/22 18:14:38 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,10 +38,12 @@ class ConfigParser;
 class Route;
 class WebServer;
 
+#include "functions.hpp"
+#include "cpp11.hpp"
 #include "ServerRoutes.hpp"
 #include "Server.hpp"
-#include "Parser.hpp"
 #include "File.hpp"
+#include "Parser.hpp"
 #include "WebServer.hpp"
 
 #endif

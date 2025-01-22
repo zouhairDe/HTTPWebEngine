@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 20:01:01 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/21 22:55:07 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/22 18:04:19 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ public:
 		return RouteName;
 	}
 	
-	
+	//ma3rftch ila chi rouote ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
 
     void setProperty(const string& key, const string& value) {
         if (key == "root") RouteRoot = value;
