@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/22 18:14:38 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/22 21:07:40 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,8 @@
 #include <fstream>
 #include <istream>
 #include <ostream>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 using namespace std;
 
