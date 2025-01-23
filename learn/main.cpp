@@ -18,8 +18,15 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cstring>
+#include <fcntl.h>
 
 using namespace std;
+
+string to_string(int n) {
+	stringstream ss;
+	ss << n;
+	return ss.str();
+}
 
 /* ------------------------------------------Mn hna-----------------------------------------  */
 
@@ -154,7 +161,7 @@ int main()
     while (true) {
         memset(buffer, 0, sizeof(buffer));
 		
-		system("lsof -i:8080");
+		// system("lsof -i:8080");
 		// system("lsof -i:8080 | grep LISTEN");
 		// system("lsof -i:8080 | grep ESTABLISHED");
 		// system("lsof -i:8080 | grep CLOSE_WAIT");
@@ -184,30 +191,85 @@ int main()
 
         cout << red << bold << blue << "Client: " << def << buffer << endl;
 
-        string response = "HTTP/1.1 200 OK";
-		response += "\nDate: Fri, 01 Jul 2022 12:00:00 GMT";
-		response += "\nServer: Apache/2.4.41 (Ubuntu)";
-		response += "\nLast-Modified: Mon, 13 Jun 2022 10:00:00 GMT";
-		response += "\nContent-Length: 1234";
-		response += "\nContent-Type: text/html; charset=UTF-8";
-		response += "\nConnection: keep-alive";
-		response += "\n\n";
-		response += "<!DOCTYPE html>";
-		response += "<html lang=\"en\">";
-		response += "<head>";
-		response += "<meta charset=\"UTF-8\">";
-		response += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
-		response += "<title>Example Page</title>";
-		response += "</head>";
-		response += "<body>";
-		response += "<h1>Welcome to Example.com!</h1>";	
-		response += "<p>This is an example web page.</p>";
-		response += "</body>";
-		response += "</html>";
+        // string response = "HTTP/1.1 200 OK";
+		// response += "\nDate: Fri, 01 Jul 2022 12:00:00 GMT";
+		// response += "\nServer: Apache/2.4.41 (Ubuntu)";
+		// response += "\nLast-Modified: Mon, 13 Jun 2022 10:00:00 GMT";
+		// response += "\nContent-Length: 1234";
+		// response += "\nContent-Type: text/html; charset=UTF-8";
+		// response += "\nConnection: keep-alive";
+		// response += "\n\n";
+		// response += "<!DOCTYPE html>";
+		// response += "<html lang=\"en\">";
+		// response += "<head>";
+		// response += "<meta charset=\"UTF-8\">";
+		// response += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
+		// response += "<title>Example Page</title>";
+		// response += "</head>";
+		// response += "<body>";
+		// response += "<h1>Welcome to Example.com!</h1>";	
+		// response += "<p>This is an example web page.</p>";
+		// response += "</body>";
+		// response += "</html>";
+		
+		
+		int fd = open("../error/403.html", O_RDONLY);
+		if (fd < 0) {
+			cerr << "Error opening file" << endl;
+			return 1;
+		}
+		// Get file size
+		off_t file_size = lseek(fd, 0, SEEK_END);
+		cerr << red << "File size: " << file_size << endl;
+		lseek(fd, 0, SEEK_SET);  //SEEK_SET: Reset to beginning
+
+		// Create buffer of exact size needed
+		char* file_buffer = new char[file_size + 1];
+		memset(file_buffer, 0, file_size + 1);
+		
+		cerr << red << "File buffer allocated"<< endl;
+
+		//   Read file in chunks
+		ssize_t total_read = 0;
+		while (total_read < file_size) {
+			ssize_t bytes_read = read(fd, file_buffer + total_read, file_size - total_read);
+			if (bytes_read <= 0) break;
+			total_read += bytes_read;
+		}
+		
+		cerr << red << "File read successfully" << endl;
+		cerr << red << "Total read: " << total_read << endl;
+
+		// 5. Add file content to response
+		// if (total_read == file_size) {
+		// 	response += string(file_buffer, file_size);
+		// }
+		
+		// cerr << red << "Response size: " << response.length() << endl;
 		
         // response += buffer;
-		cerr << red << bold << green << "Response: " << def << response << endl;
-        send(client_fd, response.c_str(), response.length(), 0);
+		// cerr << bold << green << "Response: " << def << response << endl;
+        string http_headers = "HTTP/1.1 200 OK\r\n";
+		http_headers += "Date: Fri, 01 Jul 2022 12:00:00 GMT\r\n";
+		http_headers += "Server: Apache/2.4.41 (Ubuntu)\r\n";
+		http_headers += "Last-Modified: Mon, 13 Jun 2022 10:00:00 GMT\r\n";
+		http_headers += "Content-Length: " + to_string(file_size) + "\r\n";
+		http_headers += "Content-Type: text/html; charset=UTF-8\r\n";
+		http_headers += "Connection: keep-alive\r\n";
+		http_headers += "\r\n";
+		
+		cerr << red << "HTTP headers: " << http_headers << endl;
+
+		// Send headers first
+		send(client_fd, http_headers.c_str(), http_headers.length(), 0);
+
+		// Then send file content separately
+		if (total_read == file_size) {
+			send(client_fd, file_buffer, file_size, 0);
+			cerr << red << "File sent successfully" << endl;
+			cerr << green << "File size: " << file_size << endl;
+			cerr << blue << "File content: " << file_buffer << endl;
+		}
     }
 
     close(client_fd);
