@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/22 21:07:40 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/23 01:01:24 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,5 +47,20 @@ class WebServer;
 #include "File.hpp"
 #include "Parser.hpp"
 #include "WebServer.hpp"
+
+// Color interface (IColor.hpp) and concrete classes (*Color.hpp)
+#include "interfaces/Colors/IColor.hpp"
+#include "interfaces/Colors/RedColor.hpp"
+#include "interfaces/Colors/GreenColor.hpp"
+#include "interfaces/Colors/BlueColor.hpp"
+#include "interfaces/Colors/DefaultColor.hpp"
+#include "interfaces/Colors/BoldFont.hpp"
+
+// Declare color instances globally
+extern RedColor red;
+extern GreenColor green;
+extern BlueColor blue;
+extern DefaultColor def;
+extern BoldFont bold;
 
 #endif

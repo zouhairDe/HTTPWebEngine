@@ -1,0 +1,49 @@
+-rw-r--r-- 1 zouddach candidate 1370 Jan 23 00:32 Makefile
+
+config:
+total 8
+drwxr-xr-x  2 zouddach candidate   45 Jan 21 19:58 .
+drwxr-xr-x 11 zouddach candidate  159 Jan 23 00:33 ..
+-rw-r--r--  1 zouddach candidate  782 Jan 22 14:37 default.conf
+-rw-r--r--  1 zouddach candidate 1366 Jan 22 22:57 server.conf
+
+error:
+total 12
+drwxr-xr-x  2 zouddach candidate   54 Jan 21 16:26 .
+drwxr-xr-x 11 zouddach candidate  159 Jan 23 00:33 ..
+-rw-r--r--  1 zouddach candidate 1800 Jan 21 16:26 403.html
+-rw-r--r--  1 zouddach candidate 1796 Jan 21 16:26 404.html
+-rw-r--r--  1 zouddach candidate 1826 Jan 21 16:25 500.html
+
+functions:
+total 8
+drwxr-xr-x  2 zouddach candidate   64 Jan 22 17:16 .
+drwxr-xr-x 11 zouddach candidate  159 Jan 23 00:33 ..
+-rw-r--r--  1 zouddach candidate 1339 Jan 22 17:16 helper_function.cpp
+-rw-r--r--  1 zouddach candidate 1902 Jan 22 17:32 string_manipulation.cpp
+
+includes:
+total 40
+drwxr-xr-x  3 zouddach candidate  177 Jan 22 17:07 .
+drwxr-xr-x 11 zouddach candidate  159 Jan 23 00:33 ..
+-rw-r--r--  1 zouddach candidate 1045 Jan 22 13:59 cpp11.hpp
+-rw-r--r--  1 zouddach candidate 1116 Jan 21 19:02 File.hpp
+-rw-r--r--  1 zouddach candidate 1180 Jan 22 17:17 functions.hpp
+-rw-r--r--  1 zouddach candidate 1823 Jan 23 00:20 Global.hpp
+drwxr-xr-x  3 zouddach candidate   34 Jan 23 00:17 interfaces
+-rw-r--r--  1 zouddach candidate 4773 Jan 22 17:50 Parser.hpp
+-rw-r--r--  1 zouddach candidate 4442 Jan 22 18:27 Server.hpp
+-rw-r--r--  1 zouddach candidate 2846 Jan 22 18:04 ServerRoutes.hpp
+-rw-r--r--  1 zouddach candidate 2586 Jan 22 18:28 WebServer.hpp
+
+src:
+total 8
+drwxr-xr-x  2 zouddach candidate   40 Jan 23 00:02 .
+drwxr-xr-x 11 zouddach candidate  159 Jan 23 00:33 ..
+-rw-r--r--  1 zouddach candidate  981 Jan 23 00:10 Global.cpp
+-rw-r--r--  1 zouddach candidate 1268 Jan 23 00:18 main.cpp
+
+utils:
+total 0
+drwxr-xr-x  2 zouddach candidate   6 Jan 22 17:18 .
+drwxr-xr-x 11 zouddach candidate 159 Jan 23 00:33 ..

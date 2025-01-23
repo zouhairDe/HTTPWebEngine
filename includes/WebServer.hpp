@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 19:49:51 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/22 18:28:02 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/23 01:04:00 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,10 +33,10 @@ class WebServer {
 		
 		void	changeEmptyValues()
 		{
-			cerr << "Changing Empty values for servers" << endl;
+			// cerr << "Changing Empty values for servers" << endl;
 			for (size_t i = 0; i < this->Servers.size(); i++)
 			{
-				cerr << "Changing For Server " << i + 1 << endl;
+				// cerr << "Changing For Server " << i + 1 << endl;
 				Server &server = this->Servers[i];
 				if (server.getHostName().empty())
 					server.setProperty("host", this->DefaultServer.getHostName());

@@ -81,7 +81,7 @@ int main() {
         cerr << bold << red << "Error: socket creation failed" << endl;
         return 1;
     }
-    cout << bold << green << "Socket created successfully: " << client_fd << def << endl;
+    cout << red << bold << green << "Socket created successfully: " << client_fd << def << endl;
 
     // Prepare the server address to connect to
     struct sockaddr_in server_addr;
@@ -97,7 +97,7 @@ int main() {
         return 1;
     }
 	else
-		cout << bold << blue << "Address: \"127.0.0.1\" successfully converted to:" << binary_addr << def << endl; // 127.0.0.1 = 16777343
+		cout << red << bold << blue << "Address: \"127.0.0.1\" successfully converted to:" << binary_addr << def << endl; // 127.0.0.1 = 16777343
 
     // Connect to server
     if (connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
@@ -105,20 +105,20 @@ int main() {
         close(client_fd);//memory managment wla zbi, hyd 3lia
         return 1;
     }
-    cout << bold << green << "Connected to server!" << def << endl;
+    cout << red << bold << green << "Connected to server!" << def << endl;
 
     // Communication loop
     string message;
     char buffer[1024];
     while (true) {
-        cout << bold << blue << "Enter message (or 'quit' to exit): " << def;
+        cout << red << bold << blue << "Enter message (or 'quit' to exit): " << def;
         getline(cin, message);
 
         if (message == "quit" || message == "exit" || message == "9awed") {
 			send(client_fd, message.c_str(), message.length(), 0);
         	recv(client_fd, buffer, sizeof(buffer), 0);
-			cout << bold << red << "Server: " << def << buffer << endl;
-			cout << bold << red << "quiting..." << def << endl;
+			cout << red << bold << red << "Server: " << def << buffer << endl;
+			cout << red << bold << red << "quiting..." << def << endl;
             break;
         }
 
@@ -128,7 +128,7 @@ int main() {
         // Receive response
         memset(buffer, 0, sizeof(buffer));
         recv(client_fd, buffer, sizeof(buffer), 0);
-        cout << bold << green << "Server: " << def << buffer << endl;
+        cout << red << bold << green << "Server: " << def << buffer << endl;
     }
 
     // Clean up

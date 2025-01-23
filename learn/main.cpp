@@ -79,10 +79,10 @@ class Change
 							example usage:
 							
 							string s = "Do it in Color
-							cout << red << s << def
-							cout << green << s << def;
-							cout << blue << s << def;                                                                                                                                                                                                                                                                      
-							cout << def << s << "\n"; 
+							cout << red << red << s << def
+							cout << red << green << s << def;
+							cout << red << blue << s << def;                                                                                                                                                                                                                                                                      
+							cout << red << def << s << "\n"; 
 
 							*/
 
@@ -103,7 +103,7 @@ int main()
 		return 1;
 	}
 	else 
-		cout << bold << green << "Socket created successfully\nFile descriptor: " << socket_fd << def_bold << endl;
+		cout << red << bold << green << "Socket created successfully\nFile descriptor: " << socket_fd << def_bold << endl;
 	
 	int opt = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
@@ -112,7 +112,7 @@ int main()
         return 1;
     }
 	else
-		cout << bold << blue << "Socket options set successfully" << def_bold << endl;
+		cout << red << bold << blue << "Socket options set successfully" << def_bold << endl;
 	
 	// Prepare the server address structure
     struct sockaddr_in server_addr;
@@ -127,7 +127,7 @@ int main()
         close(socket_fd);
         return 1;
     }
-    cout << bold << green << "Socket bound successfully" << def << endl;
+    cout << red << bold << green << "Socket bound successfully" << def << endl;
 	
 	// Listen for connections
     if (listen(socket_fd, 3) == -1) {
@@ -135,7 +135,7 @@ int main()
         close(socket_fd);
         return 1;
     }
-    cout << bold << blue << "Server is listening on port 8080..." << def << endl;
+    cout << red << bold << blue << "Server is listening on port 8080..." << def << endl;
 	
 	// Accept connection
     struct sockaddr_in client_addr;
@@ -147,7 +147,7 @@ int main()
         return 1;
     }
 	close(socket_fd);//sditha hna another client (fte7 terminal) could not connect
-    cout << bold << green << "Client connected!" << def << endl;// commenti dakchi li lt7t w dkh l google w dkhl l 127.0.0.1:8080 atprinta connected
+    cout << red << bold << green << "Client connected!" << def << endl;// commenti dakchi li lt7t w dkh l google w dkhl l 127.0.0.1:8080 atprinta connected
 	
 	// Communication loop
     char buffer[1024];
@@ -172,17 +172,17 @@ int main()
         // Receive message
         ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer), 0);
         if (bytes_received <= 0) {
-            cout << bold << red << "Client disconnected (Empty body: chof dok 2 stora khawyin t7t akhir http header)" << def << endl;
+            cout << red << bold << red << "Client disconnected (Empty body: chof dok 2 stora khawyin t7t akhir http header)" << def << endl;
             break;
         }
 		
 		if (string(buffer) == "quit" || string(buffer) == "exit" || string(buffer) == "9awed") {
 			send(client_fd, "thla ajmi hyd mn hna\n", string("thla ajmi hyd mn hna").length(), 0);
-			cout << bold << red << "Client disconnected" << def << endl;
+			cout << red << bold << red << "Client disconnected" << def << endl;
 			break;
 		}
 
-        cout << bold << blue << "Client: " << def << buffer << endl;
+        cout << red << bold << blue << "Client: " << def << buffer << endl;
 
         string response = "ta7iyati l 3zizati, Wslni had l msg a Chef:\n";
         response += buffer;
@@ -218,7 +218,7 @@ code      384949 zouddach   60u  IPv4 2629327      0t0  TCP e2r6p2.1337.ma:49272
 code      384949 zouddach   61u  IPv4 2626078      0t0  TCP e2r6p2.1337.ma:40044->lb-140-82-113-21-iad.github.com:https (ESTABLISHED)
 code      384949 zouddach   62u  IPv4 2630026      0t0  TCP e2r6p2.1337.ma:44650->lb-140-82-121-6-fra.github.com:https (ESTABLISHED)
 code      384949 zouddach   66u  IPv4 2628117      0t0  TCP e2r6p2.1337.ma:44760->169.254.169.254:http (SYN_SENT)
-reciveHHH 398949 zouddach    4u  IPv4 2629549      0t0  TCP localhost:http-alt->localhost:50460 (ESTABLISHED)
-sendHHHH. 399057 zouddach    3u  IPv4 2627967      0t0  TCP localhost:50460->localhost:http-alt (ESTABLISHED)
+reciveHHH 398949 zouddach    4u  IPv4 2629549      0t0  TCP localhost:http-alt->localhost:50460 (ESTABLISHED) ----> //server binary hhh
+sendHHHH. 399057 zouddach    3u  IPv4 2627967      0t0  TCP localhost:50460->localhost:http-alt (ESTABLISHED) ----> //client binary hhh
 
 */
