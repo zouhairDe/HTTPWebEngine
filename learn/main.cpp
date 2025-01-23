@@ -176,16 +176,37 @@ int main()
             break;
         }
 		
-		if (string(buffer) == "quit" || string(buffer) == "exit" || string(buffer) == "9awed") {
-			send(client_fd, "thla ajmi hyd mn hna\n", string("thla ajmi hyd mn hna").length(), 0);
-			cout << red << bold << red << "Client disconnected" << def << endl;
-			break;
-		}
+		// if (string(buffer) == "quit" || string(buffer) == "exit" || string(buffer) == "9awed") {
+		// 	send(client_fd, "thla ajmi hyd mn hna\n", string("thla ajmi hyd mn hna").length(), 0);
+		// 	cout << red << bold << red << "Client disconnected" << def << endl;
+		// 	break;
+		// }
 
         cout << red << bold << blue << "Client: " << def << buffer << endl;
 
-        string response = "ta7iyati l 3zizati, Wslni had l msg a Chef:\n";
-        response += buffer;
+        string response = "HTTP/1.1 200 OK";
+		response += "\nDate: Fri, 01 Jul 2022 12:00:00 GMT";
+		response += "\nServer: Apache/2.4.41 (Ubuntu)";
+		response += "\nLast-Modified: Mon, 13 Jun 2022 10:00:00 GMT";
+		response += "\nContent-Length: 1234";
+		response += "\nContent-Type: text/html; charset=UTF-8";
+		response += "\nConnection: keep-alive";
+		response += "\n\n";
+		response += "<!DOCTYPE html>";
+		response += "<html lang=\"en\">";
+		response += "<head>";
+		response += "<meta charset=\"UTF-8\">";
+		response += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
+		response += "<title>Example Page</title>";
+		response += "</head>";
+		response += "<body>";
+		response += "<h1>Welcome to Example.com!</h1>";	
+		response += "<p>This is an example web page.</p>";
+		response += "</body>";
+		response += "</html>";
+		
+        // response += buffer;
+		cerr << red << bold << green << "Response: " << def << response << endl;
         send(client_fd, response.c_str(), response.length(), 0);
     }
 
