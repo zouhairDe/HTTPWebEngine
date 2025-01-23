@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:41:06 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/22 17:50:09 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/22 20:28:40 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,43 +20,44 @@ vector<string> split(string str, char delimiter);
 pair<string, string> parseKeyValue(const string& line);
 
 class ConfigParser {
-	private:
-		string ConfigFileName;
-		string ConfigFilePath;
+    private:
+        string	ConfigFileName;
+        string	ConfigFilePath;
+        int 	lineCount;
+        int 	serverCount;
+	
+	public:
+        
+        bool isServerEndBlock(const string& line) {
+            return line[0] == '[' && line[line.length()-1] == ']' 
+                && line[1] == '\"'
+                && line.find("\"]") != string::npos;
+        }
 
-		bool isServerBlock(const string& line) {
-			return line.find("[server,") != string::npos || line == "[server]";
-		}
+        void parseServerBlock(ifstream& file, Server& server) {
+            string line; 
+            while (getline(file, line)) {
+                line = trim(line);
+                if (line.empty() || line[0] == '#') continue;
+                
+                if (isServerEndBlock(line)) break;
+                string routeName = "";
+                if (isRouteBlock(line, routeName)) {
+                    Route route;
+                    if (route.getRouteName().empty())
+                        route.setProperty("name", routeName);
+                    parseRouteBlock(file, route);
+                    server.addRoute(route);
+                    continue;
+                }
 
-		bool isRouteBlock(string& line, string &routeName) {
-			line = trim(line);
-			line = cpp11_replace(line, " ", "");
-			// cerr << "Route block: " << line << endl;
-			if ((line.find("[route,") != string::npos && line.find("\"]") != string::npos) || line == "[route]") {
-				// cerr << "Route block found" << endl;
-				vector<string> parts = split(line, ',');
-				// for (size_t i = 0; i < parts.size(); i++)
-				// 	cerr << "Part " << i << ": " << parts[i] << endl;
-				if (parts.size() > 2)
-					throw runtime_error("Invalid route block: " + line);
-				if (parts.size() == 2)
-					routeName = parts[1].substr(0, parts[1].length()-1);
-				else
-					routeName = "\"/\"";
-				// cerr << "Route name: " << routeName << endl;
-				return true;
-			}
-			if (line.find("[route") == string::npos)
-				return false;
-			return false;
-		}
+                if (!line.empty()) {
+                    pair<string, string> kv = parseKeyValue(line);
+                    server.setProperty(kv.first, kv.second);
+                }
+            }
+        }
 		
-		bool isServerEndBlock(const string& line) {
-			return line[0] == '[' && line[line.length()-1] == ']' 
-				&& line[1] == '\"'
-				&& line.find("\"]") != string::npos;
-		}
-
 		bool isRouteEndBlock(string line, const string& routeName) {
 			// cerr << "Checking if route end block, line: " << line << endl;
 			// cerr << "Route name: " << routeName << endl;
@@ -70,88 +71,111 @@ class ConfigParser {
 			return false;
 		}
 
-		void parseServerBlock(ifstream& file, Server& server) {
-			string line; 
-			while (getline(file, line)) {
-				line = trim(line);
-				if (line.empty() || line[0] == '#') continue;
-				
-				if (isServerEndBlock(line)) break;
-				string routeName = "";
-				if (isRouteBlock(line, routeName)) {
-					Route route;
-					if (route.getRouteName().empty())
-						route.setProperty("name", routeName);
-					// cerr << "Parsing route block" << endl;
-					parseRouteBlock(file, route);
-					server.addRoute(route);
-					continue;
-				}
+        void parseRouteBlock(ifstream& file, Route& route) {
+            string line;
+            while (getline(file, line)) {
+                line = trim(line);
+                if (line.empty() || line[0] == '#') continue;
+                
+                if (isRouteEndBlock(line, route.getRouteName())) break;
 
-				if (!line.empty()) {
-					pair<string, string> kv = parseKeyValue(line);
-					server.setProperty(kv.first, kv.second);
-				}
+                if (!line.empty()) {
+                    pair<string, string> kv = parseKeyValue(line);
+                    route.setProperty(kv.first, kv.second);
+                }
+            }
+        }
+        
+        bool fileExists(const string& filename) {
+            ifstream file(filename.c_str());
+            return file.good();
+        }
+
+        void displayProgressBar(int current, int total) {
+			const int barWidth = 60;
+			float progress = (float)current / total;
+			int pos = barWidth * progress;
+			usleep(50000); // 50ms delay bach tban lbar w hia kat7rk hhhhhhh
+
+			cout << "\r[";
+			for (int i = 0; i < barWidth; ++i) {
+				if (i < pos) cout << "=";
+				else if (i == pos) cout << ">";
+				else cout << " ";
 			}
+			cout << "] " << int(progress * 100.0) << "%";
+			cout.flush();
+
+			if (current == total)
+				cout << endl;
 		}
 
-		void parseRouteBlock(ifstream& file, Route& route) {
-			string line;
-			while (getline(file, line)) {
-				line = trim(line);
-				if (line.empty() || line[0] == '#') continue;
-				
-				if (isRouteEndBlock(line, route.getRouteName())) break;
-
-				if (!line.empty()) {
-					pair<string, string> kv = parseKeyValue(line);
-					route.setProperty(kv.first, kv.second);
-				}
-			}
-		}
+        ConfigParser(const char* filename) {
+            this->ConfigFileName = filename;
+            this->ConfigFilePath = string(filename);
+			this->lineCount = 0;
+			this->serverCount = 0;
+            if (!fileExists(ConfigFilePath))
+                throw runtime_error("Configuration file does not exist");
+        }
 		
-		bool fileExists(const string& filename) {
-			ifstream file(filename.c_str());
-			return file.good();
-		}
+		bool isServerBlock(const string& line) {
+            return line.find("[server,") != string::npos || line == "[server]";
+        }
 
-	public:
-		ConfigParser(const char* filename) {
-			this->ConfigFileName = filename;
-			this->ConfigFilePath = string(filename);
-			if (!fileExists(ConfigFilePath))
-				throw runtime_error("Configuration file does not exist");
-		}
-		
-		string getFileName() const {
-			return ConfigFileName;
-		}
-		
-		string getFilePath() const {
-			return ConfigFilePath;
-		}
-		vector<Server> parseConfig(const string& filename) {
-			vector<Server> servers;
-			ifstream file(filename.c_str());
-			
-			if (!file.is_open())
-				throw runtime_error("Cannot open configuration file: " + filename);
+        bool isRouteBlock(string& line, string &routeName) {
+            line = trim(line);
+            line = cpp11_replace(line, " ", "");
+            if ((line.find("[route,") != string::npos && line.find("\"]") != string::npos) || line == "[route]") {
+                vector<string> parts = split(line, ',');
+                if (parts.size() > 2)
+                    throw runtime_error("Invalid route block: " + line);
+                if (parts.size() == 2)
+                    routeName = parts[1].substr(0, parts[1].length()-1);
+                else
+                    routeName = "\"/\"";
+                return true;
+            }
+            if (line.find("[route") == string::npos)
+                return false;
+            return false;
+        }
+        
+        string getFileName() const {
+            return ConfigFileName;
+        }
+        
+        string getFilePath() const {
+            return ConfigFilePath;
+        }
+        vector<Server> parseConfig(const string& filename) {
+            vector<Server> servers;
+            ifstream file(filename.c_str());
+            
+            if (!file.is_open())
+                throw runtime_error("Cannot open configuration file: " + filename);
 
-			string line;
-			while (getline(file, line)) {
-				line = trim(line);
-				if (line.empty() || line[0] == '#') continue;
+            string line;
+            while (getline(file, line)) {
+                line = trim(line);
+                if (line.empty() || line[0] == '#') continue;
 
-				if (isServerBlock(line)) {
-					Server server;
-					parseServerBlock(file, server);
-					servers.push_back(server);
-				}
-			}
+                if (isServerBlock(line)) {
+                    Server server;
+                    parseServerBlock(file, server);
+                    servers.push_back(server);
+                    displayProgressBar(servers.size(), serverCount);
+                }
+            }
 
-			file.close();
-			return servers;
-		}
+            file.close();
+            cout << endl; // Move to the next line after the progress bar is complete
+            return servers;
+        }
+
+        void setServerCount(int count) {
+            serverCount = count;
+        }
 };
 
 #endif

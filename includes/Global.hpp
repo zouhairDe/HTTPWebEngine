@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 01:01:24 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/22 20:22:50 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@
 #include <ostream>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <stdexcept>
 
 using namespace std;
 

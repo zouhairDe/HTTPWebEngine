@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 19:49:51 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 01:04:00 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/22 20:20:18 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,8 +22,23 @@ class WebServer {
 		vector<Server>	Servers;
 	public:
 		WebServer(char* filename) {
+			//khas ncheciw b3da wach kayn error line fl config file
 			ConfigParser config(filename);
-			DefaultServer = config.parseConfig("config/default.conf")[0];//hadi khas nchekiwha mn b3d wach emty . acctualy la hit runtime error ayban
+			ifstream file(filename);
+			string line;
+			int serverCount = 0;
+			while (getline(file, line)) {
+				line = trim(line);
+				if (line.empty() || line[0] == '#') continue;
+				if (config.isServerBlock(line)) {
+					serverCount++;
+				}
+			}
+			cerr << "Server count: " << serverCount << endl;
+			file.close();
+			config.setServerCount(serverCount);
+
+			// DefaultServer = config.parseConfig("config/default.conf")[0];
 			Servers = config.parseConfig(string(filename));
 			changeEmptyValues();
 		}
