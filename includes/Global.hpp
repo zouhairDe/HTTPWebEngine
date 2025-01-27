@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Global.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/24 17:47:21 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/23 18:59:45 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <stdexcept>
+#include <unistd.h>
 
 using namespace std;
 

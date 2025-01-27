@@ -23,5 +23,3 @@ and they use these sockets to send and receive data.
 
 	protocol: Usually 0 (system picks appropriate protocol)
 "
-
-https://www.youtube.com/watch?v=WuwUk7Mk80E
