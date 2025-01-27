@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Parser.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:41:06 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/22 20:28:40 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/23 19:02:14 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,7 +95,7 @@ class ConfigParser {
 			const int barWidth = 60;
 			float progress = (float)current / total;
 			int pos = barWidth * progress;
-			usleep(50000); // 50ms delay bach tban lbar w hia kat7rk hhhhhhh
+			usleep(35000); // 50ms delay bach tban lbar w hia kat7rk hhhhhhh
 
 			cout << "\r[";
 			for (int i = 0; i < barWidth; ++i) {

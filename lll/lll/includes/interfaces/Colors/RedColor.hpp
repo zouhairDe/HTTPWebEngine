@@ -1,30 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   IColor.hpp                                         :+:      :+:    :+:   */
+/*   RedColor.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/22 23:58:34 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 00:58:33 by zouddach         ###   ########.fr       */
+/*   Created: 2025/01/22 23:59:23 by zouddach          #+#    #+#             */
+/*   Updated: 2025/01/23 00:41:28 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef COLOR_HPP
-#define COLOR_HPP
 
-#include <iostream>
+#ifndef REDCOLOR_HPP
+#define REDCOLOR_HPP
 
-class IColor
+#include "IColor.hpp"
+
+class RedColor : public IColor
 {
 public:
-    virtual ~IColor();
-    virtual void applyColor(std::ostream& os) const = 0;
-	
-	friend std::ostream& operator<<(std::ostream& os, const IColor& color) {
-        color.applyColor(os);
-        return os;
+    void applyColor(std::ostream& os) const
+    {
+        os << "\033[31m"; // Red text
     }
+	
+	virtual ~RedColor() {}
 };
 
 #endif

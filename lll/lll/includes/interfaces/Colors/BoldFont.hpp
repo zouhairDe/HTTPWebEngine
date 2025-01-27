@@ -1,30 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   IColor.hpp                                         :+:      :+:    :+:   */
+/*   BoldFont.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/22 23:58:34 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 00:58:33 by zouddach         ###   ########.fr       */
+/*   Created: 2025/01/23 01:00:17 by zouddach          #+#    #+#             */
+/*   Updated: 2025/01/23 01:00:48 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef COLOR_HPP
-#define COLOR_HPP
+#ifndef BOLDFONT_HPP
+#define BOLDFONT_HPP
 
-#include <iostream>
+#include "IColor.hpp"
 
-class IColor
+class BoldFont : public IColor
 {
 public:
-    virtual ~IColor();
-    virtual void applyColor(std::ostream& os) const = 0;
+	void applyColor(std::ostream& os) const
+	{
+		os << "\033[1m"; // Bold text
+	}
 	
-	friend std::ostream& operator<<(std::ostream& os, const IColor& color) {
-        color.applyColor(os);
-        return os;
-    }
+	virtual ~BoldFont() {}
 };
 
 #endif

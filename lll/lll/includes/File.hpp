@@ -1,30 +1,32 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   IColor.hpp                                         :+:      :+:    :+:   */
+/*   File.hpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/22 23:58:34 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 00:58:33 by zouddach         ###   ########.fr       */
+/*   Created: 2025/01/21 17:18:38 by zouddach          #+#    #+#             */
+/*   Updated: 2025/01/21 19:02:40 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef COLOR_HPP
-#define COLOR_HPP
+#ifndef FILE_HPP
+# define FILE_HPP
 
-#include <iostream>
+# include "./Global.hpp"
 
-class IColor
-{
-public:
-    virtual ~IColor();
-    virtual void applyColor(std::ostream& os) const = 0;
+class File {
+	private:
 	
-	friend std::ostream& operator<<(std::ostream& os, const IColor& color) {
-        color.applyColor(os);
-        return os;
-    }
+		bool 	isValid;
+		string	FileName;
+		string	FilePath;
+		
+		ifstream file;
+		
+	public:
+		File() : isValid(0) {};
+		~File() {};
 };
 
 #endif

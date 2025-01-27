@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   Global.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/23 00:02:39 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 01:00:00 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/01/23 19:05:56 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/Global.hpp"
 
-IColor::~IColor() {}  // Empty destructor definition hit Interface w cpp98 makatsupportich keywords  bhal default w override w... so darrori khask dir difinition dialo hna
+IColor::~IColor() {}
 
 RedColor red;
 GreenColor green;

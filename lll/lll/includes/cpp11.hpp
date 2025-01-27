@@ -1,30 +1,20 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   IColor.hpp                                         :+:      :+:    :+:   */
+/*   cpp11.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/22 23:58:34 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 00:58:33 by zouddach         ###   ########.fr       */
+/*   Created: 2025/01/22 13:58:35 by zouddach          #+#    #+#             */
+/*   Updated: 2025/01/22 13:59:07 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef COLOR_HPP
-#define COLOR_HPP
+#ifndef CPP11_HPP
+#define CPP11_HPP
 
-#include <iostream>
+# include "../includes/Global.hpp"
 
-class IColor
-{
-public:
-    virtual ~IColor();
-    virtual void applyColor(std::ostream& os) const = 0;
-	
-	friend std::ostream& operator<<(std::ostream& os, const IColor& color) {
-        color.applyColor(os);
-        return os;
-    }
-};
+string cpp11_replace(string  &str, string toReplace, string replacment);
 
 #endif
