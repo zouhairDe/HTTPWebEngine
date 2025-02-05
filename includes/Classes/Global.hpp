@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Global.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/24 17:47:21 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/05 11:56:22 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <stdexcept>
+#include <unistd.h>
 
 using namespace std;
 
@@ -49,7 +50,7 @@ class WebServer;
 #include "Parser.hpp"
 #include "WebServer.hpp"
 
-// Color interface (IColor.hpp) and concrete classes (*Color.hpp)
+/* Color interface (IColor.hpp) and concrete classes (*Color.hpp) */
 #include "interfaces/Colors/IColor.hpp"
 #include "interfaces/Colors/RedColor.hpp"
 #include "interfaces/Colors/GreenColor.hpp"
@@ -57,7 +58,7 @@ class WebServer;
 #include "interfaces/Colors/DefaultColor.hpp"
 #include "interfaces/Colors/BoldFont.hpp"
 
-// Declare color instances globally
+/* Declare color instances globally */
 extern RedColor red;
 extern GreenColor green;
 extern BlueColor blue;

@@ -3,18 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 19:49:51 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/22 20:20:18 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/05 12:00:00 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef WEBSERVER_HPP
 # define WEBSERVER_HPP
 
-# include "./Global.hpp"
-
+# include "Global.hpp"
 
 class WebServer {
 	private:
@@ -46,8 +45,7 @@ class WebServer {
 		//check if any empty value was found in default server return runtime_error
 		//check if any value is empty in Servers replace it by the default server value
 		
-		void	changeEmptyValues()
-		{
+		void	changeEmptyValues() {
 			// cerr << "Changing Empty values for servers" << endl;
 			for (size_t i = 0; i < this->Servers.size(); i++)
 			{

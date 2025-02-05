@@ -124,7 +124,7 @@ int main()
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_addr.s_addr = INADDR_ANY;//any address
     server_addr.sin_port = htons(8080);
 	
 	// Bind socket to address
@@ -171,7 +171,6 @@ int main()
 		// system("lsof -i:8080 | grep LAST_ACK");
 		// system("lsof -i:8080 | grep SYN_RECV");
 		// system("lsof -i:8080 | grep SYN_SENT");
-		
 		// system("netstat -tulnap | grep 8080");
 		// system("lsof -c server");
         
@@ -276,9 +275,6 @@ int main()
 	
 	return 0;
 }
-
-using namespace std;
-
 
 /*
 

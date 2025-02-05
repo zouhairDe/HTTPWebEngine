@@ -1,47 +1,57 @@
 CPPC = c++
-CFLAGS = -std=c++98 #-Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -std=c++98
+DEBUG = -g -fsanitize=address
 NAME = webserv
 
 # Directories
-HEADERS_DIR = includes/
-INTERFACE_DIR = $(HEADERS_DIR)interfaces/
-COLORS_DIR = $(INTERFACE_DIR)Colors/
-FUNCTIONS_DIR = functions/
 SRC_DIR = src/
 OBJ_DIR = obj/
+HEADERS_DIR = includes/
+INTERFACE_DIR = $(HEADERS_DIR)Interfaces/
+COLORS_DIR = $(INTERFACE_DIR)Colors/
+FUNCTIONS_DIR = $(SRC_DIR)Functions/
+CLASSES_DIR = $(SRC_DIR)Classes/
 
 # Header files
-HEADER_FILES = Global.hpp Parser.hpp Server.hpp File.hpp WebServer.hpp ServerRoutes.hpp functions.hpp cpp11.hpp
+HEADER_FILES = Global.hpp ConfigParser.hpp Server.hpp File.hpp WebServer.hpp Route.hpp functions.hpp
 HEADERS = $(addprefix $(HEADERS_DIR), $(HEADER_FILES))
 
 # Interface files (colors)
-INTERFACE_FILES = hh.hpp
-COLORS_FILES = IColor.hpp BleuColor.hpp GreenColor.hpp RedColor.hpp DefaultColor.hpp BoldFont.hpp
+COLORS_FILES = IColor.hpp BlueColor.hpp GreenColor.hpp RedColor.hpp DefaultColor.hpp BoldFont.hpp
 COLORS = $(addprefix $(COLORS_DIR), $(COLORS_FILES))
 
 # Files
-SRC_FILES = main.cpp Global.cpp
+SRC_FILES = main.cpp
 FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp
+CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp Route.cpp
 
 # Full paths
 SRC = $(addprefix $(SRC_DIR), $(SRC_FILES))
-FUNCTIONS = $(addprefix $(FUNCTIONS_DIR), $(FUNCTIONS_FILES))
+FUNCTIONS_SRC = $(addprefix $(FUNCTIONS_DIR), $(FUNCTIONS_FILES))
+CLASSES_SRC = $(addprefix $(CLASSES_DIR), $(CLASSES_FILES))
 
 # Object files
-SRC_OBJ = $(SRC_FILES:%.cpp=$(OBJ_DIR)%.o)
-FUNCTIONS_OBJ = $(FUNCTIONS_FILES:%.cpp=$(OBJ_DIR)%.o)
-OBJ = $(SRC_OBJ) $(FUNCTIONS_OBJ)
+SRC_OBJ = $(SRC_FILES:%.cpp=$(OBJ_DIR)%.opp)
+FUNCTIONS_OBJ = $(FUNCTIONS_FILES:%.cpp=$(OBJ_DIR)%.opp)
+CLASSES_OBJ = $(CLASSES_FILES:%.cpp=$(OBJ_DIR)%.opp)
+OBJ = $(SRC_OBJ) $(FUNCTIONS_OBJ) $(CLASSES_OBJ)
 
 all: $(NAME)
 
+d: CFLAGS += $(DEBUG)
+d: re
+
 $(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+	@mkdir -p $(OBJ_DIR)
 
-$(OBJ_DIR)%.o: $(SRC_DIR)%.cpp $(HEADERS)
-	$(CPPC) $(CFLAGS) -c $< -o $@
+$(OBJ_DIR)%.opp: %.cpp
+	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
 
-$(OBJ_DIR)%.o: $(FUNCTIONS_DIR)%.cpp $(HEADERS)
-	$(CPPC) $(CFLAGS) -c $< -o $@
+$(OBJ_DIR)%.opp: $(CLASSES_DIR)%.cpp $(HEADERS)
+	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
+
+$(OBJ_DIR)%.opp: $(FUNCTIONS_DIR)%.cpp $(HEADERS)
+	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
 
 $(NAME): $(OBJ_DIR) $(OBJ)
 	$(CPPC) $(CFLAGS) $(OBJ) -o $(NAME)
@@ -54,4 +64,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all d clean fclean re

@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   File.hpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 17:18:38 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/21 19:02:40 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/05 12:34:17 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef FILE_HPP
 # define FILE_HPP
 
-# include "./Global.hpp"
+# include "Global.hpp"
 
 class File {
 	private:
@@ -25,8 +25,8 @@ class File {
 		ifstream file;
 		
 	public:
-		File() : isValid(0) {};
-		~File() {};
+		File();
+		~File();
 };
 
 #endif
