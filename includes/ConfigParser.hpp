@@ -6,14 +6,14 @@
 /*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:41:06 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 12:33:16 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 13:24:12 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CONFIGPARSER_HPP
 #define CONFIGPARSER_HPP
 
-#include "Global.hpp"
+#include "Server.hpp"
 
 class ConfigParser {
     private:
@@ -27,15 +27,15 @@ class ConfigParser {
         ConfigParser(const char* filename);
 		~ConfigParser();
         
-        bool			isServerEndBlock(const string& line);
-        void			parseServerBlock(ifstream& file, Server& server);
 		bool			isRouteEndBlock(string line, const string& routeName);
+        void			parseServerBlock(ifstream& file, Server& server);
         void			parseRouteBlock(ifstream& file, Route& route);
-        bool			fileExists(const string& filename);
-        void			displayProgressBar(int current, int total);
-		bool			isServerBlock(const string& line);
         bool			isRouteBlock(string& line, string &routeName);
+        void			displayProgressBar(int current, int total);
+        bool			isServerEndBlock(const string& line);
         vector<Server>	parseConfig(const string& filename);
+        bool			fileExists(const string& filename);
+		bool			isServerBlock(const string& line);
 
 		/* getters */
         string			getFileName() const;

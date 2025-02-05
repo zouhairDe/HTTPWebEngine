@@ -1,32 +1,34 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   File.hpp                                           :+:      :+:    :+:   */
+/*   WebServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/21 17:18:38 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 12:34:17 by mzeggaf          ###   ########.fr       */
+/*   Created: 2025/01/21 19:49:51 by zouddach          #+#    #+#             */
+/*   Updated: 2025/02/05 13:30:01 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FILE_HPP
-# define FILE_HPP
+#ifndef WEBSERVER_HPP
+# define WEBSERVER_HPP
 
-# include "Global.hpp"
+# include "ConfigParser.hpp"
 
-class File {
+class WebServer {
 	private:
-	
-		bool 	isValid;
-		string	FileName;
-		string	FilePath;
-		
-		ifstream file;
-		
+		Server	DefaultServer;
+		vector<Server>	Servers;
 	public:
-		File();
-		~File();
+		WebServer(char* filename);
+		~WebServer();
+		
+		//check if any empty value was found in default server return runtime_error
+		//check if any value is empty in Servers replace it by the default server value
+		
+		void	changeEmptyValues();
+		void	printData();
+		
 };
 
 #endif

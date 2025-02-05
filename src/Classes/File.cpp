@@ -1,8 +1,9 @@
 
-#include "File.h"
+#include "File.hpp"
 
-File() : isValid(0)
-{ }
+File::File() {
+	isValid = false;
+}
 
-~File()
+File::~File()
 { }

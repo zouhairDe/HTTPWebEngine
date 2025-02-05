@@ -1,10 +1,12 @@
 
-#include "ServerRoutes.hpp"
+#include "Route.hpp"
 
 Route::Route()
 	: RouteDirectoryListing(false), RouteGETMethod(false), 
 	RoutePOSTMethod(false), ClientMaxBodySize(0)
 { }
+
+Route::~Route() { }
 			
 string Route::getRouteRoot() const {
 	return RouteRoot;

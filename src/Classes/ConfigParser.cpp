@@ -92,6 +92,8 @@ ConfigParser::ConfigParser(const char* filename) {
 		throw runtime_error("Configuration file does not exist");
 }
 
+ConfigParser::~ConfigParser() { };
+
 bool ConfigParser::isServerBlock(const string& line) {
 	return line.find("[server,") != string::npos || line == "[server]";
 }

@@ -6,11 +6,12 @@
 /*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 18:48:44 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 12:13:14 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 13:31:59 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Global.hpp"
+#include "WebServer.hpp"
+#include "Server.hpp"
 
 int main(int ac, char **av)
 {

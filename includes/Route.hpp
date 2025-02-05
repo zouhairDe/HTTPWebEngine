@@ -6,7 +6,7 @@
 /*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 20:01:01 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 12:33:24 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 13:25:37 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ class Route {
 		~Route();
 		
 		/* getters */
-		string	etRouteRoot() const;
+		string	getRouteRoot() const;
 		string	getRouteIndex() const;
 		bool	getRouteDirectoryListing() const;
 		bool	getRouteGETMethod() const;

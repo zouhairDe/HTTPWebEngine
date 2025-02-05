@@ -6,18 +6,15 @@
 /*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:51:00 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 12:48:33 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 13:26:27 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "Global.hpp"
+#include "Route.hpp"
 #include "functions.hpp"
-
-string			trim(const string& str);
-vector<string>	split(string str, char delimiter);
 
 class Server {
 	private:
@@ -41,7 +38,7 @@ class Server {
 		vector<string>		getServerNames() const;
 		long				getClientMaxBodySize() const ;
 		vector<Route>		getRoutes() const;
-		map<string, string>	getErrorPages();
+		map<string, string>	getErrorPages() const;
 		string				getRoot() const;
 
 		/* setters */
@@ -52,8 +49,11 @@ class Server {
 		void				setRoutes(vector<Route> routes);
 		void				setProperty(const string& key, string value);
 
-		friend ostream &operator<<(std::ostream &out, const Server &server);
 
 };
+
+ostream			&operator<<(std::ostream &out, const Server &server);
+string			trim(const string& str);
+vector<string>	split(string str, char delimiter);
 
 #endif

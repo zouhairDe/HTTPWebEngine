@@ -6,7 +6,7 @@
 /*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 11:56:22 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 13:22:46 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,27 +36,20 @@
 
 using namespace std;
 
-class File;
-class Server;
-class ConfigParser;
-class Route;
-class WebServer;
-
-#include "functions.hpp"
-#include "cpp11.hpp"
-#include "ServerRoutes.hpp"
-#include "Server.hpp"
-#include "File.hpp"
-#include "Parser.hpp"
-#include "WebServer.hpp"
+// #include "functions.hpp"
+// #include "Route.hpp"
+// #include "Server.hpp"
+// #include "File.hpp"
+// #include "ConfigParser.hpp"
+// #include "WebServer.hpp"
 
 /* Color interface (IColor.hpp) and concrete classes (*Color.hpp) */
-#include "interfaces/Colors/IColor.hpp"
-#include "interfaces/Colors/RedColor.hpp"
-#include "interfaces/Colors/GreenColor.hpp"
-#include "interfaces/Colors/BlueColor.hpp"
-#include "interfaces/Colors/DefaultColor.hpp"
-#include "interfaces/Colors/BoldFont.hpp"
+#include "Interfaces/Colors/IColor.hpp"
+#include "Interfaces/Colors/RedColor.hpp"
+#include "Interfaces/Colors/GreenColor.hpp"
+#include "Interfaces/Colors/BlueColor.hpp"
+#include "Interfaces/Colors/DefaultColor.hpp"
+#include "Interfaces/Colors/BoldFont.hpp"
 
 /* Declare color instances globally */
 extern RedColor red;

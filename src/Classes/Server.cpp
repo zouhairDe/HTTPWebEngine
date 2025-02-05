@@ -75,7 +75,7 @@ void Server::addRoute(const Route& route) {
 	Routes.push_back(route);
 }
 
-friend ostream &Server::operator<<(std::ostream &out, const Server &server) {
+ostream &operator<<(std::ostream &out, const Server &server) {
 	out << "Host: " << server.getHostName() << endl;
 	out << "Root: " << server.getRoot() << endl;
 	out << "Port: " << server.getPort() << endl;
