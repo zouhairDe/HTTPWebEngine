@@ -44,13 +44,13 @@ d: re
 $(OBJ_DIR):
 	@mkdir -p $(OBJ_DIR)
 
-$(OBJ_DIR)%.opp: $(SRC_DIR)%.cpp
+$(OBJ_DIR)%.opp: $(SRC_DIR)%.cpp $(HEADERS) $(COLORS)
 	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
 
-$(OBJ_DIR)%.opp: $(CLASSES_DIR)%.cpp
+$(OBJ_DIR)%.opp: $(CLASSES_DIR)%.cpp $(HEADERS) $(COLORS)
 	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
 
-$(OBJ_DIR)%.opp: $(FUNCTIONS_DIR)%.cpp
+$(OBJ_DIR)%.opp: $(FUNCTIONS_DIR)%.cpp $(HEADERS) $(COLORS)
 	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
 
 $(NAME): $(OBJ_DIR) $(OBJ)
