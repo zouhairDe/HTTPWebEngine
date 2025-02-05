@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Global.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 13:22:46 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 16:43:17 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@
 #include <sys/socket.h>
 #include <stdexcept>
 #include <unistd.h>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -57,5 +58,7 @@ extern GreenColor green;
 extern BlueColor blue;
 extern DefaultColor def;
 extern BoldFont bold;
+
+
 
 #endif

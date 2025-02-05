@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:41:06 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 13:24:12 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 14:03:35 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,9 +31,9 @@ class ConfigParser {
         void			parseServerBlock(ifstream& file, Server& server);
         void			parseRouteBlock(ifstream& file, Route& route);
         bool			isRouteBlock(string& line, string &routeName);
-        void			displayProgressBar(int current, int total);
+        void			displayProgressBar(int current, int total, bool isDefault);
         bool			isServerEndBlock(const string& line);
-        vector<Server>	parseConfig(const string& filename);
+        vector<Server>	parseConfig(const string& filename, bool isDefault);
         bool			fileExists(const string& filename);
 		bool			isServerBlock(const string& line);
 
