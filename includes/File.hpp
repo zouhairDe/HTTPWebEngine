@@ -6,7 +6,7 @@
 /*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 17:18:38 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 13:27:35 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 19:32:42 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,16 +17,20 @@
 
 class File {
 	private:
-	
-		bool 	isValid;
-		string	FileName;
-		string	FilePath;
-		
-		ifstream file;
+		string		_path;
+		size_t		_size;
+		char	*_data;
 		
 	public:
 		File();
+		File(string path);
 		~File();
+
+		/* getters */
+		size_t		getSize() const;
+		char	*getData() const;
+		string		getPath() const;
+		bool		exists() const;
 };
 
 #endif
