@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/22 16:31:07 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/22 17:32:42 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/06 17:11:37 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,19 @@ vector<string> split(string str, char delimiter) {
 		internal.push_back(tok);
 	}
 	return internal;
+}
+
+vector<string> splitByString(string str, string delimiter) {
+    vector<string> tokens;
+    size_t pos = 0;
+    size_t prev = 0;
+    
+    while ((pos = str.find(delimiter, prev)) != string::npos) {
+        tokens.push_back(str.substr(prev, pos - prev));
+        prev = pos + delimiter.length();
+    }
+    tokens.push_back(str.substr(prev));
+    return tokens;
 }
 
 string cpp11_replace(string  &str, string toReplace, string replacement)

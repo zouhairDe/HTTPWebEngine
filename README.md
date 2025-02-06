@@ -5,6 +5,7 @@
 	1. setup files and folders from the sever.conf and handle error
 	2. Set an unordered map for http headers for each server
 	3. create socket for each server
+	4. check if different servers have some same data
 
 ## AccioMo
 	1. understand cgi
