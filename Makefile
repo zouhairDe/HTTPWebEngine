@@ -13,7 +13,7 @@ FUNCTIONS_DIR = $(SRC_DIR)Functions/
 CLASSES_DIR = $(SRC_DIR)Classes/
 
 # Header files
-HEADER_FILES = Global.hpp ConfigParser.hpp Server.hpp File.hpp WebServer.hpp Route.hpp functions.hpp
+HEADER_FILES = Global.hpp ConfigParser.hpp Server.hpp File.hpp WebServer.hpp Route.hpp functions.hpp RequestProccessor.hpp
 HEADERS = $(addprefix $(HEADERS_DIR), $(HEADER_FILES))
 
 # Interface files (colors)
@@ -23,7 +23,7 @@ COLORS = $(addprefix $(COLORS_DIR), $(COLORS_FILES))
 # Files
 SRC_FILES = main.cpp
 FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp
-CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp Route.cpp
+CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp Route.cpp RequestProccessor.cpp
 
 # Full paths
 SRC = $(addprefix $(SRC_DIR), $(SRC_FILES))

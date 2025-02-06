@@ -7,10 +7,6 @@ Route::Route()
 { }
 
 Route::~Route() { }
-			
-string Route::getRouteRoot() const {
-	return RouteRoot;
-}
 
 string Route::getRouteIndex() const {
 	return RouteIndex;
@@ -43,8 +39,7 @@ string Route::getRouteName() const {
 // ma3rftch ila chi rouote ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
 
 void	Route::setProperty(const string& key, const string& value) {
-	if (key == "root") RouteRoot = value;
-	else if (key == "name") RouteName = value;
+	if (key == "name") RouteName = value;
 	else if (key == "index") RouteIndex = value;
 	else if (key == "directory_listing") 
 		RouteDirectoryListing = (value == "on");
@@ -60,19 +55,19 @@ void	Route::setProperty(const string& key, const string& value) {
 		if (unit == 'M') ClientMaxBodySize *= 1024 * 1024;
 		else if (unit == 'K') ClientMaxBodySize *= 1024;
 	}
+	else {
+		throw runtime_error("\033[31m Unknown property: " + key + ",  for Route: " + RouteName);
+		exit (1);
+	}
 }
 
 void Route::CheckFiles() const {
 	struct stat buffer;
 	cerr << blue << " ---------------- Checking Route: " << RouteName << def << endl;
-	if (RouteRoot.empty())
-		throw runtime_error("\033[31m Route: " + RouteName + " must have a Root");
 	if (RouteIndex.empty() && RouteName != "\"/uploads\"")
 		throw runtime_error("\033[31m Route: " + RouteName + " must have an Index File");
 	if (UploadStore.empty() && RouteName == "\"/uploads\"")
 		throw runtime_error("\033[31m Route: " + RouteName + " must have an Upload Store");
-	if (stat(string("/tmp/www/" + RouteRoot).c_str(), &buffer) != 0)
-		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Root");
 	if (stat(string("/tmp/www/" + UploadStore).c_str(), &buffer) != 0)
 		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Upload Store");
 	if (stat(string("/tmp/www/" + RouteIndex).c_str(), &buffer) != 0)
