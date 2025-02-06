@@ -61,3 +61,20 @@ void	Route::setProperty(const string& key, const string& value) {
 		else if (unit == 'K') ClientMaxBodySize *= 1024;
 	}
 }
+
+void Route::CheckFiles() const {
+	struct stat buffer;
+	cerr << blue << " ---------------- Checking Route: " << RouteName << def << endl;
+	if (RouteRoot.empty())
+		throw runtime_error("\033[31m Route: " + RouteName + " must have a Root");
+	if (RouteIndex.empty() && RouteName != "\"/uploads\"")
+		throw runtime_error("\033[31m Route: " + RouteName + " must have an Index File");
+	if (UploadStore.empty() && RouteName == "\"/uploads\"")
+		throw runtime_error("\033[31m Route: " + RouteName + " must have an Upload Store");
+	if (stat(string("/tmp/www/" + RouteRoot).c_str(), &buffer) != 0)
+		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Root");
+	if (stat(string("/tmp/www/" + UploadStore).c_str(), &buffer) != 0)
+		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Upload Store");
+	if (stat(string("/tmp/www/" + RouteIndex).c_str(), &buffer) != 0)
+		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Index File");
+}

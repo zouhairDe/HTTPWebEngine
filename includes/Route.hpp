@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Route.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 20:01:01 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 13:34:50 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/05 18:56:00 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ class Route {
 		string	getUploadStore() const;
 		long	getClientMaxBodySize() const;
 		string	getRouteName() const;
+		void	CheckFiles() const;
 
 		// ma3rftch ila chi rouote ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
 

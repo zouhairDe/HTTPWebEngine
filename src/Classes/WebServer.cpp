@@ -2,11 +2,11 @@
 #include "WebServer.hpp"
 
 WebServer::WebServer(char* filename) {
-	// khas ncheciw b3da wach kayn error line fl config file
+	// khas ncheckiw b3da wach kayn error line fl config file
 	ConfigParser config(filename);
 	ifstream file(filename);
 	string line;
-	int serverCount = 0;
+	int serverCount = 0;//This is to count servers for progress bar
 	while (getline(file, line)) {
 		line = trim(line);
 		if (line.empty() || line[0] == '#') continue;
@@ -17,35 +17,35 @@ WebServer::WebServer(char* filename) {
 	cerr << "Server count: " << serverCount << endl;
 	file.close();
 	config.setServerCount(serverCount);
-
-	// DefaultServer = config.parseConfig("config/default.conf")[0];
-	Servers = config.parseConfig(string(filename));
+	
+	Servers = config.parseConfig(string(filename), false);
+	//setting the default server "config/default.conf"
+	DefaultServer = config.parseConfig("config/default.conf", true)[0];
+	cout << def << endl << endl; // Move to the next line after the progress bar is complete
 	changeEmptyValues();
 }
 
 WebServer::~WebServer() { }
 
-//check if any empty value was found in default server return runtime_error
-//check if any value is empty in Servers replace it by the default server value
-
-void	WebServer::changeEmptyValues() {
+void	WebServer::changeEmptyValues() {//must have properties homa host, port 404err_page, index and root Route
 	// cerr << "Changing Empty values for servers" << endl;
 	for (size_t i = 0; i < this->Servers.size(); i++)
 	{
-		// cerr << "Changing For Server " << i + 1 << endl;
 		Server &server = this->Servers[i];
+		if (server.getRoot().empty())
+			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1)  + " must have a Root");
 		if (server.getHostName().empty())
-			server.setProperty("host", this->DefaultServer.getHostName());
+			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1)  + " must have a HostName");
 		if (server.getPort().empty())
-			server.setProperty("port", this->DefaultServer.getPort());
-		if (server.getServerNames().empty())
-			server.setServerNames(this->DefaultServer.getServerNames());
+			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1)  + " must have a Port to listen to");
+		if (server.getIndexFile().empty())
+			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1)  + " must have an Index File");
 		if (server.getClientMaxBodySize() == -1)
 			server.setClientMaxBodySize(this->DefaultServer.getClientMaxBodySize());
 		if (server.getRoutes().empty())
 			server.setRoutes(this->DefaultServer.getRoutes());
 		if (server.getErrorPages().empty())
-			server.setErrorPages(this->DefaultServer.getErrorPages());
+			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1)  + " must have an 404 error page");
 		
 	}
 }
@@ -58,4 +58,12 @@ void WebServer::printData()
 		cout << this->Servers[i];
 	}
 }
-		
+
+void WebServer::CheckFiles()
+{
+	for (size_t i = 0; i < this->Servers.size(); i++) {
+		Server &server = this->Servers[i];
+		cout << bold << green << " -------- Checking files for server " << i + 1 << def << endl;
+		server.CheckFiles();
+	}
+}

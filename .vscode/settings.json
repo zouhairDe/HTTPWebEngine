@@ -8,6 +8,15 @@
 		}
 	},
 	"files.associations": {
-		"algorithm": "cpp"
+		"algorithm": "cpp",
+		"filesystem": "cpp",
+		"iostream": "cpp",
+		"vector": "cpp",
+		"stdexcept": "cpp",
+		"iosfwd": "cpp",
+		"sstream": "cpp",
+		"string": "cpp",
+		"__split_buffer": "cpp",
+		"deque": "cpp"
 	}
 }

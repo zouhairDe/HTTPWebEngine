@@ -64,7 +64,8 @@ bool ConfigParser::fileExists(const string& filename) {
 	return file.good();
 }
 
-void ConfigParser::displayProgressBar(int current, int total) {
+void ConfigParser::displayProgressBar(int current, int total, bool isDefault) {
+	if (isDefault) return;
 	const int barWidth = 60;
 	float progress = (float)current / total;
 	int pos = barWidth * progress;
@@ -78,9 +79,6 @@ void ConfigParser::displayProgressBar(int current, int total) {
 	}
 	cout << "] " << int(progress * 100.0) << "%";
 	cout.flush();
-
-	if (current == total)
-		cout << endl;
 }
 
 ConfigParser::ConfigParser(const char* filename) {
@@ -89,7 +87,7 @@ ConfigParser::ConfigParser(const char* filename) {
 	this->lineCount = 0;
 	this->serverCount = 0;
 	if (!fileExists(ConfigFilePath))
-		throw runtime_error("Configuration file does not exist");
+		throw runtime_error("\033[31m Configuration file does not exist");
 }
 
 ConfigParser::~ConfigParser() { };
@@ -104,7 +102,7 @@ bool ConfigParser::isRouteBlock(string& line, string &routeName) {
 	if ((line.find("[route,") != string::npos && line.find("\"]") != string::npos) || line == "[route]") {
 		vector<string> parts = split(line, ',');
 		if (parts.size() > 2)
-			throw runtime_error("Invalid route block: " + line);
+			throw runtime_error("\033[31m Invalid route block: " + line);
 		if (parts.size() == 2)
 			routeName = parts[1].substr(0, parts[1].length()-1);
 		else
@@ -123,12 +121,12 @@ string ConfigParser::getFileName() const {
 string ConfigParser::getFilePath() const {
 	return ConfigFilePath;
 }
-vector<Server> ConfigParser::parseConfig(const string& filename) {
+vector<Server> ConfigParser::parseConfig(const string& filename, bool isDefault) {
 	vector<Server> servers;
 	ifstream file(filename.c_str());
 	
 	if (!file.is_open())
-		throw runtime_error("Cannot open configuration file: " + filename);
+		throw runtime_error("\033[31m Cannot open configuration file: " + filename);
 
 	string line;
 	while (getline(file, line)) {
@@ -139,12 +137,11 @@ vector<Server> ConfigParser::parseConfig(const string& filename) {
 			Server server;
 			parseServerBlock(file, server);
 			servers.push_back(server);
-			displayProgressBar(servers.size(), serverCount);
+			displayProgressBar(servers.size(), serverCount, isDefault);
 		}
 	}
 
 	file.close();
-	cout << endl; // Move to the next line after the progress bar is complete
 	return servers;
 }
 
