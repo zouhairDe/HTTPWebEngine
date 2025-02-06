@@ -3,12 +3,12 @@
 
 Server::Server(string hostname, string port, string root)
 	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(-1) {
-
+	
     memset(&Address, 0, sizeof(Address));
     Address.sin_family = AF_INET;
     Address.sin_addr.s_addr = INADDR_ANY;
     Address.sin_port = htons(stoi(Port));
-	
+
 }
 
 Server::~Server() { }
@@ -65,7 +65,7 @@ void	Server::setRoutes(vector<Route> routes) {
 	Routes = routes;
 }
 
-void Server::setProperty(const string& key, string value) {
+void Server::setProperty(const string &key, string value) {
 	if (key == "host") HostName = value;
 	else if (key == "port") Port = value;
 	else if (key == "server_names") setServerNames(split(value, ','));
@@ -86,7 +86,7 @@ void Server::addRoute(const Route& route) {
 	Routes.push_back(route);
 }
 
-ostream &operator<<(std::ostream &out, const Server &server) {
+ostream &operator<<(ostream &out, const Server &server) {
 	out << "Host: " << server.getHostName() << endl;
 	out << "Root: " << server.getRoot() << endl;
 	out << "Port: " << server.getPort() << endl;
@@ -183,28 +183,29 @@ int	Server::communicate(void) {
         }
         cout << red << bold << blue << "Client: " << def << buffer << endl;
 		
-    }
-	File file(this->getErrorPage());
-	if (!file.exists()) {
-		cerr << red << "Error: file not found: " << this->getErrorPage() << endl;
-		close(client_fd);
-		return (1);
-	}
-	
-	string http_headers = 
-		"HTTP/1.1 200 OK\n\
-Date: Fri, 01 Jul 2022 12:00:00 GMT\n\
-Server: Apache/2.4.41 (Ubuntu)\n\
-Last-Modified: Mon, 13 Jun 2022 10:00:00 GMT\n\
-Content-Length: " + to_string(file.getSize()) + "\n\
-Content-Type: text/html; charset=UTF-8\n\
-Connection: keep-alive\n";
-	
-	cerr << red << "HTTP headers: " << http_headers << endl;
+			cerr << red << "file found: " << this->getErrorPage() << endl;
+		File file(this->getErrorPage());
+		if (!file.exists()) {
+			cerr << red << "Error: file not found: " << this->getErrorPage() << endl;
+			close(client_fd);
+			return (1);
+    	}
+		
+		string http_headers = 
+			"HTTP/1.1 200 OK\r\n\
+Date: Fri, 01 Jul 2022 12:00:00 GMT\r\n\
+Server: Apache/2.4.41 (Ubuntu)\r\n\
+Last-Modified: Mon, 13 Jun 2022 10:00:00 GMT\r\n\
+Content-Length: " + to_string(file.getSize()) + "\r\n\
+Content-Type: text/html; charset=UTF-8\r\n\
+Connection: keep-alive\r\n\r\n";
+		
+		cerr << red << "HTTP headers: " << http_headers << endl;
 
-	send(client_fd, http_headers.c_str(), http_headers.length(), 0);
-	send(client_fd, file.getData(), file.getSize(), 0);
-	close(client_fd);
+		send(client_fd, http_headers.c_str(), http_headers.length(), 0);
+		send(client_fd, file.getData(), file.getSize(), 0);
+		close(client_fd);
+	}
 
 	return (0);
 }
@@ -247,8 +248,8 @@ void Server::CheckFiles()
 		Route &r = rs[i];
 		if (r.getRouteName() == "\"/\"")
 		{
-			if (r.getRouteRoot() != this->getRoot())
-				throw runtime_error("\033[31m Route / must have the same root as the server");
+			// if (r.getRouteRoot() != this->getRoot())
+			// 	throw runtime_error("\033[31m Route / must have the same root as the server");
 			if (r.getRouteIndex() != this->getIndexFile())
 				throw runtime_error("\033[31m Route / must have the same index as the server");
 		}
