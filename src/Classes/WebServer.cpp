@@ -44,26 +44,37 @@ void	WebServer::changeEmptyValues() {//must have properties homa host, port 404e
 			server.setClientMaxBodySize(this->DefaultServer.getClientMaxBodySize());
 		if (server.getRoutes().empty())
 			server.setRoutes(this->DefaultServer.getRoutes());
-		if (server.getErrorPages().empty())
+		if (server.getErrorPage().empty())
 			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1)  + " must have an 404 error page");
-		
 	}
 }
 
-void WebServer::printData()
+void	WebServer::printData()
 {
 	cout << "Default server:" << endl;
 	cout << this->DefaultServer;
 	for (size_t i = 0; i < this->Servers.size(); i++) {
-		cout << this->Servers[i];
+		cout << this->Servers[i] << endl;
+		cout << "---------------------------------" << endl;
 	}
 }
 
-void WebServer::CheckFiles()
+void	WebServer::CheckFiles()
 {
 	for (size_t i = 0; i < this->Servers.size(); i++) {
 		Server &server = this->Servers[i];
 		cout << bold << green << " -------- Checking files for server " << i + 1 << def << endl;
 		server.CheckFiles();
+	}
+}
+
+void	WebServer::run() {
+	for (size_t i = 0; i < this->Servers.size(); i++) {
+		Server &server = this->Servers[i];
+		cout << bold << green << " -------- Starting server " << i + 1 << def << endl;
+		server.initSocket();
+		server.bindSocket();
+		server.listenSocket();
+		server.communicate();
 	}
 }

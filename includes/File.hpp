@@ -6,7 +6,7 @@
 /*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 17:18:38 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 19:32:42 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/06 13:46:45 by mzeggaf          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ class File {
 	private:
 		string		_path;
 		size_t		_size;
-		char	*_data;
+		char		*_data;
 		
 	public:
 		File();
@@ -28,7 +28,7 @@ class File {
 
 		/* getters */
 		size_t		getSize() const;
-		char	*getData() const;
+		char		*getData() const;
 		string		getPath() const;
 		bool		exists() const;
 };
