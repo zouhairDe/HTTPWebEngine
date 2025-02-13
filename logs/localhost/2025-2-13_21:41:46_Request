@@ -1,17 +1,19 @@
 ----Request----
-GET / HTTP/1.1
+POST / HTTP/1.1
 Host: axample.com
+Content-Type: text/plain
 User-Agent: PostmanRuntime/7.33.0
 Accept: */*
-Postman-Token: 5c5212b4-7409-4f46-88f4-75b5b809cef7
+Postman-Token: e5978ef7-be58-4091-8411-9a0ab16aaf95
 Accept-Encoding: gzip, deflate, br
 Connection: keep-alive
+Content-Length: 17
 
-
+hi this is a test
 
 ----Response----
 HTTP/1.1 404 OK
-Date: Thu, 13 Feb 2025 20:00:30 GMT
+Date: Thu, 13 Feb 2025 20:41:46 GMT
 Server: HTTPWebEngine v0.6.9
 Last-Modified: Wed, 05 Feb 2025 11:20:06 GMT
 Content-Length: 1796
@@ -84,3 +86,26 @@ Connection: keep-alive
     </div>
 </body>
 </html>
+
+----Parsed Request----
+Request: POST / HTTP/1.1
+Host: axample.com
+Content-Type: text/plain
+User-Agent: PostmanRuntime/7.33.0
+Accept: */*
+Postman-Token: e5978ef7-be58-4091-8411-9a0ab16aaf95
+Accept-Encoding: gzip, deflate, br
+Connection: keep-alive
+Content-Length: 17
+
+hi this is a test
+Method: POST
+Uri: /
+Host: axample.com
+Connection: keep-alive
+Content-Length: 17
+Body: hi this is a test
+Query: 
+Cookie: 
+
+

@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 16:29:15 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/06 17:22:13 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/13 21:34:34 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,8 @@ class RequestProccessor {
 		RequestProccessor(string request);
 		~RequestProccessor();
 		
+		void	parseMultipartFormData(const string &body, const string &boundary);
+		
 		
 		/*getters*/
 		string		getRequest() const;
@@ -47,5 +49,6 @@ class RequestProccessor {
 		
 };
 
+std::ostream& operator<<(std::ostream& os, const RequestProccessor& req);
 
 #endif

@@ -17,6 +17,8 @@
 		"sstream": "cpp",
 		"string": "cpp",
 		"__split_buffer": "cpp",
-		"deque": "cpp"
+		"deque": "cpp",
+		"ostream": "cpp",
+		"functional": "cpp"
 	}
 }
