@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 16:46:10 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/06 17:33:07 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/06 19:07:46 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,20 +98,5 @@ RequestProccessor::RequestProccessor(string req) {
 	} else {
 		_body = "";
 	}
-	
-	//print all the data
-	// cout << blue << bold << "Request Proccessor Data:"  << endl;
-	// cout << "Request: " << _request << endl;
-	// cout << "Method: " << _method << endl;
-	// cout << "Uri: " << _uri << endl;
-	// cout << "Host: " << _host << endl;
-	// cout << "Port: " << _port << endl;
-	// cout << "Connection: " << _connection << endl;
-	// cout << "Content-Length: " << _content_length << endl;
-	// cout << "Body: " << _body << endl;//this gonna be a problem cuz we gotta 
-	// cout << "Query: " << _query << endl;//later for cgi
-	// cout << "Cookie: " << _cookie << endl;//later for bonus
-	
-	// cout << "---------------------------------" << def << endl;
 	
 }

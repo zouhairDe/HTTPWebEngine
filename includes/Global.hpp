@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/05 16:43:17 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/06 19:14:10 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,10 @@
 #include <stdexcept>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/event.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <errno.h>
 
 using namespace std;
 

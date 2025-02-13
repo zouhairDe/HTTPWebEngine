@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 18:48:44 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/06 16:07:09 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/06 19:06:18 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,8 @@ int main(int ac, char **av)
 		cout << bold << green << "Parsing config file: " << av[1] << def << endl;
 		WebServer webserv(av[1]);
 		// webserv.printData();
-		// webserv.CheckFiles();
+		webserv.CheckFiles();
+		webserv.run();
     }
     catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;

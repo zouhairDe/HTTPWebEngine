@@ -19,6 +19,8 @@ File::File(std::string path) : _path(path), _size(0), _data(nullptr) {
 	file.read(this->_data, this->_size);
 }
 
+File::File() {}//huh?
+
 File::~File() {
 	delete[] this->_data;
 }

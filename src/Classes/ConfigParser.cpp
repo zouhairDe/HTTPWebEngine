@@ -13,7 +13,10 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 		line = trim(line);
 		if (line.empty() || line[0] == '#') continue;
 		
-		if (isServerEndBlock(line)) break;
+		if (isServerEndBlock(line)) {
+			server.updateAddress();
+			break;
+		};
 		string routeName = "";
 		if (isRouteBlock(line, routeName)) {
 			Route route;

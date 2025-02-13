@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:51:00 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/06 13:35:54 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/13 20:15:45 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,11 +14,24 @@
 #define SERVER_HPP
 
 #include "Route.hpp"
-#include "functions.hpp"
-#include "File.hpp"
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
+# include "functions.hpp"
+# include "File.hpp"
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <sys/socket.h>
+# include <fcntl.h>
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <netinet/tcp.h>
+
+
+// Add OS-specific headers and definitions
+#ifdef __APPLE__
+    #define TCP_KEEPINTVL        0x101
+    #define TCP_KEEPCNT         0x102
+	#define TCP_KEEPIDLE        0x103
+	
+#endif
 
 class Server {
 	private:
@@ -31,9 +44,12 @@ class Server {
 		vector<Route>		Routes;
 		string				ErrorPage;
 
-		struct sockaddr_in	Address;
-
 	public:
+		struct sockaddr_in	Address;
+		
+		static int kq;  // Single kqueue for all servers
+        struct kevent change_event;  
+        struct kevent event_list[32];  // Array to store events
 		int					Socket;
 		Server(string hostname = "localhost", string port = "8080", string root = ".");
 		~Server();
@@ -42,7 +58,9 @@ class Server {
 		int					initSocket(void);
 		int					bindSocket(void);
 		int					listenSocket(void);
-		int					communicate(void);
+		static int 			initKqueue();
+        int 				registerWithKqueue();
+		void				updateAddress();
 		
 		/* getters */
 		string				getHostName() const;

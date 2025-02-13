@@ -22,7 +22,7 @@ COLORS = $(addprefix $(COLORS_DIR), $(COLORS_FILES))
 
 # Files
 SRC_FILES = main.cpp
-FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp
+FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp ServerFunctions.cpp
 CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp Route.cpp RequestProccessor.cpp
 
 # Full paths
