@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 16:46:10 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/13 21:40:53 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/14 19:17:05 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -170,10 +170,7 @@ RequestProccessor::RequestProccessor(string req)
 					string boundary = content_type.substr(boundary_pos + 9);
 					// Remove any quotes around boundary
 					if (boundary[0] == '"')
-					{
 						boundary = boundary.substr(1, boundary.length() - 2);
-					}
-
 					// Now we can parse multipart form data using the boundary
 					parseMultipartFormData(_body, boundary);
 				}
@@ -185,14 +182,14 @@ RequestProccessor::RequestProccessor(string req)
 void RequestProccessor::parseMultipartFormData(const string &body, const string &boundary)
 {
 	vector<string> parts = splitByString(body, "--" + boundary);
-	for (size_t i = 0; i < parts.size())
+	for (size_t i = 0; i < parts.size(); i++)
 	{
 		string part = parts[i];
 		if (part.empty() || part == "--")
 			continue;
 
 		vector<string> part_lines = split(part, '\n');
-		for (size_t i < 0; part_lines.size(); i++)
+		for (size_t i = 0; i < part_lines.size(); i++)
 		{
 			string line = trim(part_lines[i]);
 			line = trim(line);

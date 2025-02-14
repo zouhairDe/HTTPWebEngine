@@ -25,7 +25,7 @@ WebServer::WebServer(char *filename)
 
 	Servers = config.parseConfig(string(filename), false);
 	// setting the default server "config/default.conf"
-	DefaultServer = config.parseConfig("config/default.conf", true)[0];
+	DefaultServer = config.parseConfig("config/default.conf", true)[0];//no need for it anymore
 	cout << def << endl
 		 << endl; // Move to the next line after the progress bar is complete
 	changeEmptyValues();
