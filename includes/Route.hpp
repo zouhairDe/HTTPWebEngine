@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 20:01:01 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/06 19:05:26 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/14 19:37:38 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 #define ROUTE_HPP
 
 #include "Global.hpp"
+# include "File.hpp"
+# include "RequestProccessor.hpp"
 
 class Route {
 	private:
@@ -43,6 +45,9 @@ class Route {
 
 		/* setters */
 		void setProperty(const string& key, const string& value);
+		
+		/* Methods */
+		File	*getGETResponse(RequestProccessor req, string root) const;
 
 };
 

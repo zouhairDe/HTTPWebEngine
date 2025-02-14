@@ -278,7 +278,7 @@ int WebServer::handleClientData(int client_fd, Server &server)
     reqFile << "----Request----\n" << request << "\n\n";
 
     // Handle response
-    File file(server.getErrorPage());
+    File file(server.getErrorPage());//for errors only
     if (!file.exists()) {
         delete[] buffer;
         cerr << red << "Error: file not found: " << server.getErrorPage() << def << endl;
@@ -286,17 +286,56 @@ int WebServer::handleClientData(int client_fd, Server &server)
         close(client_fd);
         return -1;
     }
-
+	
+	//getting the correct response
+	//if the requested uri is not found in the server routes we return 404 error page
+	
+	RequestProccessor req(request);
+	string uri = req.getUri();
+	bool found = false;
+	vector<Route> routes = server.getRoutes();//first khasn anjibo server li senda request b anana n9arno Host<server_names> machi socket, hit i9dr ikono bzf servers nafs ip main hna kanhlo socket whda
+	Route *responsableRoute = nullptr;// if null then the servers default index file will be returned
+	File *response = nullptr;
+	for (size_t i = 0; i < routes.size(); i++)
+	{
+		cerr << "Route name: " << routes[i].getRouteName() << endl;
+		if (routes[i].getRouteName() == string("\"" + uri + "\""))
+		{
+			found = true;
+			responsableRoute = &routes[i];
+			cerr << "Route found" << endl;
+			response = responsableRoute->getGETResponse(req, server.getRoot());
+			break;
+		}
+	}
+	string http_headers;
+	if (!found)
+	{
+    	http_headers = generateHttpHeaders(file, 404);
+		cerr << "Route not found" << endl;
+		// responsableRoute = &server.getDefaultRoute();//to add later
+		if (send(client_fd, http_headers.c_str(), http_headers.length(), 0) == -1 ||
+			send(client_fd, file.getData(), file.getSize(), 0) == -1) {
+			delete[] buffer;
+			cerr << red << "Error: Failed to send response" << def << endl;
+			reqFile.close();
+			close(client_fd);
+			return -1;
+		}
+	}
+	else {
+		http_headers = generateHttpHeaders(*response, 200);
+		if (send(client_fd, http_headers.c_str(), http_headers.length(), 0) == -1 ||
+			send(client_fd, response->getData(), response->getSize(), 0) == -1) {
+			delete[] buffer;
+			cerr << red << "Error: Failed to send response" << def << endl;
+			reqFile.close();
+			close(client_fd);
+			return -1;
+		}
+	}
+	
     // Generate and send HTTP headers
-    string http_headers = generateHttpHeaders(file, 404);
-    if (send(client_fd, http_headers.c_str(), http_headers.length(), 0) == -1 ||
-        send(client_fd, file.getData(), file.getSize(), 0) == -1) {
-        delete[] buffer;
-        cerr << red << "Error: Failed to send response" << def << endl;
-        reqFile.close();
-        close(client_fd);
-        return -1;
-    }
 
     // Log response
     reqFile << "----Response----\n" << http_headers;

@@ -1,5 +1,7 @@
 
 #include "Route.hpp"
+# include "File.hpp"
+# include "RequestProccessor.hpp"
 
 Route::Route()
 	: RouteDirectoryListing(false), RouteGETMethod(false), 
@@ -72,4 +74,18 @@ void Route::CheckFiles() const {
 		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Upload Store");
 	if (stat(string("/tmp/www/" + RouteIndex).c_str(), &buffer) != 0)
 		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Index File");
+}
+
+File *Route::getGETResponse(RequestProccessor req, string root) const {
+	(void)root;
+	string path = "/tmp/www/";
+	if (req.getUri() == "/")
+		path += RouteIndex;
+	else
+		path += req.getUri();
+	cerr << "PATH: " << path << endl;
+	// struct stat buffer;
+	if (access(path.c_str(), F_OK) == -1)
+		return nullptr;
+	return new File(path);
 }
