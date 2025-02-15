@@ -83,8 +83,6 @@ File *Route::getGETResponse(RequestProccessor req, string root) const {
 		path += RouteIndex;
 	else
 		path += req.getUri();
-	cerr << "PATH: " << path << endl;
-	// struct stat buffer;
 	if (access(path.c_str(), F_OK) == -1)
 		return nullptr;
 	return new File(path);

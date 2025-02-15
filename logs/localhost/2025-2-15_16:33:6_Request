@@ -1,0 +1,162 @@
+----Request----
+POST / HTTP/1.1
+Host: blog.com
+User-Agent: PostmanRuntime/7.33.0
+Accept: */*
+Postman-Token: 83ceb1ad-7456-41f8-b21a-d1cd78ff0c84
+Accept-Encoding: gzip, deflate, br
+Connection: keep-alive
+Content-Type: multipart/form-data; boundary=--------------------------536085208832960371325641
+Content-Length: 556
+
+----------------------------536085208832960371325641
+Content-Disposition: form-data; name=""; filename="README.md"
+Content-Type: text/markdown
+
+
+# TODO:
+
+## zouhairDe
+	1. setup files and folders from the sever.conf and handle error
+	2. Set an unordered map for http headers for each server
+	3. create socket for each server
+	4. check if different servers have some same data
+
+## AccioMo
+	1. understand cgi
+	2. implement it
+	3. fail
+	4. ...?
+	5. profit
+
+## later
+	1. handle request and response
+
+
+----Response----
+HTTP/1.1 200 OK
+Date: Sat, 15 Feb 2025 15:33:06 GMT
+Server: HTTPWebEngine v0.6.9
+Last-Modified: Sat, 15 Feb 2025 15:06:58 GMT
+Content-Length: 48
+Content-Type: text/html; charset=UTF-8
+Connection: keep-alive
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 90%;
+        }
+        h1 {
+            font-size: 8rem;
+            margin: 0;
+            color: #e74c3c;
+        }
+        h2 {
+            font-size: 2rem;
+            margin: 1rem 0;
+            color: #2c3e50;
+        }
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #7f8c8d;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 0.8rem 1.5rem;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .back-link:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>404</h1>
+        <h2>Page Not Found</h2>
+        <p>The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
+        <a href="/" class="back-link">Back to Homepage</a>
+    </div>
+</body>
+</html>
+
+----Parsed Request----
+Request: POST / HTTP/1.1
+Host: blog.com
+User-Agent: PostmanRuntime/7.33.0
+Accept: */*
+Postman-Token: 83ceb1ad-7456-41f8-b21a-d1cd78ff0c84
+Accept-Encoding: gzip, deflate, br
+Connection: keep-alive
+Content-Type: multipart/form-data; boundary=--------------------------536085208832960371325641
+Content-Length: 556
+
+----------------------------536085208832960371325641
+Content-Disposition: form-data; name=""; filename="README.md"
+Content-Type: text/markdown
+
+
+# TODO:
+
+## zouhairDe
+	1. setup files and folders from the sever.conf and handle error
+	2. Set an unordered map for http headers for each server
+	3. create socket for each server
+	4. check if different servers have some same data
+
+## AccioMo
+	1. understand cgi
+	2. implement it
+	3. fail
+	4. ...?
+	5. profit
+
+## later
+	1. handle request and response
+
+Method: POST
+Uri: /
+Host: blog.com
+Connection: keep-alive
+Content-Length: 556
+Body: ----------------------------536085208832960371325641
+Content-Disposition: form-data; name=""; filename="README.md"
+Content-Type: text/markdown
+Query: 
+Cookie: 
+
+
+----Request----
+
+----------------------------536085208832960371325641--
+
+

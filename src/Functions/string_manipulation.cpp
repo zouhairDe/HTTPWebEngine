@@ -6,17 +6,22 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/22 16:31:07 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/06 17:11:37 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/15 17:00:48 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/functions.hpp"
 
 string trim(const string& str) {
-	size_t first = str.find_first_not_of(" \t");
-	if (first == string::npos) return "";
-	size_t last = str.find_last_not_of(" \t");
-	return str.substr(first, (last - first + 1));
+    // Find first non-whitespace character (including newlines)
+    size_t first = str.find_first_not_of(" \t\r\n");
+    if (first == string::npos) return "";
+    
+    // Find last non-whitespace character (including newlines) 
+    size_t last = str.find_last_not_of(" \t\r\n");
+    
+    // Return the trimmed substring
+    return str.substr(first, (last - first + 1));
 }
 
 vector<string> split(string str, char delimiter) {

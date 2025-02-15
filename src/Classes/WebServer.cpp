@@ -1,6 +1,6 @@
 
 #include "WebServer.hpp"
-# include "RequestProccessor.hpp"
+#include "RequestProccessor.hpp"
 
 WebServer::WebServer(char *filename)
 {
@@ -25,7 +25,7 @@ WebServer::WebServer(char *filename)
 
 	Servers = config.parseConfig(string(filename), false);
 	// setting the default server "config/default.conf"
-	DefaultServer = config.parseConfig("config/default.conf", true)[0];//no need for it anymore
+	DefaultServer = config.parseConfig("config/default.conf", true)[0]; // no need for it anymore
 	cout << def << endl
 		 << endl; // Move to the next line after the progress bar is complete
 	changeEmptyValues();
@@ -179,6 +179,39 @@ Server *WebServer::getServerBySocket(int socket_fd)
 	return nullptr;
 }
 
+Server* WebServer::findServerByHost(const RequestProccessor& req, Server& defaultServer)
+{
+    string host = req.getHost();
+    
+    // Check current server first
+    vector<string> currentNames = defaultServer.getServerNames();
+    if (isMatchingServer(currentNames, host))
+        return &defaultServer;
+
+    // Check other servers
+    for (size_t i = 0; i < this->Servers.size(); ++i)
+    {
+        if (&this->Servers[i] == &defaultServer)
+            continue;
+
+        vector<string> otherServerNames = this->Servers[i].getServerNames();
+        if (isMatchingServer(otherServerNames, host)) // && this->Servers[i].getPort() == req.getPort()) w ip == server.ip
+            return &this->Servers[i];
+    }
+    
+    return NULL;
+}
+
+bool WebServer::isMatchingServer(const vector<string>& serverNames, const string& requestHost)
+{
+    for (size_t k = 0; k < serverNames.size(); ++k)
+    {
+        if (serverNames[k] == requestHost)
+            return true;
+    }
+    return false;
+}
+
 int WebServer::handleNewConnection(Server &server)
 {
 	struct sockaddr_in client_addr;
@@ -204,150 +237,157 @@ int WebServer::handleNewConnection(Server &server)
 	cout << green << "Client connected!" << def << endl;
 	return 0;
 }
+
+int	LogRequest(int client_fd, Server &server, string request, string http_headers, File file)
+{
+	// Create logs directory
+	string logsPath = "logs/" + server.getHostName();
+	if (mkdir(logsPath.c_str(), 0777) == -1 && errno != EEXIST)
+	{
+		cerr << red << "Error: failed to create logs directory" << def << endl;
+		close(client_fd);
+		return -1;
+	}
+
+	// Create log filename with timestamp
+	time_t now = time(0);
+	tm *ltm = localtime(&now);
+	string date = to_string(1900 + ltm->tm_year) + "-" +
+				  to_string(1 + ltm->tm_mon) + "-" +
+				  to_string(ltm->tm_mday) + "_" +
+				  to_string(ltm->tm_hour) + ":" +
+				  to_string(ltm->tm_min) + ":" +
+				  to_string(ltm->tm_sec);
+	string filePath = logsPath + "/" + date + "_Request";
+	// Open log file
+	ofstream reqFile(filePath, ios::out | ios::app);
+	if (!reqFile.is_open())
+	{
+		cerr << red << "Error: Cannot open log file" << def << endl;
+		close(client_fd);
+		return -1;
+	}
+	// Write request to log
+	reqFile << "----Request----\n"
+			<< request << "\n\n";
+			reqFile << "----Response----\n"
+			<< http_headers;
+	if (file.getData() && file.getSize() > 0)
+	{
+		reqFile.write(file.getData(), file.getSize());
+		reqFile << "\n\n----Parsed Request----\n";
+		RequestProccessor req(request);
+		reqFile << req << "\n\n";
+	}
+	return 0;
+}
+
 int WebServer::handleClientData(int client_fd, Server &server)
 {
-    const size_t BUFFER_SIZE = 8192; // 8KB buffer
-    string request;
-    bool request_complete = false;
+	const size_t BUFFER_SIZE = 8192; // 8KB buffer
+	string request;
+	bool request_complete = false;
 
-    // Dynamically allocate buffer
-    char* buffer = new char[BUFFER_SIZE];
-    if (!buffer) {
-        cerr << red << "Error: Failed to allocate buffer" << def << endl;
-        close(client_fd);
-        return -1;
-    }
+	// Dynamically allocate buffer
+	char *buffer = new char[BUFFER_SIZE];
+	if (!buffer)
+	{
+		cerr << red << "Error: Failed to allocate buffer" << def << endl;
+		close(client_fd);
+		return -1;
+	}
 
-    // Read request in chunks
-    while (!request_complete) {
-        memset(buffer, 0, BUFFER_SIZE);
-        ssize_t bytes_received = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
-        
-        if (bytes_received < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                break; // No more data to read
-            }
-            delete[] buffer;
-            cerr << red << "Error receiving data: " << strerror(errno) << def << endl;
-            close(client_fd);
-            return -1;
-        }
-        
-        if (bytes_received == 0) {
-            break; // Connection closed by client
-        }
+	// Read request in chunks
+	while (!request_complete)
+	{
+		memset(buffer, 0, BUFFER_SIZE);
+		ssize_t bytes_received = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
 
-        request.append(buffer, bytes_received);
-        
-        // Check if we've received the full request
-        if (request.find("\r\n\r\n") != string::npos) {
-            request_complete = true;
-        }
-    }
+		if (bytes_received < 0)
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				break; // No more data to read
+			
+			delete[] buffer;
+			cerr << red << "Error receiving data: " << strerror(errno) << def << endl;
+			close(client_fd);
+			return -1;
+		}
 
-    // Create logs directory
-    string logsPath = "logs/" + server.getHostName();
-    if (mkdir(logsPath.c_str(), 0777) == -1 && errno != EEXIST) {
-        delete[] buffer;
-        cerr << red << "Error: failed to create logs directory" << def << endl;
-        close(client_fd);
-        return -1;
-    }
+		if (bytes_received == 0)
+			break; // Connection closed by client
 
-    // Create log filename with timestamp
-    time_t now = time(0);
-    tm *ltm = localtime(&now);
-    string date = to_string(1900 + ltm->tm_year) + "-" +
-                  to_string(1 + ltm->tm_mon) + "-" +
-                  to_string(ltm->tm_mday) + "_" +
-                  to_string(ltm->tm_hour) + ":" +
-                  to_string(ltm->tm_min) + ":" +
-                  to_string(ltm->tm_sec);
-    string filePath = logsPath + "/" + date + "_Request";
+		request.append(buffer, bytes_received);
 
-    // Open log file
-    ofstream reqFile(filePath, ios::out | ios::app);
-    if (!reqFile.is_open()) {
-        delete[] buffer;
-        cerr << red << "Error: Cannot open log file" << def << endl;
-        close(client_fd);
-        return -1;
-    }
+		// Check if we've received the full request
+		if (request.find("\r\n\r\n") != string::npos)
+			request_complete = true;
+	}
 
-    // Write request to log
-    reqFile << "----Request----\n" << request << "\n\n";
-
-    // Handle response
-    File file(server.getErrorPage());//for errors only
-    if (!file.exists()) {
-        delete[] buffer;
-        cerr << red << "Error: file not found: " << server.getErrorPage() << def << endl;
-        reqFile.close();
-        close(client_fd);
-        return -1;
-    }
-	
-	//getting the correct response
-	//if the requested uri is not found in the server routes we return 404 error page
+	// Handle response
+	File file(server.getErrorPage()); // for errors only
+	if (!file.exists())
+	{
+		delete[] buffer;
+		cerr << red << "Error: file not found: " << server.getErrorPage() << def << endl;
+		close(client_fd);
+		return -1;
+	}
 	
 	RequestProccessor req(request);
+	Server *newServer = findServerByHost(req, server);
+	if (!newServer)
+        newServer = &server;
+
 	string uri = req.getUri();
 	bool found = false;
-	vector<Route> routes = server.getRoutes();//first khasn anjibo server li senda request b anana n9arno Host<server_names> machi socket, hit i9dr ikono bzf servers nafs ip main hna kanhlo socket whda
-	Route *responsableRoute = nullptr;// if null then the servers default index file will be returned
+	vector<Route> routes = newServer->getRoutes(); // first khasn anjibo server li senda request b anana n9arno Host<server_names> machi socket, hit i9dr ikono bzf servers nafs ip main hna kanhlo socket whda
+	Route *responsableRoute = nullptr;		   // if null then the servers default index file will be returned
 	File *response = nullptr;
 	for (size_t i = 0; i < routes.size(); i++)
 	{
-		cerr << "Route name: " << routes[i].getRouteName() << endl;
 		if (routes[i].getRouteName() == string("\"" + uri + "\""))
 		{
 			found = true;
 			responsableRoute = &routes[i];
-			cerr << "Route found" << endl;
-			response = responsableRoute->getGETResponse(req, server.getRoot());
+			response = responsableRoute->getGETResponse(req, newServer->getRoot());
 			break;
 		}
 	}
 	string http_headers;
 	if (!found)
 	{
-    	http_headers = generateHttpHeaders(file, 404);
+		http_headers = generateHttpHeaders(file, 404);
 		cerr << "Route not found" << endl;
 		// responsableRoute = &server.getDefaultRoute();//to add later
 		if (send(client_fd, http_headers.c_str(), http_headers.length(), 0) == -1 ||
-			send(client_fd, file.getData(), file.getSize(), 0) == -1) {
+			send(client_fd, file.getData(), file.getSize(), 0) == -1)
+		{
 			delete[] buffer;
 			cerr << red << "Error: Failed to send response" << def << endl;
-			reqFile.close();
 			close(client_fd);
 			return -1;
 		}
 	}
-	else {
+	else
+	{
 		http_headers = generateHttpHeaders(*response, 200);
 		if (send(client_fd, http_headers.c_str(), http_headers.length(), 0) == -1 ||
-			send(client_fd, response->getData(), response->getSize(), 0) == -1) {
+			send(client_fd, response->getData(), response->getSize(), 0) == -1)
+		{
 			delete[] buffer;
 			cerr << red << "Error: Failed to send response" << def << endl;
-			reqFile.close();
 			close(client_fd);
 			return -1;
 		}
 	}
-	
-    // Generate and send HTTP headers
-
-    // Log response
-    reqFile << "----Response----\n" << http_headers;
-    if (file.getData() && file.getSize() > 0) {
-        reqFile.write(file.getData(), file.getSize());
-        reqFile << "\n\n----Parsed Request----\n";
-        RequestProccessor req(request); // Use accumulated request instead of buffer
-        reqFile << req << "\n\n";
-    }
-
-    // Cleanup
-    delete[] buffer;
-    reqFile.close();
-    return 0;
+	if (LogRequest(client_fd, server, request, http_headers, file) == -1)
+	{
+		delete[] buffer;
+		cerr << red << "Error: Failed to log request" << def << endl;
+		// return -1;
+	}
+	// Cleanup
+	delete[] buffer;
+	return 0;
 }

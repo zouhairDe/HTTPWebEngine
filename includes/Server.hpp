@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:51:00 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/13 20:15:45 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/15 16:12:30 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,8 @@ class Server {
 		int					Socket;
 		Server(string hostname = "localhost", string port = "8080", string root = ".");
 		~Server();
+		// Server(const Server &server);
+		// Server				&operator=(const Server &server);
 		
 		void				addRoute(const Route& route);
 		int					initSocket(void);

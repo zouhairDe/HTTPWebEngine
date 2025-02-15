@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   File.hpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mzeggaf <mzeggaf@student.42.fr>            +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 17:18:38 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/06 13:46:45 by mzeggaf          ###   ########.fr       */
+/*   Updated: 2025/02/15 17:17:11 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,8 @@ class File {
 	public:
 		File();
 		File(string path);
+		File(const File &other);
+		File	&operator=(const File &other);
 		~File();
 
 		/* getters */

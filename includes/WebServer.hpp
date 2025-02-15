@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 19:49:51 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/13 20:20:18 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/15 17:03:31 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,8 @@ class WebServer {
 		Server* getServerBySocket(int socket_fd);
 		int 	handleNewConnection(Server& server);
 		int 	handleClientData(int client_fd, Server& server);
+		Server* findServerByHost(const RequestProccessor& req, Server& defaultServer);
+    	bool	isMatchingServer(const vector<string>& serverNames, const string& requestHost);
 			
 };
 

@@ -52,12 +52,15 @@ void	Server::setClientMaxBodySize(long size) {
 }
 
 void	Server::setServerNames(vector<string> names) {
-	ServerNames = names;
+	for (size_t i = 0; i < names.size(); i++) {
+		ServerNames.push_back(trim(names[i]));
+	}
 }
 
 void	Server::setRoutes(vector<Route> routes) {
 	Routes = routes;
 }
+
 
 void Server::setProperty(const string &key, string value) {
 	if (key == "host") HostName = value;

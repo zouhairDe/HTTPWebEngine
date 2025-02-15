@@ -21,6 +21,24 @@ File::File(std::string path) : _path(path), _size(0), _data(nullptr) {
 
 File::File() {}//huh?
 
+File::File(const File &other) {
+	this->_path = other._path;
+	this->_size = other._size;
+	this->_data = new char[this->_size + 1];
+	std::memcpy(this->_data, other._data, this->_size);
+}
+
+File	&File::operator=(const File &other) {
+	if (this != &other) {
+		this->_path = other._path;
+		this->_size = other._size;
+		delete[] this->_data;
+		this->_data = new char[this->_size + 1];
+		std::memcpy(this->_data, other._data, this->_size);
+	}
+	return (*this);
+}
+
 File::~File() {
 	delete[] this->_data;
 }
