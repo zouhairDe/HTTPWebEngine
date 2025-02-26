@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:51:00 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/15 16:12:30 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/26 19:58:10 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,16 +33,19 @@
 	
 #endif
 
+// TODO: add a vector<Server> _Friends; to the Server class, khas ykono 3ndo ga3 friends li homa servers li mcharkin m3ah fl ip && port
+
 class Server {
 	private:
 		string				HostName;
-		string				IndexFile;
+		vector<string>		IndexFiles;
 		string				Port;
 		string				Root;
 		vector<string>		ServerNames;
 		long				ClientMaxBodySize; /* in bytes */
 		vector<Route>		Routes;
 		string				ErrorPage;
+		vector<Server>		_ServerFriends;
 
 	public:
 		struct sockaddr_in	Address;
@@ -57,12 +60,8 @@ class Server {
 		// Server				&operator=(const Server &server);
 		
 		void				addRoute(const Route& route);
-		int					initSocket(void);
-		int					bindSocket(void);
-		int					listenSocket(void);
-		static int 			initKqueue();
-        int 				registerWithKqueue();
 		void				updateAddress();
+		Route				*getRouteFromUri(string uri);
 		
 		/* getters */
 		string				getHostName() const;
@@ -72,7 +71,8 @@ class Server {
 		vector<Route>		getRoutes() const;
 		string				getErrorPage() const;
 		string				getRoot() const;
-		string				getIndexFile() const;
+		vector<string>		getIndexFiles() const;
+		vector<Server>		getFriends() const;
 
 		/* setters */
 		void				setRoot(string root);
@@ -81,6 +81,8 @@ class Server {
 		void				setServerNames(vector<string> names);
 		void				setRoutes(vector<Route> routes);
 		void				setProperty(const string& key, string value);
+		void				addFriend(Server& server);
+		
 		void				CheckFiles();
 
 

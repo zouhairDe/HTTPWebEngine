@@ -15,8 +15,8 @@ string Server::getPort() const {
 	return Port;
 }
 
-string	Server::getIndexFile() const {
-	return IndexFile;
+vector<string>	Server::getIndexFiles() const {
+	return IndexFiles;
 }
 
 vector<string> Server::getServerNames() const {
@@ -61,13 +61,32 @@ void	Server::setRoutes(vector<Route> routes) {
 	Routes = routes;
 }
 
+Route *Server::getRouteFromUri(string uri) {
+    for (size_t i = 0; i < Routes.size(); i++) {
+        if (Routes[i].getRouteName() == string("\"" + uri + "\"")) {
+            cerr << "Route found from *Server::getRouteFromUri(): " << Routes[i].getRouteName() << endl;
+            return &Routes[i];
+        }
+    }
+    size_t lastSlash = uri.find_last_of('/');
+    if (lastSlash != string::npos && uri != "/") {
+        uri = uri.substr(0, lastSlash);
+        return getRouteFromUri(uri);
+    }
+    return nullptr;
+}
 
 void Server::setProperty(const string &key, string value) {
 	if (key == "host") HostName = value;
 	else if (key == "port") Port = value;
 	else if (key == "server_names") setServerNames(split(value, ','));
 	else if (key == "root") Root = value;
-	else if (key == "index") IndexFile = value;
+	else if (key == "index")
+	{
+		vector<string> indexes = split(value, ',');
+		for (size_t i = 0; i < indexes.size(); i++)
+			IndexFiles.push_back(trim(indexes[i]));
+	}
 	else if (key == "client_max_body_size") {
 		string size = value.substr(0, value.length()-1);
 		char unit = value[value.length()-1];//if unit is not a number consider it bytes
@@ -107,7 +126,7 @@ ostream &operator<<(ostream &out, const Server &server) {
 	for (size_t i = 0; i < routes.size(); i++) {
 		Route route = routes[i];
 		out << "  Route " << i + 1 << ":" << endl;
-		out << "    Index: " << route.getRouteIndex() << endl;
+		out << "    IndexFiles size: " << route.getRouteIndexFiles().size() << endl;
 		out << "    Directory listing: " << (route.getRouteDirectoryListing() ? "on" : "off") << endl;
 		out << "    Allowed methods: ";
 		if (route.getRouteGETMethod()) out << "GET ";
@@ -120,92 +139,12 @@ ostream &operator<<(ostream &out, const Server &server) {
 	return out;
 }
 
-int Server::kq = -1;
-
-int Server::initKqueue() {
-    if (kq == -1) {
-        kq = kqueue();
-        if (kq == -1) {
-            cerr << red << "Error: kqueue() failed" << def << endl;
-            return -1;
-        }
-    }
-    return kq;
+void	Server::addFriend(Server& server) {
+	_ServerFriends.push_back(server);
 }
 
-int Server::registerWithKqueue() {
-    // Register server socket with kqueue
-    EV_SET(&change_event, Socket, EVFILT_READ, EV_ADD, 0, 0, NULL);
-    if (kevent(kq, &change_event, 1, NULL, 0, NULL) == -1) {
-        cerr << red << "Error: kevent register failed" << def << endl;
-        return -1;
-    }
-    return 0;
-}
-
-int Server::initSocket() {
-    // Create socket
-    Socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (Socket == -1) {
-        cerr << red << "Error: socket creation failed: " << strerror(errno) << def << endl;
-        return 1;
-    }
-    
-    // Set socket options
-    int opt = 1;
-    int keepalive = 1;
-    int keepcnt = 3;
-    int keepidle = 1;
-    int keepintvl = 1;
-    
-    if (setsockopt(Socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1 ||
-        setsockopt(Socket, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive)) == -1 ||
-        setsockopt(Socket, IPPROTO_TCP, TCP_KEEPCNT, &keepcnt, sizeof(keepcnt)) == -1 ||
-        setsockopt(Socket, IPPROTO_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle)) == -1 ||
-        setsockopt(Socket, IPPROTO_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl)) == -1) {
-        cerr << red << "Error: setsockopt failed: " << strerror(errno) << def << endl;
-        close(Socket);
-        return 1;
-    }
-
-    // Set non-blocking mode
-    int flags = fcntl(Socket, F_GETFL, 0);
-    if (flags == -1 || fcntl(Socket, F_SETFL, flags | O_NONBLOCK) == -1) {
-        cerr << red << "Error: fcntl failed: " << strerror(errno) << def << endl;
-        close(Socket);
-        return 1;
-    }
-
-    cout << green << "Socket initialized with fd: " << Socket << def << endl;
-    return 0;
-}
-
-int Server::bindSocket() {
-    memset(&Address, 0, sizeof(Address));
-    Address.sin_family = AF_INET;
-    Address.sin_port = htons(atoi(Port.c_str()));
-    Address.sin_addr.s_addr = htonl(INADDR_ANY);  // Accept on all interfaces
-
-    if (bind(Socket, (struct sockaddr *)&Address, sizeof(Address)) == -1) {
-		//check if it failed because the port is already in use we return 0
-		// if (errno == EADDRINUSE)// if its already in use nhandliwh somehowelse
-        cerr << red << "Error: bind failed: " << strerror(errno) << def << endl;
-        close(Socket);
-        return 1;
-    }
-
-    cout << green << "Socket bound to port " << Port << def << endl;
-    return 0;
-}
-
-int Server::listenSocket() {
-    if (listen(Socket, SOMAXCONN) == -1) {
-        cerr << red << "Error: listen failed: " << strerror(errno) << def << endl;
-        close(Socket);
-        return 1;
-    }
-    cout << blue << "Server is listening on port: " << Port << def << endl;
-    return 0;
+vector<Server> Server::getFriends() const {
+	return _ServerFriends;
 }
 
 void Server::CheckFiles()
@@ -231,7 +170,7 @@ void Server::CheckFiles()
         }
 		
 		if (this->getErrorPage().empty())
-			throw runtime_error("\033[31m Server must have an 404 error page");
+			throw runtime_error("\033[31m Server must have an 404 error page");//TA NRUNNI NGNIX W NCHOFO HADI WACH S7I7A
 			
 		if (access(string(this->getErrorPage()).c_str(), R_OK) != 0)
 			throw runtime_error("\033[31m No read access to 404 error page");
@@ -239,18 +178,4 @@ void Server::CheckFiles()
     } else {
         throw runtime_error("\033[31m Folder does not exist: " + rootPath);
     }
-	
-	vector<Route> rs = this->getRoutes();
-	for (size_t i = 0; i < rs.size(); i++)
-	{
-		Route &r = rs[i];
-		if (r.getRouteName() == "\"/\"")
-		{
-			// if (r.getRouteRoot() != this->getRoot())
-			// 	throw runtime_error("\033[31m Route / must have the same root as the server");
-			if (r.getRouteIndex() != this->getIndexFile())
-				throw runtime_error("\033[31m Route / must have the same index as the server");
-		}
-		r.CheckFiles();
-	}
 }

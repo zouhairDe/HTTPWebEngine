@@ -2,10 +2,24 @@
 # TODO:
 
 ## zouhairDe
-	1. setup files and folders from the sever.conf and handle error
-	2. Set an unordered map for http headers for each server
-	3. create socket for each server
-	4. check if different servers have some same data
+	0. Firsti should make the indeFile -> IndexFiles: vector<string>, and its not necessary in the config file
+	
+	/*		
+		else if (fileFromUri.empty()) {
+			cerr << red << "File from uri is empty, Meanning we r in a Folder\n" << def;
+			//TODO: check if the folder exists and we have access to it
+				/* If yes check if indexFiles of this route are valid starting from the left side*/
+					/* If a file is valid return it*/
+				/* Else check if directory listing is On */
+					/* If yes generate httpFile for DL */
+					/* Else return nullptr: for 404errpage */
+
+			return nullptr;
+		}
+	*/
+	
+	1. In: File *Route::getGETResponse(RequestProccessor req, string root, string fileFromUri) const
+		Ihave to check if it a folder or a file to responde 3la hsab ila folder wach directory listenning On wlala
 
 ## AccioMo
 	1. understand cgi

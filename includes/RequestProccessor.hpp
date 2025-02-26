@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 16:29:15 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/13 21:34:34 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/25 23:54:04 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ class RequestProccessor {
 		
 	public:
 		RequestProccessor();
-		RequestProccessor(string request);
+		RequestProccessor(string request, string __port);
 		~RequestProccessor();
 		
 		void	parseMultipartFormData(const string &body, const string &boundary);
@@ -41,6 +41,7 @@ class RequestProccessor {
 		string		getMethod() const;
 		string		getUri() const;
 		string		getHost() const;
+		string		getPort() const;
 		string		getConnection() const;
 		string		getContentLength() const;
 		string		getBody() const;

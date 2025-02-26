@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 16:46:10 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/14 19:17:05 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/26 15:50:31 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,11 @@ string RequestProccessor::getHost() const
 	return _host;
 }
 
+string RequestProccessor::getPort() const
+{
+	return _port;
+}
+
 string RequestProccessor::getConnection() const
 {
 	return _connection;
@@ -65,7 +70,7 @@ string RequestProccessor::getCookie() const
 	return _cookie;
 }
 
-RequestProccessor::RequestProccessor(string req)
+RequestProccessor::RequestProccessor(string req, string __port)
 {
 	_request = req;
 
@@ -129,13 +134,14 @@ RequestProccessor::RequestProccessor(string req)
 			if (port_pos != string::npos)
 			{
 				_host = trim(value.substr(0, port_pos));
-				_port = trim(value.substr(port_pos + 1));
+				_port = __port;
 			}
 			else
 			{
 				_host = value;
-				_port = "80";
+				_port = __port;
 			}
+			cout << blue << "Port has been set to: " << _port << def << endl;
 		}
 		else if (key == "Connection")
 		{

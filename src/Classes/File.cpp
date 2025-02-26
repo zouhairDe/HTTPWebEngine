@@ -1,19 +1,19 @@
 
 #include "File.hpp"
 
-File::File(std::string path) : _path(path), _size(0), _data(nullptr) {
-    std::ifstream file(this->_path, std::ios::binary | std::ios::ate);
+File::File(string path) : _path(path), _size(0), _data(nullptr) {
+    ifstream file(this->_path, ios::binary | ios::ate);
     if (!file) {
-        std::cerr << "Failed to get file size.\n";
+        cerr << "Failed to get file size.\n";
         return ;
     }
 
     this->_size = file.tellg();
-	file.seekg(0, std::ios::beg);
+	file.seekg(0, ios::beg);
 
 	_data = new char[this->_size + 1];
 	if (!file) {
-		std::cerr << "Failed to open the file.\n";
+		cerr << "Failed to open the file.\n";
 		return ;
 	}
 	file.read(this->_data, this->_size);
@@ -25,7 +25,7 @@ File::File(const File &other) {
 	this->_path = other._path;
 	this->_size = other._size;
 	this->_data = new char[this->_size + 1];
-	std::memcpy(this->_data, other._data, this->_size);
+	memcpy(this->_data, other._data, this->_size);
 }
 
 File	&File::operator=(const File &other) {
@@ -34,7 +34,7 @@ File	&File::operator=(const File &other) {
 		this->_size = other._size;
 		delete[] this->_data;
 		this->_data = new char[this->_size + 1];
-		std::memcpy(this->_data, other._data, this->_size);
+		memcpy(this->_data, other._data, this->_size);
 	}
 	return (*this);
 }
@@ -55,6 +55,6 @@ char	*File::getData() const {
 	return (this->_data);
 }
 
-std::string	File::getPath() const {
+string	File::getPath() const {
 	return (this->_path);
 }

@@ -67,8 +67,7 @@ bool ConfigParser::fileExists(const string& filename) {
 	return file.good();
 }
 
-void ConfigParser::displayProgressBar(int current, int total, bool isDefault) {
-	if (isDefault) return;
+void ConfigParser::displayProgressBar(int current, int total) {
 	const int barWidth = 60;
 	float progress = (float)current / total;
 	int pos = barWidth * progress;
@@ -124,7 +123,19 @@ string ConfigParser::getFileName() const {
 string ConfigParser::getFilePath() const {
 	return ConfigFilePath;
 }
-vector<Server> ConfigParser::parseConfig(const string& filename, bool isDefault) {
+
+/* if server has same port and host as another server; add it to that server's friends */
+bool	ConfigParser::addServerToFriends(Server& server, vector<Server>& servers) {
+	for (size_t i = 0; i < servers.size(); i++) {
+		if (servers[i].getHostName() == server.getHostName() && servers[i].getPort() == server.getPort()) {
+			servers[i].addFriend(server);
+			return true;
+		}
+	}
+	return false;
+}
+
+vector<Server> ConfigParser::parseConfig(const string& filename) {
 	vector<Server> servers;
 	ifstream file(filename.c_str());
 	
@@ -139,8 +150,9 @@ vector<Server> ConfigParser::parseConfig(const string& filename, bool isDefault)
 		if (isServerBlock(line)) {
 			Server server;
 			parseServerBlock(file, server);
-			servers.push_back(server);
-			displayProgressBar(servers.size(), serverCount, isDefault);
+			if (!addServerToFriends(server, servers))
+				servers.push_back(server);
+			displayProgressBar(servers.size(), serverCount);
 		}
 	}
 

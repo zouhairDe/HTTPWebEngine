@@ -6,7 +6,7 @@
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 16:46:41 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/06 19:14:10 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/02/15 22:10:05 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <fstream>
 
 using namespace std;
 
