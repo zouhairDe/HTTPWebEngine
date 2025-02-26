@@ -21,8 +21,6 @@ def parse_config(config_file):
 		routes = re.findall(r'\[route, "(.*?)"\](.*?)\["\1"\]', block, re.DOTALL)
 		server_config['routes'] = []
 		for route_path, route_block in routes:
-			# if route_path == '/': literally just commented this 9lawi (took 2 fucking hours)
-			# 	continue
 			route_config = {'path': route_path}
 			for line in route_block.strip().split('\n'):
 				line = line.strip()
@@ -34,20 +32,18 @@ def parse_config(config_file):
 		parsed_servers.append(server_config)
 	
 	return parsed_servers
-
+	
 def create_server_structure(servers):
 	base_path = '/tmp/www/'
 	os.makedirs(base_path, exist_ok=True)
-	
 	for server in servers:
-		# Create server root directory
 		server_root = os.path.normpath(os.path.join(base_path, server.get('root', server['name'] + 'Root').rstrip('/')))
 		os.makedirs(server_root, exist_ok=True)
 		
-		# Create index.html
 		if 'index' in server:
 			print(server)
 			index_path = os.path.normpath(os.path.join(base_path, server['index']))
+			os.makedirs(os.path.dirname(index_path), exist_ok=True)
 			with open(index_path, 'w') as f:
 				f.write(f'<h1>Welcome to {index_path}</h1>')
 			for route in server["routes"]:
@@ -57,7 +53,6 @@ def create_server_structure(servers):
 					with open(index_path, 'w') as f:
 						f.write(f'<h1>Welcome to {index_path}</h1>')
 		
-		# Create error directory in server root and copy contents
 		if 'error_page_404' in server:
 			error_dir = os.path.join(server_root, 'error')
 			os.makedirs(error_dir, exist_ok=True)
