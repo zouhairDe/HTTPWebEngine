@@ -1,5 +1,8 @@
 
 #include "Server.hpp"
+#include <cstring>
+#include <string>
+#include <cstddef>
 
 Server::Server(string hostname, string port, string root)
 	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(-1) {
@@ -73,7 +76,7 @@ Route *Server::getRouteFromUri(string uri) {
         uri = uri.substr(0, lastSlash);
         return getRouteFromUri(uri);
     }
-    return nullptr;
+    return NULL;
 }
 
 void Server::setProperty(const string &key, string value) {
@@ -102,7 +105,25 @@ void Server::updateAddress() {
     memset(&Address, 0, sizeof(Address));
     Address.sin_family = AF_INET;
     Address.sin_addr.s_addr = INADDR_ANY;
-    Address.sin_port = htons(stoi(Port));
+	/*
+
+	_..._   .--.                              
+	.'     '. |__|  .--./)   .--./)             
+	.   .-.   ..--. /.''\\   /.''\\              
+	|  '   '  ||  || |  | | | |  | |      __     
+	|  |   |  ||  | \`-' /   \`-' /    .:--.'.   
+	|  |   |  ||  | /("'`    /("'`    / |   \ |  
+	|  |   |  ||  | \ '---.  \ '---.  `" __ | |  
+	|  |   |  ||__|  /'""'.\  /'""'.\  .'.''| |  
+	|  |   |  |     ||     ||||     ||/ /   | |_ 
+	|  |   |  |     \'. __// \'. __// \ \._,\ '/ 
+	'--'   '--'      `'---'   `'---'   `--'  `" 
+
+		std::stoi() is C++11 NOT 98
+    	Address.sin_port = htons(stoi(Port));
+	*/
+	Address.sin_port = htons(69);
+	std::cout << "src/Classes/Server.cpp:113:4: CHECK THIS!!" << std::endl;
 }
 
 void Server::addRoute(const Route& route) {

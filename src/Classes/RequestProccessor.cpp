@@ -195,9 +195,9 @@ void RequestProccessor::parseMultipartFormData(const string &body, const string 
 			continue;
 
 		vector<string> part_lines = split(part, '\n');
-		for (size_t i = 0; i < part_lines.size(); i++)
+		for (size_t j = 0; j < part_lines.size(); j++)
 		{
-			string line = trim(part_lines[i]);
+			string line = trim(part_lines[j]);
 			line = trim(line);
 			if (line.find("Content-Disposition:") != string::npos)
 			{

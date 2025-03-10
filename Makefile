@@ -1,68 +1,83 @@
-CPPC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++98
-DEBUG = -g -fsanitize=address
-NAME = webserv
+CLANG = c++
+FLAGS = -std=c++98 -Wall -Wextra -Werror -Wshadow
+DEBUG_FLAGS = -g -fsanitize=address
+OPTIMIZATION_FLAGS = -O3
+HEADER_FILES = Global.hpp ConfigParser.hpp Server.hpp File.hpp WebServer.hpp \
+				Route.hpp Functions.hpp RequestProccessor.hpp
+COLOR_HEADERS = IColor.hpp BlueColor.hpp GreenColor.hpp RedColor.hpp DefaultColor.hpp \
+				BoldFont.hpp
+FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp ServerFunctions.cpp
+CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp \
+				Route.cpp RequestProccessor.cpp
+MAIN_FILE = main.cpp
 
-# Directories
 SRC_DIR = src/
-OBJ_DIR = obj/
-HEADERS_DIR = includes/
-INTERFACE_DIR = $(HEADERS_DIR)Interfaces/
+INCLUDE_DIR = include/
+INTERFACE_DIR = $(INCLUDE_DIR)Interfaces/
 COLORS_DIR = $(INTERFACE_DIR)Colors/
 FUNCTIONS_DIR = $(SRC_DIR)Functions/
 CLASSES_DIR = $(SRC_DIR)Classes/
+DEBUG_OBJ_DIR = debug_obj/
+OBJ_DIR = obj/
 
-# Header files
-HEADER_FILES = Global.hpp ConfigParser.hpp Server.hpp File.hpp WebServer.hpp Route.hpp functions.hpp RequestProccessor.hpp
-HEADERS = $(addprefix $(HEADERS_DIR), $(HEADER_FILES))
+FLAGS += -I$(INCLUDE_DIR) -I$(COLORS_DIR)
 
-# Interface files (colors)
-COLORS_FILES = IColor.hpp BlueColor.hpp GreenColor.hpp RedColor.hpp DefaultColor.hpp BoldFont.hpp
-COLORS = $(addprefix $(COLORS_DIR), $(COLORS_FILES))
+INCLUDES = $(addprefix $(INCLUDE_DIR), $(HEADER_FILES)) $(addprefix $(COLORS_DIR), $(COLOR_HEADERS))
+FILES = $(FUNCTIONS_FILES) $(CLASSES_FILES) $(MAIN_FILE)
+OBJ_FILES = $(addprefix $(OBJ_DIR), $(FILES:.cpp=.opp))
+DEBUG_OBJ_FILES = $(addprefix $(DEBUG_OBJ_DIR), $(FILES:.cpp=_debug.opp))
+NAME_DEBUG = webserv_debug
+NAME = webserv
 
-# Files
-SRC_FILES = main.cpp
-FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp ServerFunctions.cpp
-CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp Route.cpp RequestProccessor.cpp
+# ==== RELEASE ==== #
 
-# Full paths
-SRC = $(addprefix $(SRC_DIR), $(SRC_FILES))
-FUNCTIONS_SRC = $(addprefix $(FUNCTIONS_DIR), $(FUNCTIONS_FILES))
-CLASSES_SRC = $(addprefix $(CLASSES_DIR), $(CLASSES_FILES))
+all: $(OBJ_DIR) $(NAME)
 
-# Object files
-SRC_OBJ = $(SRC_FILES:%.cpp=$(OBJ_DIR)%.opp)
-FUNCTIONS_OBJ = $(FUNCTIONS_FILES:%.cpp=$(OBJ_DIR)%.opp)
-CLASSES_OBJ = $(CLASSES_FILES:%.cpp=$(OBJ_DIR)%.opp)
-OBJ = $(SRC_OBJ) $(FUNCTIONS_OBJ) $(CLASSES_OBJ)
-
-all: CFLAGS += $(DEBUG)
-all: $(NAME)
-
-d: CFLAGS += $(DEBUG)
-d: re
+opt: FLAGS += $(OPTIMIZATION_FLAGS)
+opt: all
 
 $(OBJ_DIR):
 	@mkdir -p $(OBJ_DIR)
 
-$(OBJ_DIR)%.opp: $(SRC_DIR)%.cpp $(HEADERS) $(COLORS)
-	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
+$(NAME): $(OBJ_FILES) $(INCLUDES)
+	$(CLANG) $(FLAGS) $(OBJ_FILES) -o $(NAME)
 
-$(OBJ_DIR)%.opp: $(CLASSES_DIR)%.cpp $(HEADERS) $(COLORS)
-	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
+$(OBJ_DIR)%.opp: $(FUNCTIONS_DIR)%.cpp $(INCLUDES)
+	$(CLANG) $(FLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-$(OBJ_DIR)%.opp: $(FUNCTIONS_DIR)%.cpp $(HEADERS) $(COLORS)
-	$(CPPC) $(CFLAGS) -I$(HEADERS_DIR) -c $< -o $@
+$(OBJ_DIR)%.opp: $(CLASSES_DIR)%.cpp $(INCLUDES)
+	$(CLANG) $(FLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-$(NAME): $(OBJ_DIR) $(OBJ)
-	$(CPPC) $(CFLAGS) $(OBJ) -o $(NAME)
+$(OBJ_DIR)%.opp: $(SRC_DIR)%.cpp $(INCLUDES)
+	$(CLANG) $(FLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+
+# ==== DEBUG ==== #
+
+debug: FLAGS += $(DEBUG_FLAGS)
+debug: $(DEBUG_OBJ_DIR) $(NAME_DEBUG)
+
+$(DEBUG_OBJ_DIR):
+	@mkdir -p $(DEBUG_OBJ_DIR)
+
+$(NAME_DEBUG): $(DEBUG_OBJ_FILES) $(INCLUDES)
+	$(CLANG) $(FLAGS) $(DEBUG_OBJ_FILES) -o $(NAME_DEBUG)
+
+$(DEBUG_OBJ_DIR)%_debug.opp: $(FUNCTIONS_DIR)%.cpp $(INCLUDES)
+	$(CLANG) $(FLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+
+$(DEBUG_OBJ_DIR)%_debug.opp: $(CLASSES_DIR)%.cpp $(INCLUDES)
+	$(CLANG) $(FLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+
+$(DEBUG_OBJ_DIR)%_debug.opp: $(SRC_DIR)%.cpp $(INCLUDES)
+	$(CLANG) $(FLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 clean:
-	rm -rf $(OBJ_DIR)
+	rm -f $(OBJ_FILES)
+	rm -f $(DEBUG_OBJ_FILES)
 
 fclean: clean
-	rm -f $(NAME)
+	rm -f $(NAME) $(NAME_DEBUG)
 
 re: fclean all
 
-.PHONY: all d clean fclean re
+.PHONY: all debug clean fclean re

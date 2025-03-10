@@ -1,8 +1,10 @@
 
 #include "File.hpp"
+#include <fstream>
+#include <cstring>
 
 File::File(string path) : _path(path), _size(0), _data(nullptr) {
-    ifstream file(this->_path, ios::binary | ios::ate);
+    ifstream file(this->_path.c_str(), ios::binary | ios::ate);
     if (!file) {
         cerr << "Failed to get file size.\n";
         return ;

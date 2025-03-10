@@ -115,12 +115,10 @@ void Route::CheckFiles() const
 
 File* Route::handleFile(const string& path) const {
 	cout << "In HandleFile" << endl;
-    if (access(path.c_str(), F_OK) == -1)
+    if (access(path.c_str(), F_OK) == -1 || access(path.c_str(), R_OK) == -1)
         return NULL;
-    if (access(path.c_str(), R_OK) == -1)
-        return NULL;
-	cout << "Found File" << endl;
-    return new File(path);
+	else
+    	return new File(path);
 }
 
 string Route::createDirectoryListing(const string& path) const {

@@ -34,7 +34,6 @@
 #include <stdexcept>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/event.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -43,6 +42,8 @@
 #include <fstream>
 
 using namespace std;
+
+#define nullptr NULL
 
 // #include "functions.hpp"
 // #include "Route.hpp"

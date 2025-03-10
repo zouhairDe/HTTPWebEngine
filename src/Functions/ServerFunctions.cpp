@@ -10,8 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-# include "../../includes/File.hpp"
-# include "../../includes/functions.hpp"
+#include "File.hpp"
+#include "Functions.hpp"
+#include <string>
+#include <cstring>
 
 string generateHttpHeaders(const File& file, int status_code = 200) {
     // Get current time
@@ -30,11 +32,11 @@ string generateHttpHeaders(const File& file, int status_code = 200) {
         strcpy(modified_buffer, date_buffer); // Fallback to current time
     }
 
-    string http_headers = "HTTP/1.1 " + to_string(status_code) + " OK\r\n"
+    string http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + " OK\r\n"
         "Date: " + string(date_buffer) + "\r\n"
         "Server: HTTPWebEngine v0.6.9\r\n"
         "Last-Modified: " + string(modified_buffer) + "\r\n"
-        "Content-Length: " + to_string(file.getSize()) + "\r\n"
+        "Content-Length: " + cpp11_toString(file.getSize()) + "\r\n"
         "Content-Type: text/html; charset=UTF-8\r\n"//todo later: file.getContentType()
         "Connection: keep-alive\r\n\r\n";
 

@@ -14,7 +14,7 @@
 #define SERVER_HPP
 
 #include "Route.hpp"
-# include "functions.hpp"
+# include "Functions.hpp"
 # include "File.hpp"
 # include <netinet/in.h>
 # include <arpa/inet.h>
@@ -50,9 +50,6 @@ class Server {
 	public:
 		struct sockaddr_in	Address;
 		
-		static int kq;  // Single kqueue for all servers
-        struct kevent change_event;  
-        struct kevent event_list[32];  // Array to store events
 		int					Socket;
 		Server(string hostname = "localhost", string port = "8080", string root = ".");
 		~Server();

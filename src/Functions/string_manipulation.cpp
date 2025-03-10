@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/functions.hpp"
+#include "Functions.hpp"
 
 string trim(const string& str) {
     // Find first non-whitespace character (including newlines)

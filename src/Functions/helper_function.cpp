@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-# include "../includes/functions.hpp"
+# include "Functions.hpp"
 
 pair<string, string> parseKeyValue(const string& line) {
 	size_t pos = line.find("=");
