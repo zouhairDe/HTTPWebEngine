@@ -165,15 +165,39 @@ void	WebServer::run(){
 			buffer[bytes_received] = '\0';
 			string buffer_string(buffer, bytes_received);
 			request += buffer_string;
+				/* HNA ANHSBO BODY TOTAL SIZE - HEADER SIZE == CONTENT-LENGTH */
 			if (request.find("\r\n\r\n") != string::npos) {
-				connected = false;
-				break;
+				size_t contentLengthPos = request.find("Content-Length: ");
+				if (contentLengthPos != string::npos) {
+					size_t endOfLine = request.find("\r\n", contentLengthPos);
+					std::string contentLengthStr = request.substr(
+						contentLengthPos + 16, // "Content-Length: " XXX
+						endOfLine - (contentLengthPos + 16)
+					);
+					int contentLength = std::atoi(contentLengthStr.c_str());
+					size_t bodyStartPos = request.find("\r\n\r\n") + 4;
+					int bodyBytesReceived = request.length() - bodyStartPos;
+					if (bodyBytesReceived >= contentLength) {
+						connected = false;
+						break;
+					}
+				}
+				else {
+					// For requests without Content-Length (like GET), 
+					// consider them complete once we have headers
+					if (request.find("GET") == 0 || request.find("HEAD") == 0) {
+						connected = false;
+						break;
+					}
+				}
 			}
 		}
 
+
+
         RequestProccessor req(request, "8081", server);
-		cout << bold << green << "Request parsed:" << def << endl;
-		req.debugRequest();
+		cout << bold << green << "Request parsed:\n" << request << def << endl;
+		// req.debugRequest();
         
         if (req.getMethod() == "GET") {
 			File *f = new File("./error/404.html");
@@ -181,24 +205,23 @@ void	WebServer::run(){
             string response = getResponse.generateResponse();
             send(client_socket, response.c_str(), response.length(), 0);
         } 
-		//else if (req.getMethod() == "POST") {
-        //     POSTResponse postResponse(&req);
-        //     string response = postResponse.generateResponse();
-        //     send(client_socket, response.c_str(), response.length(), 0);
+		else if (req.getMethod() == "POST") {
+            POSTResponse postResponse(&req);
+            string response = postResponse.generateResponse();
+            send(client_socket, response.c_str(), response.length(), 0);
             
-        //     if (!req.getFileContent().empty()) {
-        //         string uploadPath = "./body/"; // Use proper path from config
-        //         string filename = req.getStoreFileName();
-        //         ofstream outFile(uploadPath + filename, ios::binary);
-        //         if (outFile.is_open()) {
-        //             outFile.write(req.getFileContent().c_str(), req.getFileContent().length());
-        //             outFile.close();
-        //             cout << bold << green << "File saved: " << uploadPath + filename << def << endl;
-        //         } else {
-        //             cerr << "Failed to save uploaded file" << endl;
-        //         }
-        //     }
-        // }
+            if (!req.getFileContent().empty()) {
+                string uploadPath = "./body/" + req.getStoreFileName();
+                ofstream outFile(uploadPath.c_str(), ios::binary);
+                if (outFile.is_open()) {
+                    outFile.write(req.getFileContent().c_str(), req.getFileContent().length());
+                    outFile.close();
+                    cout << bold << green << "File saved: " << uploadPath << def << endl;
+                } else {
+                    cerr << "Failed to save uploaded file" << endl;
+                }
+            }
+        }
 
         if (req.getConnection() == "close") {
 			cout << bold << green << "CLOSED" << def << endl;
