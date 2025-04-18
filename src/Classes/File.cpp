@@ -27,6 +27,7 @@ File::File(const File &other) {
 	this->_path = other._path;
 	this->_size = other._size;
 	this->_data = new char[this->_size + 1];
+	/* THIS FUNCTION IS NOT ALLOWED */
 	memcpy(this->_data, other._data, this->_size);
 }
 

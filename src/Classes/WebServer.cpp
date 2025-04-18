@@ -109,10 +109,6 @@ void WebServer::CheckFiles()
 	and adding them to the WebServer::RunningSockets vector`
 */
 void	WebServer::run(){
-	/*hardcoded tests*/
-
-
-
 	/*  hna cancrew server wahd (socket ....)   */
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1)
@@ -142,70 +138,76 @@ void	WebServer::run(){
 		exit(1);
 	}
 	Server *server = &Servers[0];
-	cout << bold << green << "Server created succefully" << def << endl;
+	cout << bold << green << "SERVER ON" << def << endl;
 
-
-	while (1) {
-        int client_fd = accept(server_fd, NULL, NULL);
-        if (client_fd == -1) {
+	while (true) {
+        int client_socket = accept(server_fd, NULL, NULL);
+        if (client_socket == -1) {
             cerr << "Error accepting connection" << endl;
             continue;
         }
-        cout << bold << green << "Client connected" << def << endl;
+        cout << bold << green << "CONNECTION ESTABLISHED" << def << endl;
 
-        // Receive the request with larger buffer for file uploads
-        char buffer[10240]; // 10KB buffer for larger requests
-        int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_received == -1) {
-            cerr << "Error receiving data" << endl;
-            close(client_fd);
-            continue;
-        }
+		bool connected = true;
+		string request;
+		
+		while (connected) {
+        	char buffer[1024];
+			for (int i = 0; i < 1024; i++) buffer[i] = '\0';
+			int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+			if (bytes_received == 0) {
+				connected = false;
+				break;
+			} else if (bytes_received == -1) {
+				cerr << "Error receiving data" << endl;
+				break;
+			}
+			buffer[bytes_received] = '\0';
+			string buffer_string(buffer, bytes_received);
+			request += buffer_string;
+			if (request.find("\r\n\r\n") != string::npos) {
+				connected = false;
+				break;
+			}
+		}
 
-        buffer[bytes_received] = '\0';
-        cout << bold << green << "Request received: " << bytes_received << " bytes\n\n";
+        RequestProccessor req(request, "8081", server);
+		cout << bold << green << "Request parsed:" << def << endl;
+		req.debugRequest();
         
-        // Parse the request
-        RequestProccessor req(buffer, "8081", server);
-        cout << bold << green << "Request parsed:" << def << endl;
-        req.debugRequest();
-        
-        // Choose appropriate response handler based on method
         if (req.getMethod() == "GET") {
 			File *f = new File("./error/404.html");
             GETResponse getResponse(&req, f);
             string response = getResponse.generateResponse();
-            send(client_fd, response.c_str(), response.length(), 0);
-        } else if (req.getMethod() == "POST") {
-            POSTResponse postResponse(&req);
-            string response = postResponse.generateResponse();
-            send(client_fd, response.c_str(), response.length(), 0);
+            send(client_socket, response.c_str(), response.length(), 0);
+        } 
+		//else if (req.getMethod() == "POST") {
+        //     POSTResponse postResponse(&req);
+        //     string response = postResponse.generateResponse();
+        //     send(client_socket, response.c_str(), response.length(), 0);
             
-            // if (!req.getFileContent().empty()) {
-            //     string uploadPath = "./body/"; // Use proper path from config
-            //     string filename = req.getStoreFileName();
-            //     ofstream outFile(uploadPath + filename, ios::binary);
-            //     if (outFile.is_open()) {
-            //         outFile.write(req.getFileContent().c_str(), req.getFileContent().length());
-            //         outFile.close();
-            //         cout << bold << green << "File saved: " << uploadPath + filename << def << endl;
-            //     } else {
-            //         cerr << "Failed to save uploaded file" << endl;
-            //     }
-            // }
-        }
-        
-        close(client_fd);
+        //     if (!req.getFileContent().empty()) {
+        //         string uploadPath = "./body/"; // Use proper path from config
+        //         string filename = req.getStoreFileName();
+        //         ofstream outFile(uploadPath + filename, ios::binary);
+        //         if (outFile.is_open()) {
+        //             outFile.write(req.getFileContent().c_str(), req.getFileContent().length());
+        //             outFile.close();
+        //             cout << bold << green << "File saved: " << uploadPath + filename << def << endl;
+        //         } else {
+        //             cerr << "Failed to save uploaded file" << endl;
+        //         }
+        //     }
+        // }
+
+        if (req.getConnection() == "close") {
+			cout << bold << green << "CLOSED" << def << endl;
+			close(client_socket);
+			break;
+		} else {
+			cout << bold << green << "KEEP-ALIVE" << def << endl;
+		}
     }
-	
-	
-
-	
-	// RequestProccessor req("POST /index.html HTTP/1.1\nHost: www.axample.com\n", "8081");
-	// cout << bold << green << req << def << endl;
-	// File file("error/403.html");
-
-
 }
 
 /*
@@ -238,8 +240,8 @@ int		WebServer::handleNewConnection(Server& server){
 /*
 	Handle the client data, meaning when the I/O events are ready to read from the client
 */
-int		WebServer::handleClientData(int client_fd, Server& server){
-	(void)client_fd;
+int		WebServer::handleClientData(int client_socket, Server& server){
+	(void)client_socket;
 	(void)server;
 	
 	return 0;
