@@ -34,7 +34,7 @@ class RequestProccessor {
         string      _filename;      //for upload file
         string      _fileContent;   //actual content of uploaded file
         map<string, string> _formFields; //for storing form fields
-        
+        string		_fileContentType;
     public:
 	RequestProccessor();
 	RequestProccessor(string request, string __port, Server *server);
@@ -43,7 +43,8 @@ class RequestProccessor {
 	void	parseMultipartFormData(const string &body, const string &boundary);
 	void	parseFormUrlEncoded(const string &body);
 	void	debugRequest() const;
-	
+	string  getExtensionFromContentType(const string& contentType) const;
+	void	parseTextPlainUpload(const string &body);
 	Server		*_server;
 	
 	/*getters*/
@@ -60,6 +61,7 @@ class RequestProccessor {
 	string		getStoreFileName() const;
 	string      getFileContent() const;
 	map<string, string> getFormFields() const;
+	string getFileContentType() const;
 		
 };
 

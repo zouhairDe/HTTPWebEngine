@@ -83,6 +83,7 @@ void RequestProccessor::debugRequest() const
     if (!_filename.empty())
     {
         cerr << "Uploaded filename: " << _filename << endl;
+        cerr << "File content type: " << _fileContentType << endl;
         cerr << "File content length: " << _fileContent.length() << " bytes" << endl;
     }
     
@@ -90,7 +91,6 @@ void RequestProccessor::debugRequest() const
     for (map<string, string>::const_iterator it = _formFields.begin(); it != _formFields.end(); ++it)
     {
         cerr << "  " << it->first << ": ";
-        // Limit output length for large values
         if (it->second.length() > 50)
             cerr << it->second.substr(0, 50) << "... (" << it->second.length() << " bytes)";
         else
@@ -120,210 +120,291 @@ void RequestProccessor::parseFormUrlEncoded(const string &body)
 
 RequestProccessor::RequestProccessor(string req, string __port, Server *server)
 {
-	_request = req;
-	_server = server;
+    _request = req;
+    _server = server;
+    
+    // First split the request into headers and body using an empty line
+    size_t headerEnd = req.find("\r\n\r\n");
+    if (headerEnd == string::npos) {
+        headerEnd = req.find("\n\n"); // Fallback for non-standard requests
+        if (headerEnd == string::npos) {
+            cerr << "Invalid request format: couldn't find header/body separator" << endl;
+            return;
+        }
+    }
+    
+    // Extract headers section and body
+    string headersSection = req.substr(0, headerEnd);
+    
+    // Get the body (everything after the empty line)
+    _body = "";
+    if (headerEnd + 4 < req.length()) {
+        _body = req.substr(headerEnd + 4); // Skip "\r\n\r\n"
+    } else if (headerEnd + 2 < req.length()) {
+        _body = req.substr(headerEnd + 2); // Skip "\n\n" for non-standard
+    }
+    
+    // Normalize line endings in headers section and split into lines
+    // Replace all \r\n with \n for consistent processing
+    string normalizedHeaders = headersSection;
+    size_t pos = 0;
+    while ((pos = normalizedHeaders.find("\r\n", pos)) != string::npos) {
+        normalizedHeaders.replace(pos, 2, "\n");
+        pos++;
+    }
+    
+    // Split headers by \n
+    vector<string> headers = split(normalizedHeaders, '\n');
+    if (headers.empty()) {
+        cerr << "Invalid request: no headers found" << endl;
+        return;
+    }
+    
+    // Process the first line (request line)
+    vector<string> requestLine = splitByString(headers[0], " ");
+    if (requestLine.size() < 2) {
+        cerr << "Invalid request line format" << endl;
+        return;
+    }
+    
+    _method = requestLine[0];
+    _uri = requestLine[1];
+    
+    // Extract query parameters if present
+    size_t queryPos = _uri.find('?');
+    if (queryPos != string::npos) {
+        _query = _uri.substr(queryPos + 1);
+        _uri = _uri.substr(0, queryPos);
+    }
+    
+    // Process the rest of the headers
+    for (size_t i = 1; i < headers.size(); i++) {
+        string header = headers[i];
+        size_t colonPos = header.find(':');
+        if (colonPos != string::npos) {
+            string key = trim(header.substr(0, colonPos));
+            string value = trim(header.substr(colonPos + 1));
+            
+            if (key == "Host") {
+                size_t portPos = value.find(':');
+                if (portPos != string::npos) {
+                    _host = trim(value.substr(0, portPos));
+                    _port = __port;
+                } else {
+                    _host = value;
+                    _port = __port;
+                }
+            } else if (key == "Content-Type") {
+                _content_type = value;
+            } else if (key == "Content-Length") {
+                _content_length = value;
+            } else if (key == "Connection") {
+                _connection = value;
+            } else if (key == "Cookie") {
+                _cookie = value;
+            }
+        }
+    }
+    
+    // Process POST request data if applicable
+    if (_method == "POST") {
+        if (_content_type.find("application/x-www-form-urlencoded") != string::npos) {
+            parseFormUrlEncoded(_body);
+        } else if (_content_type.find("multipart/form-data") != string::npos) {
+            size_t boundaryPos = _content_type.find("boundary=");
+            if (boundaryPos != string::npos) {
+                string boundary = _content_type.substr(boundaryPos + 9);
+                
+                // Remove quotes if present
+                if (boundary[0] == '"' && boundary[boundary.length()-1] == '"') {
+                    boundary = boundary.substr(1, boundary.length() - 2);
+                }
+                
+                // Don't add extra dashes - the boundary in header already has them
+                parseMultipartFormData(_body, boundary);
+            }
+        }
+        else if (_content_type.find("text/plain") != string::npos) {
+            // Handle plain text uploads
+            parseTextPlainUpload(_body);
+        }
+        else if (_content_type.find("application/json") != string::npos) {
+            // Handle JSON uploads (if needed)
+            // For now, just store the body as file content
+            _fileContent = _body;
+            _filename = "upload_" + cpp11_toString(time(NULL)) + ".json";
+            _fileContentType = "application/json";
+        }//now we add support for images and binaries
+        // else if (_content_type.find("image/") != string::npos || _content_type.find("application/octet-stream") != string::npos) {
+        //     // Handle binary uploads (images, etc.)
+        //     _fileContent = _body;
+        //     _filename = "upload_" + cpp11_toString(time(NULL)) + "." + 
+        //                 getExtensionFromContentType(_content_type);
+        //     _fileContentType = _content_type;
+        // }
+        // else {
+        //     cerr << "Unsupported Content-Type: " << _content_type << endl;
+        // }
+    }
+}
 
-	// Split headers and body using proper HTTP delimiter
-	vector<string> request_parts = splitByString(req, "\r\n\r\n");
-	if (request_parts.empty())
-	{
-		throw runtime_error("Invalid request: empty request");
-	}
-
-	// Parse headers section
-	vector<string> lines = split(request_parts[0], '\n');
-	if (lines.empty())
-	{
-		throw runtime_error("Invalid request: missing request line");
-	}
-
-	// Parse first line (request line)
-	string first_line = trim(lines[0]);
-	vector<string> first_line_parts = split(first_line, ' ');
-	if (first_line_parts.size() != 3)
-	{ // Must have METHOD URI HTTP/VERSION
-		throw runtime_error("Invalid request line: " + first_line);
-	}
-
-	// Set method and parse URI
-	_method = trim(first_line_parts[0]);
-	string uri_str = trim(first_line_parts[1]);
-
-	// Parse URI and query parameters
-	size_t query_pos = uri_str.find('?');
-	if (query_pos != string::npos)
-	{
-		_uri = uri_str.substr(0, query_pos);
-		_query = uri_str.substr(query_pos + 1);
-	}
-	else
-	{
-		_uri = uri_str;
-		_query = "";
-	}
-
-	// Parse headers
-	string content_type;
-	for (size_t i = 1; i < lines.size(); i++)
-	{
-		string line = trim(lines[i]);
-		if (line.empty())
-			continue;
-
-		size_t colon_pos = line.find(':');
-		if (colon_pos == string::npos)
-			continue;
-
-		string key = trim(line.substr(0, colon_pos));
-		string value = trim(line.substr(colon_pos + 1));
-
-		if (key == "Host")
-		{
-			size_t port_pos = value.find(':');
-			if (port_pos != string::npos)
-			{
-				_host = trim(value.substr(0, port_pos));
-				_port = __port;
-			}
-			else
-			{
-				_host = value;
-				_port = __port;
-			}
-			cout << blue << "Port has been set to: " << _port << def << endl;
-		}
-		else if (key == "Connection")
-		{
-			_connection = value;
-		}
-		else if (key == "Content-Length")
-		{
-			_content_length = value;
-		}
-		else if (key == "Cookie")
-		{
-			_cookie = value;
-		}
-		else if (key == "Content-Type")
-		{
-			content_type = value;
-    		_content_type = value;
-		}
-	}
-
-	if (request_parts.size() > 1)
-	{
-		_body = request_parts[1];
-		
-		if (_method == "POST" && !content_type.empty())
-		{
-			_content_type = content_type;
-			
-			if (content_type.find("multipart/form-data") != string::npos)
-			{
-				// Handle multipart form data (file uploads)
-				size_t boundary_pos = content_type.find("boundary=");
-				if (boundary_pos != string::npos)
-				{
-					string boundary = content_type.substr(boundary_pos + 9);
-					// Remove quotes if present
-					if (boundary[0] == '"' && boundary[boundary.length()-1] == '"')
-						boundary = boundary.substr(1, boundary.length() - 2);
-					
-					cout << "Parsing multipart form data with boundary: " << boundary << endl;
-					parseMultipartFormData(_body, boundary);
-				}
-			}
-			else if (content_type.find("application/x-www-form-urlencoded") != string::npos)
-			{
-				// Handle standard form submission
-				parseFormUrlEncoded(_body);
-			}
-			else if (content_type.find("application/json") != string::npos)
-			{
-				// For JSON content, keep the body as is and let handler process it
-				cout << "JSON content detected: " << _body.substr(0, 30) << "..." << endl;
-			}
-		}
-	}
+string RequestProccessor::getFileContentType() const
+{
+    return _fileContentType;
 }
 
 void RequestProccessor::parseMultipartFormData(const string &body, const string &boundary)
 {
+    // The boundary in the Content-Type header doesn't include the leading "--"
+    // but in the request body, each boundary starts with "--"
     string boundaryDelimiter = "--" + boundary;
     string endBoundary = boundaryDelimiter + "--";
+    
+    cout << "Searching with boundary: '" << boundaryDelimiter << "'" << endl;
     
     size_t pos = 0;
     size_t nextBoundaryPos;
     
     while ((nextBoundaryPos = body.find(boundaryDelimiter, pos)) != string::npos) {
-        // Skip past this boundary
-        pos = nextBoundaryPos + boundaryDelimiter.length();
+        // Skip past the current boundary line
+        size_t partStart = body.find("\r\n", nextBoundaryPos);
+        if (partStart == string::npos) break;
+        partStart += 2; // Skip "\r\n"
         
-        // Check if we've hit the end boundary
-        if (body.substr(pos, 2) == "--")
-            break;
-            
-        // Skip CRLF after boundary
-        if (body.substr(pos, 2) == "\r\n")
-            pos += 2;
-            
-        // Find the end of this part
-        size_t nextPartPos = body.find(boundaryDelimiter, pos);
-        if (nextPartPos == string::npos)
-            break;
-            
-        // Extract part content including headers
-        string part = body.substr(pos, nextPartPos - pos);
+        // Find the next boundary
+        size_t partEnd = body.find(boundaryDelimiter, partStart);
+        if (partEnd == string::npos) break;
         
-        // Split headers and content
+        // Extract the part content (includes headers and data)
+        string part = body.substr(partStart, partEnd - partStart);
+        
+        // Split headers from content
         size_t headerEnd = part.find("\r\n\r\n");
-        if (headerEnd != string::npos) {
-            string headers = part.substr(0, headerEnd);
-            string content = part.substr(headerEnd + 4); // Skip the double CRLF
-            
-            // Remove trailing CRLF from content if present
-            if (content.length() >= 2 && content.substr(content.length() - 2) == "\r\n") {
-                content = content.substr(0, content.length() - 2);
-            }
-            
-            // Parse Content-Disposition header for field name and filename
-            size_t namePos = headers.find("name=\"");
-            string fieldName;
-            string filename;
-            
-            if (namePos != string::npos) {
-                namePos += 6; // Skip 'name="'
-                size_t nameEnd = headers.find("\"", namePos);
-                if (nameEnd != string::npos) {
-                    fieldName = headers.substr(namePos, nameEnd - namePos);
-                }
-            }
-            
-            size_t filenamePos = headers.find("filename=\"");
-            if (filenamePos != string::npos) {
-                filenamePos += 10; // Skip 'filename="'
-                size_t filenameEnd = headers.find("\"", filenamePos);
-                if (filenameEnd != string::npos) {
-                    filename = headers.substr(filenamePos, filenameEnd - filenamePos);
-                }
-            }
-            
-            // Store field in the map
-            if (!fieldName.empty()) {
-                _formFields[fieldName] = content;
+        if (headerEnd == string::npos) continue;
+        
+        string headers = part.substr(0, headerEnd);
+        string content = part.substr(headerEnd + 4); // Skip "\r\n\r\n"
+        
+        // Remove trailing CRLF if present
+        if (content.length() >= 2 && content.substr(content.length() - 2) == "\r\n") {
+            content = content.substr(0, content.length() - 2);
+        }
+        
+        // Parse Content-Disposition to get field name and filename
+        size_t namePos = headers.find("name=\"");
+        size_t filenamePos = headers.find("filename=\"");
+        
+        string fieldName;
+        if (namePos != string::npos) {
+            namePos += 6; // Skip 'name="'
+            size_t nameEnd = headers.find("\"", namePos);
+            if (nameEnd != string::npos)
+                fieldName = headers.substr(namePos, nameEnd - namePos);
+        }
+        
+        // Store form field value
+        if (!fieldName.empty()) {
+            _formFields[fieldName] = content;
+            cout << "Found field: " << fieldName << " with length: " << content.length() << endl;
+        }
+        
+        // Handle file upload
+        if (filenamePos != string::npos) {
+            filenamePos += 10; // Skip 'filename="'
+            size_t filenameEnd = headers.find("\"", filenamePos);
+            if (filenameEnd != string::npos) {
+                _filename = headers.substr(filenamePos, filenameEnd - filenamePos);
+                _fileContent = content;
                 
-                // If it's a file, store its info
-                if (!filename.empty()) {
-                    _filename = filename;
-                    _fileContent = content;
+                // Get content type
+                size_t contentTypePos = headers.find("Content-Type:");
+                if (contentTypePos != string::npos) {
+                    contentTypePos += 13; // Skip "Content-Type:"
+                    size_t ctEnd = headers.find("\r\n", contentTypePos);
+                    if (ctEnd != string::npos)
+                        _fileContentType = trim(headers.substr(contentTypePos, ctEnd - contentTypePos));
+                    else
+                        _fileContentType = trim(headers.substr(contentTypePos));
                 }
+                
+                cout << "Found file: " << _filename << endl;
+                cout << "Content type: " << _fileContentType << endl;
+                cout << "File size: " << _fileContent.length() << " bytes" << endl;
             }
         }
         
-        // Move position to process next part
-        pos = nextPartPos;
+        // Move to next boundary
+        pos = partEnd;
     }
+    
+    cout << "Boundary: '" << boundary << "'" << endl;
+    cout << "Found part with file: " << (_filename.empty() ? "No" : "Yes") << endl;
+    cout << "File content size: " << _fileContent.size() << " bytes" << endl;
+}
+
+void RequestProccessor::parseTextPlainUpload(const string &body)
+{
+    // For text/plain uploads, store the entire body as file content
+    _fileContent = body;
+    
+    // Set a default filename with timestamp
+    _filename = "upload_" + cpp11_toString(time(NULL)) + ".txt";
+    
+    // Set content type
+    _fileContentType = "text/plain";
+    
+    // Also add to form fields for consistency
+    _formFields["file"] = body;
+}
+
+
+string RequestProccessor::getExtensionFromContentType(const string& contentType) const
+{
+    // Default extension is bin for unknown types
+    if (contentType.empty())
+        return "bin";
+    
+    // Map MIME types to common extensions
+    if (contentType == "image/jpeg" || contentType == "image/jpg")
+        return "jpg";
+    if (contentType == "image/png")
+        return "png";
+    if (contentType == "image/gif")
+        return "gif";
+    if (contentType == "image/bmp")
+        return "bmp";
+    if (contentType == "image/webp")
+        return "webp";
+    if (contentType == "image/svg+xml")
+        return "svg";
+        
+    if (contentType == "video/mp4")
+        return "mp4";
+    if (contentType == "video/mpeg")
+        return "mpeg";
+    if (contentType == "video/webm")
+        return "webm";
+    if (contentType == "video/quicktime")
+        return "mov";
+    
+    if (contentType == "application/pdf")
+        return "pdf";
+    if (contentType == "application/zip")
+        return "zip";
+    if (contentType == "application/x-tar")
+        return "tar";
+    if (contentType == "application/x-gzip")
+        return "gz";
+    
+    // For other types, extract extension from the main type
+    size_t slashPos = contentType.find('/');
+    if (slashPos != string::npos) {
+        string subtype = contentType.substr(slashPos + 1);
+        // Handle cases like "application/json" -> "json"
+        return subtype;
+    }
+    
+    return "bin"; // Default binary extension
 }
 
 
@@ -344,7 +425,9 @@ std::ostream &operator<<(std::ostream &os, const RequestProccessor &req)
 string RequestProccessor::getStoreFileName() const
 {
     if (_filename.empty()) {
-        return "upload_" + cpp11_toString(time(NULL)) + ".bin";
+        // Generate a default name with appropriate extension
+        return "upload_" + cpp11_toString(time(NULL)) + "." + 
+               getExtensionFromContentType(_fileContentType);
     }
     return _filename;
 }

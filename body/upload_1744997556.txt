@@ -1,0 +1,129 @@
+WEBSERVER IMPLEMENTATION EXPLANATION
+==================================
+
+1. SOCKET FUNCTIONS
+------------------
+
+socket()
+    Function: int socket(int domain, int type, int protocol)
+    Purpose: Creates a new socket
+    Parameters:
+        - domain: Communication domain (AF_INET for IPv4, AF_INET6 for IPv6)
+        - type: Socket type (SOCK_STREAM for TCP, SOCK_DGRAM for UDP)
+        - protocol: Protocol (0 for system default)
+    Returns: Socket file descriptor or -1 on error
+    Example:
+        int sock_fd = socket(AF_INET, SOCK_STREAM, 0);  // TCP socket
+        int udp_sock = socket(AF_INET, SOCK_DGRAM, 0);  // UDP socket
+
+bind()
+    Function: int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+    Purpose: Binds socket to specific address and port
+    Parameters:
+        - sockfd: Socket file descriptor
+        - addr: Address structure with IP and port
+        - addrlen: Size of address structure
+    Returns: 0 on success, -1 on error
+    Example:
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(8080);
+        addr.sin_addr.s_addr = INADDR_ANY;
+        bind(sockfd, (struct sockaddr*)&addr, sizeof(addr));
+
+listen()
+    Function: int listen(int sockfd, int backlog)
+    Purpose: Marks socket as passive for accepting connections
+    Parameters:
+        - sockfd: Socket file descriptor
+        - backlog: Maximum pending connections queue length
+    Returns: 0 on success, -1 on error
+    Example:
+        listen(sockfd, SOMAXCONN);
+        listen(sockfd, 5);
+
+2. KQUEUE FUNCTIONS (BSD/macOS)
+------------------------------
+
+kqueue()
+    Function: int kqueue(void)
+    Purpose: Creates new kernel event queue
+    Returns: Queue file descriptor
+    Example:
+        int kq = kqueue();
+
+kevent()
+    Function: int kevent(int kq, const struct kevent *changelist, int nchanges,
+                        struct kevent *eventlist, int nevents,
+                        const struct timespec *timeout)
+    Purpose: Register/receive events
+    Parameters:
+        - kq: kqueue descriptor
+        - changelist: Array of changes
+        - nchanges: Size of changelist
+        - eventlist: Array for returned events
+        - nevents: Size of eventlist
+        - timeout: Maximum wait time
+    Returns: Number of events received
+
+3. DATA STRUCTURES
+-----------------
+
+struct sockaddr_in
+    Members:
+        sa_family_t sin_family    // AF_INET
+        in_port_t sin_port        // Port number
+        struct in_addr sin_addr   // IP address
+
+struct kevent
+    Members:
+        uintptr_t ident      // Identifier (usually fd)
+        short filter         // Event type
+        u_short flags        // Action flags
+        u_int fflags        // Filter flags
+        intptr_t data       // Filter data
+        void *udata         // User data
+
+4. SOCKET OPTIONS
+----------------
+
+setsockopt()
+    Function: int setsockopt(int sockfd, int level, int optname,
+                           const void *optval, socklen_t optlen)
+    Common options:
+        - SO_REUSEADDR: Allow address reuse
+        - SO_KEEPALIVE: Enable keepalive
+        - TCP_NODELAY: Disable Nagle's algorithm
+
+5. FILE OPERATIONS
+-----------------
+
+fcntl()
+    Function: int fcntl(int fd, int cmd, ...)
+    Purpose: Manipulate file descriptor
+    Common use: Set non-blocking mode
+    Example:
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+6. ERROR HANDLING
+----------------
+
+errno
+    Purpose: Global error variable
+    Access: errno (number) or strerror(errno) (string)
+    Example:
+        if (bind(fd, ...) == -1) {
+            printf("Error: %s\n", strerror(errno));
+        }
+
+7. IMPLEMENTATION NOTES
+----------------------
+
+- Uses C++98 standard
+- Color-coded error output
+- Multiple server support
+- kqueue for event-driven I/O
+- HTTP request handling
+- Config file support
+- File serving capability
