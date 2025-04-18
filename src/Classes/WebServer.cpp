@@ -109,10 +109,6 @@ void WebServer::CheckFiles()
 	and adding them to the WebServer::RunningSockets vector`
 */
 void	WebServer::run(){
-	/*hardcoded tests*/
-
-
-
 	/*  hna cancrew server wahd (socket ....)   */
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd == -1)
@@ -141,106 +137,77 @@ void	WebServer::run(){
 		cerr << "Error listening on socket" << endl;
 		exit(1);
 	}
-	// Server *server = &Servers[0];
-	cout << bold << green << "Server created succefully" << def << endl;
+	Server *server = &Servers[0];
+	cout << bold << green << "SERVER ON" << def << endl;
 
-
-	char buffer[8192]; // 10KB buffer for larger requests
-	string full_request;
-	while (1) {
-        int client_fd = accept(server_fd, NULL, NULL);
-        if (client_fd == -1) {
+	while (true) {
+        int client_socket = accept(server_fd, NULL, NULL);
+        if (client_socket == -1) {
             cerr << "Error accepting connection" << endl;
             continue;
         }
-        cout << bold << green << "Client connected" << def << endl;
+        cout << bold << green << "CONNECTION ESTABLISHED" << def << endl;
 
-        // Receive the request with larger buffer for file uploads
-		while (1)
-		{
-			int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-			if (bytes_received == -1) {
+		bool connected = true;
+		string request;
+		
+		while (connected) {
+        	char buffer[1024];
+			for (int i = 0; i < 1024; i++) buffer[i] = '\0';
+			int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+			if (bytes_received == 0) {
+				connected = false;
+				break;
+			} else if (bytes_received == -1) {
 				cerr << "Error receiving data" << endl;
-				close(client_fd);
-				continue;
+				break;
 			}
-	
 			buffer[bytes_received] = '\0';
-			// cout << buffer << endl << endl;
-			cout << bold << green << "Request received: " << bytes_received << " bytes\n\n";
-			full_request += string(buffer, bytes_received);
-			
-			// Parse the request
-			cout << full_request << endl;
+			string buffer_string(buffer, bytes_received);
+			request += buffer_string;
+			if (request.find("\r\n\r\n") != string::npos) {
+				connected = false;
+				break;
+			}
+		}
+
+        RequestProccessor req(request, "8081", server);
+		cout << bold << green << "Request parsed:" << def << endl;
+		req.debugRequest();
+        
+        if (req.getMethod() == "GET") {
+			File *f = new File("./error/404.html");
+            GETResponse getResponse(&req, f);
+            string response = getResponse.generateResponse();
+            send(client_socket, response.c_str(), response.length(), 0);
+        } 
+		//else if (req.getMethod() == "POST") {
+        //     POSTResponse postResponse(&req);
+        //     string response = postResponse.generateResponse();
+        //     send(client_socket, response.c_str(), response.length(), 0);
+            
+        //     if (!req.getFileContent().empty()) {
+        //         string uploadPath = "./body/"; // Use proper path from config
+        //         string filename = req.getStoreFileName();
+        //         ofstream outFile(uploadPath + filename, ios::binary);
+        //         if (outFile.is_open()) {
+        //             outFile.write(req.getFileContent().c_str(), req.getFileContent().length());
+        //             outFile.close();
+        //             cout << bold << green << "File saved: " << uploadPath + filename << def << endl;
+        //         } else {
+        //             cerr << "Failed to save uploaded file" << endl;
+        //         }
+        //     }
+        // }
+
+        if (req.getConnection() == "close") {
+			cout << bold << green << "CLOSED" << def << endl;
+			close(client_socket);
+			break;
+		} else {
+			cout << bold << green << "KEEP-ALIVE" << def << endl;
 		}
     }
-
-	// RequestProccessor req(string(buffer), "8081", server);
-	// cout << bold << green << "Request has been parsed succefully:" << def << endl;
-	// req.debugRequest();
-	
-	// if (req.getMethod() == "GET") {
-	// 	cerr << "from GET method" << endl;
-	// 	/*
-	// 		hna khasna ndiro get file from uri kan9lb f touts d server 3la li 3ndo dak uri
-	// 		w kanjib root dialo si non ila default rout kanakhdo l rout dialo wila makanch
-	// 		kanadiwh l 404.
-	// 		db just for tests kanmchiw dima l "/tmp/chatroom/index.html"
-	// 	*/
-	// 	File *f = new File("/tmp/www/chatroom/index.html");
-	// 	GETResponse getResponse(&req, f);
-	// 	string response = getResponse.generateResponse();
-	// 	send(client_fd, response.c_str(), response.length(), 0);
-	// } else
-	// if (req.getMethod() == "POST") {
-	// 	cerr << "from POST method" << endl;
-	// 	POSTResponse postResponse(&req);
-	// 	string response = postResponse.generateResponse();
-	// 	send(client_fd, response.c_str(), response.length(), 0);
-		
-	// 	// Inside the POST handler
-	// if (!req.getFileContent().empty()) {
-	// 	string uploadPath = "./body/";
-	// 	string filename = req.getStoreFileName();
-		
-	// 	// Create directory if it doesn't exist
-	// 	if (mkdir(uploadPath.c_str(), 0755) != 0 && errno != EEXIST) {
-	// 		cerr << "Error creating upload directory: " << endl;
-	// 	}
-		
-	// 	cout << "Saving file: " << filename << endl;
-	// 	cout << "File size: " << req.getFileContent().size() << " bytes" << endl;
-	// 	cout << "File type: " << req.getFileContentType() << endl;
-		
-	// 	string filePath = uploadPath + filename;
-	// 	ofstream outFile(filePath.c_str(), ios::binary); // Important: Use binary mode!
-		
-	// 	if (outFile) {
-	// 		// Write binary data directly, avoiding any text transformations
-	// 		outFile.write(req.getFileContent().c_str(), req.getFileContent().size());
-	// 		outFile.close();
-			
-	// 		cout << bold << green << "File uploaded successfully: " << filePath << def << endl;
-	// 		cout << "File type: " << req.getFileContentType() << endl;
-	// 		cout << "File size: " << req.getFileContent().size() << " bytes" << endl;
-	// 	} else {
-	// 		cerr << "Error writing file: " << filePath << " - " << endl;
-	// 	}
-	// } else {
-	// 		cout << bold << green << "No file uploaded" << def << endl;
-	// 	}
-	// }
-	
-	// close(client_fd);
-	
-	
-
-	
-	// RequestProccessor req("POST /index.html HTTP/1.1\nHost: www.axample.com\n", "8081");
-	// cout << bold << green << req << def << endl;
-	// File file("error/403.html");
-
-
 }
 
 /*
@@ -273,8 +240,8 @@ int		WebServer::handleNewConnection(Server& server){
 /*
 	Handle the client data, meaning when the I/O events are ready to read from the client
 */
-int		WebServer::handleClientData(int client_fd, Server& server){
-	(void)client_fd;
+int		WebServer::handleClientData(int client_socket, Server& server){
+	(void)client_socket;
 	(void)server;
 	
 	return 0;

@@ -13,8 +13,6 @@
 #include "WebServer.hpp"
 #include "Server.hpp"
 
-//TODO: 
-
 int main(int ac, char **av)
 {
     try {
