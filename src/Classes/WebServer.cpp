@@ -1,6 +1,20 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   WebServer.cpp                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/04/17 15:32:33 by zouddach          #+#    #+#             */
+/*   Updated: 2025/04/17 20:52:03 by zouddach         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-#include "WebServer.hpp"
-#include "RequestProccessor.hpp"
+
+# include "WebServer.hpp"
+# include "RequestProccessor.hpp"
+# include "GETResponse.hpp"
+# include "POSTResponse.hpp"
 
 WebServer::WebServer(char *filename)
 {
@@ -95,7 +109,81 @@ void WebServer::CheckFiles()
 	and adding them to the WebServer::RunningSockets vector`
 */
 void	WebServer::run(){
+	/*hardcoded tests*/
+
+
+
+	/*  hna cancrew server wahd (socket ....)   */
+	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (server_fd == -1)
+	{
+		cerr << "Error creating socket" << endl;
+		exit(1);
+	}
+	int opt = 1;
+	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
+	{
+		cerr << "Error setting socket options" << endl;
+		exit(1);
+	}
+
+	struct sockaddr_in server_addr;
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = INADDR_ANY;
+	server_addr.sin_port = htons(8081);
+	if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+	{
+		cerr << "Error binding socket" << endl;
+		exit(1);
+	}
+	if (listen(server_fd, 5) == -1)
+	{
+		cerr << "Error listening on socket" << endl;
+		exit(1);
+	}
+	Server *server = &Servers[0];
+	cout << bold << green << "Server created succefully" << def << endl;
+
+
+	while (1)
+	{
+		int client_fd = accept(server_fd, NULL, NULL);
+		if (client_fd == -1)
+		{
+			cerr << "Error accepting connection" << endl;
+			continue;
+		}
+		cout << bold << green << "Client connected" << def << endl;
+		// this->RunningSockets.push_back(client_fd);
+
+		//recive the request from the client
+		char buffer[1024];
+		int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+		if (bytes_received == -1)
+		{
+			cerr << "Error receiving data" << endl;
+			close(client_fd);
+			continue;
+		}
+
+		buffer[bytes_received] = '\0';
+		cout << bold << green << "Request received:\n\n" << buffer << def << endl << endl;
+		//parse the request
+		RequestProccessor req(buffer, "8081", server);
+		cout << bold << green << "Request parsed: " << req << def << endl;
+		
+		POSTResponse postResponse(&req);
+		cout << postResponse.generateResponse() << endl;
+	}
 	
+	
+
+	
+	// RequestProccessor req("POST /index.html HTTP/1.1\nHost: www.axample.com\n", "8081");
+	// cout << bold << green << req << def << endl;
+	// File file("error/403.html");
+
+
 }
 
 /*

@@ -105,23 +105,6 @@ void Server::updateAddress() {
     memset(&Address, 0, sizeof(Address));
     Address.sin_family = AF_INET;
     Address.sin_addr.s_addr = INADDR_ANY;
-	/*
-
-	_..._   .--.                              
-	.'     '. |__|  .--./)   .--./)             
-	.   .-.   ..--. /.''\\   /.''\\              
-	|  '   '  ||  || |  | | | |  | |      __     
-	|  |   |  ||  | \`-' /   \`-' /    .:--.'.   
-	|  |   |  ||  | /("'`    /("'`    / |   \ |  
-	|  |   |  ||  | \ '---.  \ '---.  `" __ | |  
-	|  |   |  ||__|  /'""'.\  /'""'.\  .'.''| |  
-	|  |   |  |     ||     ||||     ||/ /   | |_ 
-	|  |   |  |     \'. __// \'. __// \ \._,\ '/ 
-	'--'   '--'      `'---'   `'---'   `--'  `" 
-
-		std::stoi() is C++11 NOT 98
-    	Address.sin_port = htons(stoi(Port));
-	*/
 	Address.sin_port = htons(69);
 	std::cout << "src/Classes/Server.cpp:113:4: CHECK THIS!!" << std::endl;
 }

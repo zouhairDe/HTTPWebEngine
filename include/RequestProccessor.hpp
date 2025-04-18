@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestProccessor.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 16:29:15 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/25 23:54:04 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/04/17 20:54:44 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,9 @@
 # define REQUESTPROCCESOR_HPP
 
 # include "Global.hpp"
+# include "Server.hpp"
+
+class Server;
 
 class RequestProccessor {
 	private:
@@ -27,14 +30,16 @@ class RequestProccessor {
 		string		_body;			//ex: name=Zouhair&age=22 or for upload file ex: file=@/path/to/file and this just for POST method
 		string		_query;			//l cgi mnb3d
 		string		_cookie;		//for bonus
+		string		_filename;		//for upload file
 		
 	public:
 		RequestProccessor();
-		RequestProccessor(string request, string __port);
+		RequestProccessor(string request, string __port, Server *server);
 		~RequestProccessor();
 		
 		void	parseMultipartFormData(const string &body, const string &boundary);
 		
+		Server		*_server;
 		
 		/*getters*/
 		string		getRequest() const;
@@ -47,6 +52,7 @@ class RequestProccessor {
 		string		getBody() const;
 		string		getQuery() const;
 		string		getCookie() const;
+		string		getStoreFileName();
 		
 };
 

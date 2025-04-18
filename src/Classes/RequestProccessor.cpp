@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   RequestProccessor.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/06 16:46:10 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/26 15:50:31 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/04/17 21:01:29 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,9 +70,10 @@ string RequestProccessor::getCookie() const
 	return _cookie;
 }
 
-RequestProccessor::RequestProccessor(string req, string __port)
+RequestProccessor::RequestProccessor(string req, string __port, Server *server)
 {
 	_request = req;
+	_server = server;
 
 	// Split headers and body using proper HTTP delimiter
 	vector<string> request_parts = splitByString(req, "\r\n\r\n");
@@ -187,36 +188,61 @@ RequestProccessor::RequestProccessor(string req, string __port)
 
 void RequestProccessor::parseMultipartFormData(const string &body, const string &boundary)
 {
-	vector<string> parts = splitByString(body, "--" + boundary);
-	for (size_t i = 0; i < parts.size(); i++)
-	{
-		string part = parts[i];
-		if (part.empty() || part == "--")
-			continue;
+    cerr << "Hello from parseMultipartFormData" << endl;
+    cerr << "This is the body getting arsed:\n-------------------------------------\n" << body << "\n-------------------------------------" << endl;
+    vector<string> parts = splitByString(body, "--" + boundary);
+    for (size_t i = 0; i < parts.size(); i++)
+    {
+        string part = parts[i];
+        if (part.empty() || part == "--")
+            continue;
 
-		vector<string> part_lines = split(part, '\n');
-		for (size_t j = 0; j < part_lines.size(); j++)
-		{
-			string line = trim(part_lines[j]);
-			line = trim(line);
-			if (line.find("Content-Disposition:") != string::npos)
-			{
-				// Parse filename and field name
-				size_t filename_pos = line.find("filename=\"");
-				if (filename_pos != string::npos)
-				{
-					size_t end_pos = line.find("\"", filename_pos + 10);
-					if (end_pos != string::npos)
-					{
-						string filename = line.substr(filename_pos + 10,
-													  end_pos - (filename_pos + 10));
-						// Store filename for processing
-						// _filename = filename;
-					}
-				}
-			}
-		}
-	}
+        vector<string> part_lines = split(part, '\n');
+        string fieldName = "";
+        
+        for (size_t j = 0; j < part_lines.size(); j++)
+        {
+            string line = trim(part_lines[j]);
+            
+            // Case 1: Parse Content-Disposition header
+            if (line.find("Content-Disposition:") != string::npos)
+            {
+                cerr << bold << red << "Content-Disposition was found" << def << endl;
+                
+                // Check for filename attribute in header (actual file upload)
+                size_t filename_pos = line.find("filename=\"");
+                if (filename_pos != string::npos)
+                {
+                    size_t end_pos = line.find("\"", filename_pos + 10);
+                    if (end_pos != string::npos)
+                    {
+                        _filename = line.substr(filename_pos + 10, end_pos - (filename_pos + 10));
+                        cerr << bold << red << "StoreFilename found in header: " << _filename << def << endl;
+                    }
+                }
+                
+                // Get field name for potential Case 2
+                size_t name_pos = line.find("name=\"");
+                if (name_pos != string::npos)
+                {
+                    size_t end_pos = line.find("\"", name_pos + 6);
+                    if (end_pos != string::npos)
+                    {
+                        fieldName = line.substr(name_pos + 6, end_pos - (name_pos + 6));
+                        cerr << bold << blue << "Field name found: " << fieldName << def << endl;
+                    }
+                }
+            }
+            // Case 2: If field name is "filename" and this is an empty line
+            else if (fieldName == "filename" && line.empty() && j+1 < part_lines.size())
+            {
+                // Next line contains the filename value
+                _filename = trim(part_lines[j+1]);
+                cerr << bold << red << "Filename from field value: " << _filename << def << endl;
+                break;
+            }
+        }
+    }
 }
 
 std::ostream &operator<<(std::ostream &os, const RequestProccessor &req)
@@ -231,4 +257,9 @@ std::ostream &operator<<(std::ostream &os, const RequestProccessor &req)
 	os << "Query: " << req.getQuery() << endl;
 	os << "Cookie: " << req.getCookie() << endl;
 	return os;
+}
+
+string	RequestProccessor::getStoreFileName()
+{
+	return _filename;
 }

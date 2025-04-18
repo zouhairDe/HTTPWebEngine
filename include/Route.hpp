@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Route.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/21 20:01:01 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/25 22:30:51 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/04/17 15:27:49 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,10 @@
 #include "Global.hpp"
 # include "File.hpp"
 # include "RequestProccessor.hpp"
+
+class Server;
+class File;
+class RequestProccessor;
 
 class Route {
 	private:

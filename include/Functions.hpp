@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   functions.hpp                                      :+:      :+:    :+:   */
+/*   Functions.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
+/*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/22 16:31:36 by zouddach          #+#    #+#             */
-/*   Updated: 2025/02/13 18:14:01 by zouddach         ###   ########.fr       */
+/*   Updated: 2025/04/17 15:21:51 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,5 +22,6 @@ vector<string>			split(string str, char delimiter);
 string					trim(const string& str);
 pair<string, string>	parseKeyValue(const string& line);
 string					generateHttpHeaders(const File& file, int status_code);
+string                  getStatusMessage(int code);
 
 #endif
