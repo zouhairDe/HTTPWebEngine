@@ -25,7 +25,7 @@ int main(int ac, char **av)
 		cout << bold << green << "Parsing config file: " << av[1] << def << endl;
 		WebServer webserv(av[1]);
 		// webserv.printData();
-		// webserv.CheckFiles();
+		webserv.CheckFiles();
 		webserv.run();
     }
     catch (const exception& e) {

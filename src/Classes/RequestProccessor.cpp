@@ -70,6 +70,54 @@ string RequestProccessor::getCookie() const
 	return _cookie;
 }
 
+void RequestProccessor::debugRequest() const
+{
+    cerr << "==== REQUEST DEBUG ====" << endl;
+    cerr << "Method: " << _method << endl;
+    cerr << "URI: " << _uri << endl;
+    cerr << "Query: " << _query << endl;
+    cerr << "Host: " << _host << endl;
+    cerr << "Content-Type: " << _content_type << endl;
+    cerr << "Content-Length: " << _content_length << endl;
+    
+    if (!_filename.empty())
+    {
+        cerr << "Uploaded filename: " << _filename << endl;
+        cerr << "File content length: " << _fileContent.length() << " bytes" << endl;
+    }
+    
+    cerr << "Form fields: " << endl;
+    for (map<string, string>::const_iterator it = _formFields.begin(); it != _formFields.end(); ++it)
+    {
+        cerr << "  " << it->first << ": ";
+        // Limit output length for large values
+        if (it->second.length() > 50)
+            cerr << it->second.substr(0, 50) << "... (" << it->second.length() << " bytes)";
+        else
+            cerr << it->second;
+        cerr << endl;
+    }
+    cerr << "======================" << endl;
+}
+
+void RequestProccessor::parseFormUrlEncoded(const string &body)
+{
+    vector<string> pairs = split(body, '&');
+    for (size_t i = 0; i < pairs.size(); i++)
+	{
+		string pair = pairs[i];
+		size_t equalsPos = pair.find('=');
+		if (equalsPos != string::npos)
+		{
+			string key = pair.substr(0, equalsPos);
+			string value = pair.substr(equalsPos + 1);
+			
+			// URL decode the key and value if needed
+			_formFields[key] = value;
+		}
+	}
+}
+
 RequestProccessor::RequestProccessor(string req, string __port, Server *server)
 {
 	_request = req;
@@ -159,28 +207,42 @@ RequestProccessor::RequestProccessor(string req, string __port, Server *server)
 		else if (key == "Content-Type")
 		{
 			content_type = value;
+    		_content_type = value;
 		}
 	}
 
-	// Handle body and multipart form data
 	if (request_parts.size() > 1)
 	{
 		_body = request_parts[1];
-
+		
 		if (_method == "POST" && !content_type.empty())
 		{
+			_content_type = content_type;
+			
 			if (content_type.find("multipart/form-data") != string::npos)
 			{
+				// Handle multipart form data (file uploads)
 				size_t boundary_pos = content_type.find("boundary=");
 				if (boundary_pos != string::npos)
 				{
 					string boundary = content_type.substr(boundary_pos + 9);
-					// Remove any quotes around boundary
-					if (boundary[0] == '"')
+					// Remove quotes if present
+					if (boundary[0] == '"' && boundary[boundary.length()-1] == '"')
 						boundary = boundary.substr(1, boundary.length() - 2);
-					// Now we can parse multipart form data using the boundary
+					
+					cout << "Parsing multipart form data with boundary: " << boundary << endl;
 					parseMultipartFormData(_body, boundary);
 				}
+			}
+			else if (content_type.find("application/x-www-form-urlencoded") != string::npos)
+			{
+				// Handle standard form submission
+				parseFormUrlEncoded(_body);
+			}
+			else if (content_type.find("application/json") != string::npos)
+			{
+				// For JSON content, keep the body as is and let handler process it
+				cout << "JSON content detected: " << _body.substr(0, 30) << "..." << endl;
 			}
 		}
 	}
@@ -188,62 +250,82 @@ RequestProccessor::RequestProccessor(string req, string __port, Server *server)
 
 void RequestProccessor::parseMultipartFormData(const string &body, const string &boundary)
 {
-    cerr << "Hello from parseMultipartFormData" << endl;
-    cerr << "This is the body getting arsed:\n-------------------------------------\n" << body << "\n-------------------------------------" << endl;
-    vector<string> parts = splitByString(body, "--" + boundary);
-    for (size_t i = 0; i < parts.size(); i++)
-    {
-        string part = parts[i];
-        if (part.empty() || part == "--")
-            continue;
-
-        vector<string> part_lines = split(part, '\n');
-        string fieldName = "";
+    string boundaryDelimiter = "--" + boundary;
+    string endBoundary = boundaryDelimiter + "--";
+    
+    size_t pos = 0;
+    size_t nextBoundaryPos;
+    
+    while ((nextBoundaryPos = body.find(boundaryDelimiter, pos)) != string::npos) {
+        // Skip past this boundary
+        pos = nextBoundaryPos + boundaryDelimiter.length();
         
-        for (size_t j = 0; j < part_lines.size(); j++)
-        {
-            string line = trim(part_lines[j]);
+        // Check if we've hit the end boundary
+        if (body.substr(pos, 2) == "--")
+            break;
             
-            // Case 1: Parse Content-Disposition header
-            if (line.find("Content-Disposition:") != string::npos)
-            {
-                cerr << bold << red << "Content-Disposition was found" << def << endl;
-                
-                // Check for filename attribute in header (actual file upload)
-                size_t filename_pos = line.find("filename=\"");
-                if (filename_pos != string::npos)
-                {
-                    size_t end_pos = line.find("\"", filename_pos + 10);
-                    if (end_pos != string::npos)
-                    {
-                        _filename = line.substr(filename_pos + 10, end_pos - (filename_pos + 10));
-                        cerr << bold << red << "StoreFilename found in header: " << _filename << def << endl;
-                    }
-                }
-                
-                // Get field name for potential Case 2
-                size_t name_pos = line.find("name=\"");
-                if (name_pos != string::npos)
-                {
-                    size_t end_pos = line.find("\"", name_pos + 6);
-                    if (end_pos != string::npos)
-                    {
-                        fieldName = line.substr(name_pos + 6, end_pos - (name_pos + 6));
-                        cerr << bold << blue << "Field name found: " << fieldName << def << endl;
-                    }
+        // Skip CRLF after boundary
+        if (body.substr(pos, 2) == "\r\n")
+            pos += 2;
+            
+        // Find the end of this part
+        size_t nextPartPos = body.find(boundaryDelimiter, pos);
+        if (nextPartPos == string::npos)
+            break;
+            
+        // Extract part content including headers
+        string part = body.substr(pos, nextPartPos - pos);
+        
+        // Split headers and content
+        size_t headerEnd = part.find("\r\n\r\n");
+        if (headerEnd != string::npos) {
+            string headers = part.substr(0, headerEnd);
+            string content = part.substr(headerEnd + 4); // Skip the double CRLF
+            
+            // Remove trailing CRLF from content if present
+            if (content.length() >= 2 && content.substr(content.length() - 2) == "\r\n") {
+                content = content.substr(0, content.length() - 2);
+            }
+            
+            // Parse Content-Disposition header for field name and filename
+            size_t namePos = headers.find("name=\"");
+            string fieldName;
+            string filename;
+            
+            if (namePos != string::npos) {
+                namePos += 6; // Skip 'name="'
+                size_t nameEnd = headers.find("\"", namePos);
+                if (nameEnd != string::npos) {
+                    fieldName = headers.substr(namePos, nameEnd - namePos);
                 }
             }
-            // Case 2: If field name is "filename" and this is an empty line
-            else if (fieldName == "filename" && line.empty() && j+1 < part_lines.size())
-            {
-                // Next line contains the filename value
-                _filename = trim(part_lines[j+1]);
-                cerr << bold << red << "Filename from field value: " << _filename << def << endl;
-                break;
+            
+            size_t filenamePos = headers.find("filename=\"");
+            if (filenamePos != string::npos) {
+                filenamePos += 10; // Skip 'filename="'
+                size_t filenameEnd = headers.find("\"", filenamePos);
+                if (filenameEnd != string::npos) {
+                    filename = headers.substr(filenamePos, filenameEnd - filenamePos);
+                }
+            }
+            
+            // Store field in the map
+            if (!fieldName.empty()) {
+                _formFields[fieldName] = content;
+                
+                // If it's a file, store its info
+                if (!filename.empty()) {
+                    _filename = filename;
+                    _fileContent = content;
+                }
             }
         }
+        
+        // Move position to process next part
+        pos = nextPartPos;
     }
 }
+
 
 std::ostream &operator<<(std::ostream &os, const RequestProccessor &req)
 {
@@ -259,7 +341,20 @@ std::ostream &operator<<(std::ostream &os, const RequestProccessor &req)
 	return os;
 }
 
-string	RequestProccessor::getStoreFileName()
+string RequestProccessor::getStoreFileName() const
 {
-	return _filename;
+    if (_filename.empty()) {
+        return "upload_" + cpp11_toString(time(NULL)) + ".bin";
+    }
+    return _filename;
+}
+
+string RequestProccessor::getFileContent() const
+{
+	return _fileContent;
+}
+
+map<string, string> RequestProccessor::getFormFields() const
+{
+	return _formFields;
 }

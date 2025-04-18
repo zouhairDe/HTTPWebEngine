@@ -145,36 +145,58 @@ void	WebServer::run(){
 	cout << bold << green << "Server created succefully" << def << endl;
 
 
-	while (1)
-	{
-		int client_fd = accept(server_fd, NULL, NULL);
-		if (client_fd == -1)
-		{
-			cerr << "Error accepting connection" << endl;
-			continue;
-		}
-		cout << bold << green << "Client connected" << def << endl;
-		// this->RunningSockets.push_back(client_fd);
+	while (1) {
+        int client_fd = accept(server_fd, NULL, NULL);
+        if (client_fd == -1) {
+            cerr << "Error accepting connection" << endl;
+            continue;
+        }
+        cout << bold << green << "Client connected" << def << endl;
 
-		//recive the request from the client
-		char buffer[1024];
-		int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-		if (bytes_received == -1)
-		{
-			cerr << "Error receiving data" << endl;
-			close(client_fd);
-			continue;
-		}
+        // Receive the request with larger buffer for file uploads
+        char buffer[10240]; // 10KB buffer for larger requests
+        int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+        if (bytes_received == -1) {
+            cerr << "Error receiving data" << endl;
+            close(client_fd);
+            continue;
+        }
 
-		buffer[bytes_received] = '\0';
-		cout << bold << green << "Request received:\n\n" << buffer << def << endl << endl;
-		//parse the request
-		RequestProccessor req(buffer, "8081", server);
-		cout << bold << green << "Request parsed: " << req << def << endl;
-		
-		POSTResponse postResponse(&req);
-		cout << postResponse.generateResponse() << endl;
-	}
+        buffer[bytes_received] = '\0';
+        cout << bold << green << "Request received: " << bytes_received << " bytes\n\n";
+        
+        // Parse the request
+        RequestProccessor req(buffer, "8081", server);
+        cout << bold << green << "Request parsed:" << def << endl;
+        req.debugRequest();
+        
+        // Choose appropriate response handler based on method
+        if (req.getMethod() == "GET") {
+			File *f = new File("./error/404.html");
+            GETResponse getResponse(&req, f);
+            string response = getResponse.generateResponse();
+            send(client_fd, response.c_str(), response.length(), 0);
+        } else if (req.getMethod() == "POST") {
+            POSTResponse postResponse(&req);
+            string response = postResponse.generateResponse();
+            send(client_fd, response.c_str(), response.length(), 0);
+            
+            // if (!req.getFileContent().empty()) {
+            //     string uploadPath = "./body/"; // Use proper path from config
+            //     string filename = req.getStoreFileName();
+            //     ofstream outFile(uploadPath + filename, ios::binary);
+            //     if (outFile.is_open()) {
+            //         outFile.write(req.getFileContent().c_str(), req.getFileContent().length());
+            //         outFile.close();
+            //         cout << bold << green << "File saved: " << uploadPath + filename << def << endl;
+            //     } else {
+            //         cerr << "Failed to save uploaded file" << endl;
+            //     }
+            // }
+        }
+        
+        close(client_fd);
+    }
 	
 	
 
