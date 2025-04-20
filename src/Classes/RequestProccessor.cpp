@@ -171,6 +171,10 @@ int    RequestProccessor::parseHeaders(string req) {
     }
     
     _method = requestLine[0];
+    if (_method != "GET" && _method != "POST") {
+        cerr << "Unsupported HTTP method: " << _method << endl;
+        return (1);
+    }
     _uri = requestLine[1];
     
     // Extract query parameters if present
@@ -359,8 +363,8 @@ void RequestProccessor::parseMultipartFormData(const string &body, const string 
     }
     
     // cout << "Boundary: '" << boundary << "'" << endl;
-    cout << "Found part with file: " << (_filename.empty() ? "No" : "Yes") << endl;
-    cout << "File content size: " << _fileContent.size() << " bytes" << endl;
+    // cout << "Found part with file: " << (_filename.empty() ? "No" : "Yes") << endl;
+    // cout << "File content size: " << _fileContent.size() << " bytes" << endl;
 }
 
 void RequestProccessor::parseTextPlainUpload(const string &body)
@@ -480,19 +484,18 @@ void RequestProccessor::clear() {
     _formFields.clear();
     _headers_parsed = false;
     _body_size = 0;
-    _client_socket = 0;
+    _client_socket = -1;
     _server = NULL;
 }
 
-bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *server)
-{
+bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *server) {
     char buffer[REQUEST_BUFFER_SIZE];
     this->_client_socket = client_socket;
     this->_server = server;
     this->_port = port;
     while (true) {
         int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
-        // cout << "bytesReceived: " << bytesReceived << endl;
+        cout << "bytesReceived: " << bytesReceived << endl;
         if (bytesReceived > 0) {
             buffer[bytesReceived] = '\0';
             _request += string(buffer);
@@ -502,10 +505,11 @@ bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *s
                 _body_size = _request.length() - _request.find("\r\n\r\n") - 4;
             }
         } else if (bytesReceived == 0) {
-            cout << "CLIENT DISCONNECTED" << endl;
+            // cout << "CLIENT DISCONNECTED" << endl;
+            _client_socket = -1;
             return true;  // client sd connection
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // cout << "no more data to read" << endl;
+            cout << "aaaaaaa" << endl;
             break ;  // no more data to read. took me 18 hours to figure this out
         } else {
             perror("recv() failed");
@@ -524,6 +528,7 @@ bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *s
         if (this->getMethod() == "GET") {
             return true;
         } else if (this->getMethod() == "POST") {
+            cout << _body_size << "B/" << _content_length << "B" << endl;
             if (_body_size >= _content_length) {
                 this->parseBody(_request);
                 return true;
@@ -533,10 +538,41 @@ bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *s
             return false;
         }
     }
+            cout << "aaaaaaa" << endl;
     return false;
 }
 
 int RequestProccessor::getSocket() const
 {
     return _client_socket;
+}
+
+static void print_time(void)
+{
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
+    cout
+         << ltm->tm_mday << "-"
+         << (((ltm->tm_mon + 1) / 10 == 0) ? "0" : "") << (ltm->tm_mon + 1) << "-"
+         << ((ltm->tm_year + 1900 / 10 == 0) ? "0" : "") << ltm->tm_year + 1900 << " "
+         << ((ltm->tm_hour / 10 == 0) ? "0" : "") << ltm->tm_hour << ":"
+         << ((ltm->tm_min / 10 == 0) ? "0" : "") << ltm->tm_min << ":"
+         << ((ltm->tm_sec / 10 == 0) ? "0" : "") << ltm->tm_sec;
+}
+
+void RequestProccessor::log() const {
+    cout << def << "[";
+    print_time();
+    cout << "] ";
+    if (_client_socket == -1) {
+        cout << "DISCONNECTED" << endl;
+        return;
+    }
+    if (_method == "POST")
+        cout << bold << blue;
+    else if (_method == "GET")
+        cout << bold << green;
+    else
+        cout << bold << red;
+    cout << _method << def << " " << _uri << " " << _host << ":" << _port << endl;
 }

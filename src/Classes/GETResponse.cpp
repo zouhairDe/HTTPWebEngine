@@ -44,8 +44,9 @@ GETResponse &GETResponse::operator=(const GETResponse &copy)
     return *this;
 }
 
-void    GETResponse::generateHttpHeaders(int status_code)
+void    GETResponse::generateHttpHeaders(Server *server, int status_code)
 {
+    (void)server;
     _Http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     _Http_headers += "Content-Type: text/html\r\n";
@@ -57,7 +58,7 @@ void    GETResponse::generateHttpHeaders(int status_code)
 std::string     ReturnServerErrorPage(Server *server, int status_code)//should be a global function
 {
     /* File    error_page(server->getErrorPage());// till we have the server */(void)server;
-    File    error_page("/home/zouddach/Desktop/webserver/error/404.html");
+    File    error_page("./error/404.html");
     std::string response = "HTTP/1.1" + cpp11_toString(status_code) + " " + getStatusMessage(status_code);
     response += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     response += "Content-Type: text/html\r\n";
@@ -77,7 +78,7 @@ std::string    GETResponse::generateResponse()
 
     else// if no cgi
     {
-        generateHttpHeaders(200);
+        generateHttpHeaders(_Request->_server, 200);
         std::string response = _Http_headers;
         response += string(_File->getData());
         return response;

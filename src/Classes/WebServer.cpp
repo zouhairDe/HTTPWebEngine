@@ -164,7 +164,7 @@ void	WebServer::run(){
 	}
 	map<int, RequestProccessor> requests;
 
-	cout << bold << green << "SERVER ON" << def << endl;
+	cout << bold << endl << "============== SERVER ON ==============" << def << endl << endl;
 
 	while (true) {
 		int event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
@@ -183,18 +183,19 @@ void	WebServer::run(){
 			int client_socket = events[i].data.fd;
 			bool done = requests[client_socket].receiveRequest(client_socket, "8081", server);
 			if (done) {
+				requests[client_socket].log();
 				handleClientData(requests[client_socket]);
 				if (requests[client_socket].getConnection() == "close") {
 					if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_socket, NULL) == -1) {
 						perror("Epoll ctl failed");
 						exit(EXIT_FAILURE);
 					};
-					cout << bold << green << "CLOSED" << def << endl;
+					// cout << bold << green << "CLOSED" << def << endl;
 					close(requests[client_socket].getSocket());
 					requests[client_socket].clear();
 					requests.erase(client_socket);
 				} else {
-					cout << bold << green << "KEEP-ALIVE" << def << endl;
+					// cout << bold << green << "KEEP-ALIVE" << def << endl;
 					requests[client_socket].clear();
 				}
 			}
@@ -240,7 +241,7 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 		close(client_socket);
 	}
 
-	cout << bold << green << "NEW CONNECTION" << def << endl;
+	// cout << bold << green << "NEW CONNECTION" << def << endl;
 
 	return (client_socket);
 }
@@ -250,15 +251,15 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 */
 int		WebServer::handleClientData(RequestProccessor &request) {
 	if (request.getMethod() == "GET") {
-		cout << "GET request" << endl;
 		File *f = new File("./error/404.html");
+
+        cout << "_File->getData(): " << f->getData() << endl;
 		GETResponse getResponse(&request, f);
 		string response = getResponse.generateResponse();
 		send(request.getSocket(), response.c_str(), response.length(), 0);
 	} else if (request.getMethod() == "POST") {
 		POSTResponse postResponse(&request);
 		string response = postResponse.generateResponse();
-		cout << "POST request" << endl;
 		send(request.getSocket(), response.c_str(), response.length(), 0);
 		
 		if (!request.getFileContent().empty()) {
@@ -267,7 +268,7 @@ int		WebServer::handleClientData(RequestProccessor &request) {
 			if (outFile.is_open()) {
 				outFile.write(request.getFileContent().c_str(), request.getFileContent().length());
 				outFile.close();
-				cout << bold << green << "File saved: " << uploadPath << def << endl;
+				// cout << bold << green << "File saved: " << uploadPath << def << endl;
 			} else {
 				cerr << "Failed to save uploaded file" << endl;
 			}

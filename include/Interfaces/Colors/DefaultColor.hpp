@@ -20,7 +20,7 @@ class DefaultColor : public IColor
 public:
     void applyColor(std::ostream& os) const
     {
-        os << "\033[39m"; // Default text color
+        os << "\033[39m\033[0m"; // Default text color
     }
 	
 	virtual ~DefaultColor() {}

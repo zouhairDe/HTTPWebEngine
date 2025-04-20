@@ -40,6 +40,7 @@ class RequestProccessor {
 		size_t		_body_size;      //current size of body
         map<string, string>	_formFields; //for storing form fields
         string		_fileContentType;
+		
 
     public:
 		RequestProccessor();
@@ -72,6 +73,7 @@ class RequestProccessor {
 		string      getFileContent() const;
 		int			getSocket() const;
 		void		clear();
+		void		log() const;
 		map<string, string> getFormFields() const;
 		string getFileContentType() const;
 

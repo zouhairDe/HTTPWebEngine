@@ -30,7 +30,7 @@ class GETResponse
         RequestProccessor		*_Request;
 		File					*_File;
 		std::string				_Http_headers;
-        void                    generateHttpHeaders(int status_code);
+        void                    generateHttpHeaders(Server *server, int status_code);
         std::string             generateResponse();
 };
 

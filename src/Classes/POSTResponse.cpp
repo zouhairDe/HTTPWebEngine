@@ -77,7 +77,7 @@ string   POSTResponse::generateResponse()
     // and we create the file in the upload store 
     std::string filename = _Request->getStoreFileName();
     std::string file_path = store_path ;
-    cout << bold << red << "store path: " << file_path << def << endl;
+    // cout << bold << red << "store path: " << file_path << def << endl;
 
     generateHttpHeaders(_Request->_server, 200);
     

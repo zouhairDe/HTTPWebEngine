@@ -19,6 +19,7 @@ File::File(string path) : _path(path), _size(0), _data(nullptr) {
 		return ;
 	}
 	file.read(this->_data, this->_size);
+	this->_data[this->_size] = '\0';
 }
 
 File::File() {}//huh?
@@ -27,8 +28,9 @@ File::File(const File &other) {
 	this->_path = other._path;
 	this->_size = other._size;
 	this->_data = new char[this->_size + 1];
-	/* THIS FUNCTION IS NOT ALLOWED */
+	/* THIS FUNCTION IS (MAYBE) NOT ALLOWED */
 	memcpy(this->_data, other._data, this->_size);
+	this->_data[this->_size] = '\0';
 }
 
 File	&File::operator=(const File &other) {
@@ -38,6 +40,7 @@ File	&File::operator=(const File &other) {
 		delete[] this->_data;
 		this->_data = new char[this->_size + 1];
 		memcpy(this->_data, other._data, this->_size);
+		this->_data[this->_size] = '\0';
 	}
 	return (*this);
 }
