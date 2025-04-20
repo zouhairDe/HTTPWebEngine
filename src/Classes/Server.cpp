@@ -31,7 +31,7 @@ long Server::getClientMaxBodySize() const {
 }
 
 vector<Route> Server::getRoutes() const {
-	return Routes;
+	return _Routes;
 }
 
 string Server::getErrorPage() const {
@@ -61,14 +61,14 @@ void	Server::setServerNames(vector<string> names) {
 }
 
 void	Server::setRoutes(vector<Route> routes) {
-	Routes = routes;
+	_Routes = routes;
 }
 
 Route *Server::getRouteFromUri(string uri) {
-    for (size_t i = 0; i < Routes.size(); i++) {
-        if (Routes[i].getRouteName() == string("\"" + uri + "\"")) {
-            cerr << "Route found from *Server::getRouteFromUri(): " << Routes[i].getRouteName() << endl;
-            return &Routes[i];
+    for (size_t i = 0; i < _Routes.size(); i++) {
+        if (_Routes[i].getRouteName() == string("\"" + uri + "\"")) {
+            cerr << "Route found from *Server::getRouteFromUri(): " << _Routes[i].getRouteName() << endl;
+            return &_Routes[i];
         }
     }
     size_t lastSlash = uri.find_last_of('/');
@@ -106,11 +106,10 @@ void Server::updateAddress() {
     Address.sin_family = AF_INET;
     Address.sin_addr.s_addr = INADDR_ANY;
 	Address.sin_port = htons(69);
-	std::cout << "src/Classes/Server.cpp:113:4: CHECK THIS!!" << std::endl;
 }
 
 void Server::addRoute(const Route& route) {
-	Routes.push_back(route);
+	_Routes.push_back(route);
 }
 
 ostream &operator<<(ostream &out, const Server &server) {
@@ -125,7 +124,7 @@ ostream &operator<<(ostream &out, const Server &server) {
 	}
 	out << endl;
 	out << "Client max body size: " << server.getClientMaxBodySize() << endl;
-	out << "Routes:" << endl;
+	out << "_Routes:" << endl;
 	vector<Route> routes = server.getRoutes();
 	for (size_t i = 0; i < routes.size(); i++) {
 		Route route = routes[i];

@@ -50,7 +50,7 @@ void    GETResponse::generateHttpHeaders(int status_code)
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     _Http_headers += "Content-Type: text/html\r\n";
     _Http_headers += "Content-Length: " + cpp11_toString(_File->getSize()) + "\r\n";
-    _Http_headers += "Connection: close\r\n";//to change ater , from request
+    _Http_headers += "Connection: \r\n";//to change ater , from request
     _Http_headers += "\r\n";
 }
 
@@ -79,10 +79,8 @@ std::string    GETResponse::generateResponse()
     {
         generateHttpHeaders(200);
         std::string response = _Http_headers;
-        cout << green << "hmmmmmmmmmmmmmm File ppath is: "  << _File->getPath() << def << endl;
         response += string(_File->getData());
         return response;
     }
     //maybe mn b3d ykhsn nhandliw l Body dia GET for cgi..
 }
-

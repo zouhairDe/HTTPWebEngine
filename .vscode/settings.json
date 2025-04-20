@@ -78,6 +78,15 @@
 		"unordered_map": "cpp",
 		"utility": "cpp",
 		"ranges": "cpp",
-		"span": "cpp"
-	}
+		"span": "cpp",
+		"*.tcc": "cpp",
+		"clocale": "cpp",
+		"compare": "cpp",
+		"concepts": "cpp",
+		"memory_resource": "cpp",
+		"numeric": "cpp",
+		"random": "cpp",
+		"numbers": "cpp"
+	},
+	"C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }

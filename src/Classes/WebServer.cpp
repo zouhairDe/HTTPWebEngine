@@ -10,11 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-
 # include "WebServer.hpp"
 # include "RequestProccessor.hpp"
 # include "GETResponse.hpp"
 # include "POSTResponse.hpp"
+
+#define MAX_EVENTS 32
 
 WebServer::WebServer(char *filename)
 {
@@ -108,6 +109,14 @@ void WebServer::CheckFiles()
 	doe the servers `Creating a socket for all of them
 	and adding them to the WebServer::RunningSockets vector`
 */
+
+// void	handleNewConnection(int server_fd, int epoll_fd)
+// {
+// }
+
+// void handleClientData
+// }
+
 void	WebServer::run(){
 	/*  hna cancrew server wahd (socket ....)   */
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -116,6 +125,8 @@ void	WebServer::run(){
 		cerr << "Error creating socket" << endl;
 		exit(1);
 	}
+	int flags = fcntl(server_fd, F_GETFL, 0);
+	fcntl(server_fd, F_SETFL, flags | O_NONBLOCK);
 	int opt = 1;
 	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
 	{
@@ -138,97 +149,55 @@ void	WebServer::run(){
 		exit(1);
 	}
 	Server *server = &Servers[0];
+
+	struct epoll_event new_event, events[MAX_EVENTS];
+	int epoll_fd = epoll_create1(0);
+	if (epoll_fd == -1) {
+		perror("Epoll create failed");
+		exit(EXIT_FAILURE);
+	}
+	new_event.events = EPOLLIN | EPOLLET;
+	new_event.data.fd = server_fd;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &new_event) == -1) {
+		perror("Epoll ctl failed");
+		exit(EXIT_FAILURE);
+	}
+	map<int, RequestProccessor> requests;
+
 	cout << bold << green << "SERVER ON" << def << endl;
 
 	while (true) {
-        int client_socket = accept(server_fd, NULL, NULL);
-        if (client_socket == -1) {
-            cerr << "Error accepting connection" << endl;
-            continue;
-        }
-        cout << bold << green << "CONNECTION ESTABLISHED" << def << endl;
-
-		bool connected = true;
-		string request;
-		
-		while (connected) {
-        	char buffer[1024];
-			for (int i = 0; i < 1024; i++) buffer[i] = '\0';
-			int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
-			if (bytes_received == 0) {
-				connected = false;
-				break;
-			} else if (bytes_received == -1) {
-				cerr << "Error receiving data" << endl;
-				break;
-			}
-			buffer[bytes_received] = '\0';
-			string buffer_string(buffer, bytes_received);
-			request += buffer_string;
-				/* HNA ANHSBO BODY TOTAL SIZE - HEADER SIZE == CONTENT-LENGTH */
-			if (request.find("\r\n\r\n") != string::npos) {
-				size_t contentLengthPos = request.find("Content-Length: ");
-				if (contentLengthPos != string::npos) {
-					size_t endOfLine = request.find("\r\n", contentLengthPos);
-					std::string contentLengthStr = request.substr(
-						contentLengthPos + 16, // "Content-Length: " XXX
-						endOfLine - (contentLengthPos + 16)
-					);
-					int contentLength = std::atoi(contentLengthStr.c_str());
-					size_t bodyStartPos = request.find("\r\n\r\n") + 4;
-					int bodyBytesReceived = request.length() - bodyStartPos;
-					if (bodyBytesReceived >= contentLength) {
-						connected = false;
-						break;
-					}
-				}
-				else {
-					// For requests without Content-Length (like GET), 
-					// consider them complete once we have headers
-					if (request.find("GET") == 0 || request.find("HEAD") == 0) {
-						connected = false;
-						break;
-					}
-				}
-			}
+		int event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		// std::cout << bold << green << "Waiting for events..." << def << endl;
+		// std::cout << bold << green << "Event count: " << event_count << def << endl;
+		if (event_count == -1) {
+			perror("Epoll wait failed");
+			exit(EXIT_FAILURE);
 		}
-
-
-
-        RequestProccessor req(request, "8081", server);
-		cout << bold << green << "Request parsed:\n" << request << def << endl;
-		// req.debugRequest();
-        
-        if (req.getMethod() == "GET") {
-			File *f = new File("./error/404.html");
-            GETResponse getResponse(&req, f);
-            string response = getResponse.generateResponse();
-            send(client_socket, response.c_str(), response.length(), 0);
-        } 
-		else if (req.getMethod() == "POST") {
-            POSTResponse postResponse(&req);
-            string response = postResponse.generateResponse();
-            send(client_socket, response.c_str(), response.length(), 0);
-            
-            if (!req.getFileContent().empty()) {
-                string uploadPath = "./body/" + req.getStoreFileName();
-                ofstream outFile(uploadPath.c_str(), ios::binary);
-                if (outFile.is_open()) {
-                    outFile.write(req.getFileContent().c_str(), req.getFileContent().length());
-                    outFile.close();
-                    cout << bold << green << "File saved: " << uploadPath << def << endl;
-                } else {
-                    cerr << "Failed to save uploaded file" << endl;
-                }
-            }
-        }
-
-        if (req.getConnection() == "close") {
-			cout << bold << green << "CLOSED" << def << endl;
-			close(client_socket);
-			break;
-		} else {
-			cout << bold << green << "KEEP-ALIVE" << def << endl;
+		for (int i = 0; i < event_count; i++) {
+			if (events[i].data.fd == server_fd) {
+				int client_socket = handleNewConnection(server_fd, epoll_fd);
+				requests[client_socket] = RequestProccessor();
+				continue ;
+			}
+			int client_socket = events[i].data.fd;
+			bool done = requests[client_socket].receiveRequest(client_socket, "8081", server);
+			if (done) {
+				handleClientData(requests[client_socket]);
+				if (requests[client_socket].getConnection() == "close") {
+					if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_socket, NULL) == -1) {
+						perror("Epoll ctl failed");
+						exit(EXIT_FAILURE);
+					};
+					cout << bold << green << "CLOSED" << def << endl;
+					close(requests[client_socket].getSocket());
+					requests[client_socket].clear();
+					requests.erase(client_socket);
+				} else {
+					cout << bold << green << "KEEP-ALIVE" << def << endl;
+					requests[client_socket].clear();
+				}
+			}
 		}
     }
 }
@@ -254,20 +223,60 @@ Server* WebServer::getServerBySocket(int socket_fd){
 	Handle the new connection from the client, meanning when a 
 	new client connects to the server
 */
-int		WebServer::handleNewConnection(Server& server){
-	(void)server;
+int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 	
-	return 0;
+	struct epoll_event new_event;
+	int client_socket = accept(server_fd, NULL, NULL);
+	if (client_socket == -1) {
+		cerr << "Error accepting connection" << endl;
+		return -1;
+	}
+	int flags = fcntl(client_socket, F_GETFL, 0);
+	fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
+	new_event.events = EPOLLIN | EPOLLET;
+	new_event.data.fd = client_socket;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket, &new_event) == -1) {
+		perror("Epoll_ctl client failed");
+		close(client_socket);
+	}
+
+	cout << bold << green << "NEW CONNECTION" << def << endl;
+
+	return (client_socket);
 }
 
 /*
 	Handle the client data, meaning when the I/O events are ready to read from the client
 */
-int		WebServer::handleClientData(int client_socket, Server& server){
-	(void)client_socket;
-	(void)server;
-	
-	return 0;
+int		WebServer::handleClientData(RequestProccessor &request) {
+	if (request.getMethod() == "GET") {
+		cout << "GET request" << endl;
+		File *f = new File("./error/404.html");
+		GETResponse getResponse(&request, f);
+		string response = getResponse.generateResponse();
+		send(request.getSocket(), response.c_str(), response.length(), 0);
+	} else if (request.getMethod() == "POST") {
+		POSTResponse postResponse(&request);
+		string response = postResponse.generateResponse();
+		cout << "POST request" << endl;
+		send(request.getSocket(), response.c_str(), response.length(), 0);
+		
+		if (!request.getFileContent().empty()) {
+			string uploadPath = "./body/" + request.getStoreFileName();
+			ofstream outFile(uploadPath.c_str(), ios::binary);
+			if (outFile.is_open()) {
+				outFile.write(request.getFileContent().c_str(), request.getFileContent().length());
+				outFile.close();
+				cout << bold << green << "File saved: " << uploadPath << def << endl;
+			} else {
+				cerr << "Failed to save uploaded file" << endl;
+			}
+		} else {
+			cout << bold << red << "No file uploaded" << def << endl;
+		}
+	}
+
+	return 1;
 }
 
 /*

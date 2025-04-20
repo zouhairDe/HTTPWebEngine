@@ -29,8 +29,8 @@ class WebServer {
 		void	run();
 		int		communicate();
 		Server* getServerBySocket(int socket_fd);
-		int 	handleNewConnection(Server& server);
-		int 	handleClientData(int client_fd, Server& server);
+		int 	handleNewConnection(int server_fd, int epoll_fd);
+		int 	handleClientData(RequestProccessor &request);
 		Server* findServerByHost(const RequestProccessor& req);
 			
 };

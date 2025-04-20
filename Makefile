@@ -58,6 +58,7 @@ $(OBJ_DIR)%.opp: $(SRC_DIR)%.cpp $(INCLUDES)
 
 debug: FLAGS += $(DEBUG_FLAGS)
 debug: $(DEBUG_OBJ_DIR) $(NAME_DEBUG)
+d: debug
 
 
 $(DEBUG_OBJ_DIR):

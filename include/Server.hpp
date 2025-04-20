@@ -21,18 +21,14 @@
 # include <sys/socket.h>
 # include <fcntl.h>
 # include <sys/socket.h>
-# include <netinet/in.h>
 # include <netinet/tcp.h>
 
-
-// Add OS-specific headers and definitions
-#ifdef __APPLE__
-    #define TCP_KEEPINTVL        0x101
-    #define TCP_KEEPCNT         0x102
-	#define TCP_KEEPIDLE        0x103
-#endif
+# include <sys/types.h>
+# include <sys/epoll.h>
 
 class Route;
+// class Client;
+
 // TODO: add a vector<Server> _Friends; to the Server class, khas ykono 3ndo ga3 friends li homa servers li mcharkin m3ah fl ip && port
 
 class Server {
@@ -43,9 +39,10 @@ class Server {
 		string				Root;
 		vector<string>		ServerNames;
 		long				ClientMaxBodySize; /* in bytes */
-		vector<Route>		Routes;
 		string				ErrorPage;
+		vector<Route>		_Routes;
 		vector<Server>		_ServerFriends;
+		// vector<Client>		_Clients;
 
 	public:
 		struct sockaddr_in	Address;

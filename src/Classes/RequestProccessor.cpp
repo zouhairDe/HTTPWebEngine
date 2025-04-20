@@ -16,7 +16,11 @@ vector<string> split(string str, char delimiter);
 string trim(const string &str);
 vector<string> splitByString(string str, string delimiter);
 
-RequestProccessor::RequestProccessor() {}
+RequestProccessor::RequestProccessor() {
+    _headers_parsed = false;
+    _content_length = 0;
+    _body_size = 0;
+}
 
 RequestProccessor::~RequestProccessor() {}
 
@@ -50,7 +54,7 @@ string RequestProccessor::getConnection() const
 	return _connection;
 }
 
-string RequestProccessor::getContentLength() const
+int RequestProccessor::getContentLength() const
 {
 	return _content_length;
 }
@@ -122,27 +126,26 @@ RequestProccessor::RequestProccessor(string req, string __port, Server *server)
 {
     _request = req;
     _server = server;
+    _port = __port;
     
-    // First split the request into headers and body using an empty line
+    if (this->parseHeaders(req))
+        cerr << "Error parsing headers" << endl;
+    if (this->parseBody(req))
+        cerr << "Error parsing body" << endl;
+}
+
+int    RequestProccessor::parseHeaders(string req) {
     size_t headerEnd = req.find("\r\n\r\n");
     if (headerEnd == string::npos) {
         headerEnd = req.find("\n\n"); // Fallback for non-standard requests
         if (headerEnd == string::npos) {
             cerr << "Invalid request format: couldn't find header/body separator" << endl;
-            return;
+            return (1);
         }
     }
     
     // Extract headers section and body
     string headersSection = req.substr(0, headerEnd);
-    
-    // Get the body (everything after the empty line)
-    _body = "";
-    if (headerEnd + 4 < req.length()) {
-        _body = req.substr(headerEnd + 4); // Skip "\r\n\r\n"
-    } else if (headerEnd + 2 < req.length()) {
-        _body = req.substr(headerEnd + 2); // Skip "\n\n" for non-standard
-    }
     
     // Normalize line endings in headers section and split into lines
     // Replace all \r\n with \n for consistent processing
@@ -157,14 +160,14 @@ RequestProccessor::RequestProccessor(string req, string __port, Server *server)
     vector<string> headers = split(normalizedHeaders, '\n');
     if (headers.empty()) {
         cerr << "Invalid request: no headers found" << endl;
-        return;
+        return (1);
     }
     
     // Process the first line (request line)
     vector<string> requestLine = splitByString(headers[0], " ");
     if (requestLine.size() < 2) {
         cerr << "Invalid request line format" << endl;
-        return;
+        return (1);
     }
     
     _method = requestLine[0];
@@ -189,15 +192,13 @@ RequestProccessor::RequestProccessor(string req, string __port, Server *server)
                 size_t portPos = value.find(':');
                 if (portPos != string::npos) {
                     _host = trim(value.substr(0, portPos));
-                    _port = __port;
                 } else {
                     _host = value;
-                    _port = __port;
                 }
             } else if (key == "Content-Type") {
                 _content_type = value;
             } else if (key == "Content-Length") {
-                _content_length = value;
+                _content_length = std::atoi(value.c_str());
             } else if (key == "Connection") {
                 _connection = value;
             } else if (key == "Cookie") {
@@ -206,8 +207,31 @@ RequestProccessor::RequestProccessor(string req, string __port, Server *server)
         }
     }
     
-    // Process POST request data if applicable
+    return (0);
+}
+
+int RequestProccessor::parseBody(string req) {
     if (_method == "POST") {
+        size_t headerEnd = req.find("\r\n\r\n");
+        if (headerEnd == string::npos) {
+            headerEnd = req.find("\n\n"); // Fallback for non-standard requests
+            if (headerEnd == string::npos) {
+                cerr << "Invalid request format: couldn't find header/body separator" << endl;
+                return (1);
+            }
+        }
+        
+        // Extract headers section and body
+        string headersSection = req.substr(0, headerEnd);
+        
+        // Get the body (everything after the empty line)
+        _body = "";
+        if (headerEnd + 4 < req.length()) {
+            _body = req.substr(headerEnd + 4); // Skip "\r\n\r\n"
+        } else if (headerEnd + 2 < req.length()) {
+            _body = req.substr(headerEnd + 2); // Skip "\n\n" for non-standard
+        }
+
         if (_content_type.find("application/x-www-form-urlencoded") != string::npos) {
             parseFormUrlEncoded(_body);
         } else if (_content_type.find("multipart/form-data") != string::npos) {
@@ -242,10 +266,12 @@ RequestProccessor::RequestProccessor(string req, string __port, Server *server)
         //                 getExtensionFromContentType(_content_type);
         //     _fileContentType = _content_type;
         // }
-        // else {
-        //     cerr << "Unsupported Content-Type: " << _content_type << endl;
-        // }
+        else {
+            cerr << "Unsupported Content-Type: " << _content_type << endl;
+            return (1);
+        }
     }
+    return (0);
 }
 
 string RequestProccessor::getFileContentType() const
@@ -260,7 +286,7 @@ void RequestProccessor::parseMultipartFormData(const string &body, const string 
     string boundaryDelimiter = "--" + boundary;
     string endBoundary = boundaryDelimiter + "--";
     
-    cout << "Searching with boundary: '" << boundaryDelimiter << "'" << endl;
+    // cout << "Searching with boundary: '" << boundaryDelimiter << "'" << endl;
     
     size_t pos = 0;
     size_t nextBoundaryPos;
@@ -274,7 +300,6 @@ void RequestProccessor::parseMultipartFormData(const string &body, const string 
         // Find the next boundary
         size_t partEnd = body.find(boundaryDelimiter, partStart);
         if (partEnd == string::npos) break;
-        
         // Extract the part content (includes headers and data)
         string part = body.substr(partStart, partEnd - partStart);
         
@@ -305,7 +330,7 @@ void RequestProccessor::parseMultipartFormData(const string &body, const string 
         // Store form field value
         if (!fieldName.empty()) {
             _formFields[fieldName] = content;
-            cout << "Found field: " << fieldName << " with length: " << content.length() << endl;
+            // cout << "Found field: " << fieldName << " with length: " << content.length() << endl;
         }
         
         // Handle file upload
@@ -326,10 +351,6 @@ void RequestProccessor::parseMultipartFormData(const string &body, const string 
                     else
                         _fileContentType = trim(headers.substr(contentTypePos));
                 }
-                
-                cout << "Found file: " << _filename << endl;
-                cout << "Content type: " << _fileContentType << endl;
-                cout << "File size: " << _fileContent.length() << " bytes" << endl;
             }
         }
         
@@ -337,7 +358,7 @@ void RequestProccessor::parseMultipartFormData(const string &body, const string 
         pos = partEnd;
     }
     
-    cout << "Boundary: '" << boundary << "'" << endl;
+    // cout << "Boundary: '" << boundary << "'" << endl;
     cout << "Found part with file: " << (_filename.empty() ? "No" : "Yes") << endl;
     cout << "File content size: " << _fileContent.size() << " bytes" << endl;
 }
@@ -440,4 +461,82 @@ string RequestProccessor::getFileContent() const
 map<string, string> RequestProccessor::getFormFields() const
 {
 	return _formFields;
+}
+
+void RequestProccessor::clear() {
+    _request.clear();
+    _method.clear();
+    _uri.clear();
+    _host.clear();
+    _port.clear();
+    _connection.clear();
+    _content_length = 0;
+    _body.clear();
+    _query.clear();
+    _cookie.clear();
+    _filename.clear();
+    _fileContent.clear();
+    _fileContentType.clear();
+    _formFields.clear();
+    _headers_parsed = false;
+    _body_size = 0;
+    _client_socket = 0;
+    _server = NULL;
+}
+
+bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *server)
+{
+    char buffer[REQUEST_BUFFER_SIZE];
+    this->_client_socket = client_socket;
+    this->_server = server;
+    this->_port = port;
+    while (true) {
+        int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
+        // cout << "bytesReceived: " << bytesReceived << endl;
+        if (bytesReceived > 0) {
+            buffer[bytesReceived] = '\0';
+            _request += string(buffer);
+            if (_body_size)
+                _body_size += bytesReceived;
+            else if (_request.find("\r\n\r\n") != string::npos) {
+                _body_size = _request.length() - _request.find("\r\n\r\n") - 4;
+            }
+        } else if (bytesReceived == 0) {
+            cout << "CLIENT DISCONNECTED" << endl;
+            return true;  // client sd connection
+        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // cout << "no more data to read" << endl;
+            break ;  // no more data to read. took me 18 hours to figure this out
+        } else {
+            perror("recv() failed");
+            return false;  // if this: 9awdnaha
+        }
+    }
+    if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
+        if (this->parseHeaders(_request) == 0) {
+            _headers_parsed = true;
+        } else {
+            cerr << "Error parsing request" << endl;
+            return false;
+        }
+    }
+    if (_headers_parsed) {
+        if (this->getMethod() == "GET") {
+            return true;
+        } else if (this->getMethod() == "POST") {
+            if (_body_size >= _content_length) {
+                this->parseBody(_request);
+                return true;
+            }
+        } else {
+            cerr << "Unsupported method: " << _method << endl;
+            return false;
+        }
+    }
+    return false;
+}
+
+int RequestProccessor::getSocket() const
+{
+    return _client_socket;
 }
