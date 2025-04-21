@@ -118,50 +118,25 @@ void WebServer::CheckFiles()
 // }
 
 void	WebServer::run(){
-	/*  hna cancrew server wahd (socket ....)   */
-	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (server_fd == -1)
-	{
-		cerr << "Error creating socket" << endl;
-		exit(1);
-	}
-	int flags = fcntl(server_fd, F_GETFL, 0);
-	fcntl(server_fd, F_SETFL, flags | O_NONBLOCK);
-	int opt = 1;
-	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
-	{
-		cerr << "Error setting socket options" << endl;
-		exit(1);
-	}
+	struct epoll_event events[MAX_EVENTS];
 
-	struct sockaddr_in server_addr;
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = INADDR_ANY;
-	server_addr.sin_port = htons(8081);
-	if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
-	{
-		cerr << "Error binding socket" << endl;
-		exit(1);
-	}
-	if (listen(server_fd, 5) == -1)
-	{
-		cerr << "Error listening on socket" << endl;
-		exit(1);
-	}
-	Server *server = &Servers[0];
-
-	struct epoll_event new_event, events[MAX_EVENTS];
 	int epoll_fd = epoll_create1(0);
 	if (epoll_fd == -1) {
 		perror("Epoll create failed");
-		exit(EXIT_FAILURE);
+		return ;
 	}
-	new_event.events = EPOLLIN | EPOLLET;
-	new_event.data.fd = server_fd;
-	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &new_event) == -1) {
-		perror("Epoll ctl failed");
-		exit(EXIT_FAILURE);
+	/*  hna cancrew server wahd (socket ....)   */
+	
+	for (size_t i = 0; i < Servers.size(); i++) {
+		Server *server = &Servers[i];
+		if (server->init(epoll_fd)) {
+			cerr << "Error initializing server " << i << endl;
+			return ;
+		} else {
+			cout << bold << green << "Server " << i << " initialized" << def << endl;
+		}
 	}
+
 	map<int, RequestProccessor> requests;
 
 	cout << bold << endl << "============== SERVER ON ==============" << def << endl << endl;
@@ -174,14 +149,25 @@ void	WebServer::run(){
 			perror("Epoll wait failed");
 			exit(EXIT_FAILURE);
 		}
+			// cout << bold << green << "Server " << server->getPort() << " is waiting for events..." << def << endl;
 		for (int i = 0; i < event_count; i++) {
-			if (events[i].data.fd == server_fd) {
-				int client_socket = handleNewConnection(server_fd, epoll_fd);
-				requests[client_socket] = RequestProccessor();
-				continue ;
+			cout << bold << green << "Event " << i << " on fd: " << events[i].data.fd << def << endl;
+			bool new_connection = false;
+			for (size_t s = 0; s < Servers.size(); s++) {
+				Server *server = &Servers[s];
+				if (events[i].data.fd == server->Socket) {
+					int client_socket = handleNewConnection(server->Socket, epoll_fd);
+					requests[client_socket] = RequestProccessor();
+					requests[client_socket].setPort(server->getPort());
+					requests[client_socket]._server = server;
+					new_connection = true;
+					break ;
+				}
 			}
+			if (new_connection)
+				continue ;
 			int client_socket = events[i].data.fd;
-			bool done = requests[client_socket].receiveRequest(client_socket, "8081", server);
+			bool done = requests[client_socket].receiveRequest(client_socket);
 			if (done) {
 				requests[client_socket].log();
 				handleClientData(requests[client_socket]);
@@ -191,12 +177,12 @@ void	WebServer::run(){
 						exit(EXIT_FAILURE);
 					};
 					// cout << bold << green << "CLOSED" << def << endl;
-					close(requests[client_socket].getSocket());
-					requests[client_socket].clear();
+					close(client_socket);
 					requests.erase(client_socket);
 				} else {
 					// cout << bold << green << "KEEP-ALIVE" << def << endl;
 					requests[client_socket].clear();
+					
 				}
 			}
 		}

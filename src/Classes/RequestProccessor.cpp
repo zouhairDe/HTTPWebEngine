@@ -471,8 +471,6 @@ void RequestProccessor::clear() {
     _request.clear();
     _method.clear();
     _uri.clear();
-    _host.clear();
-    _port.clear();
     _connection.clear();
     _content_length = 0;
     _body.clear();
@@ -484,15 +482,13 @@ void RequestProccessor::clear() {
     _formFields.clear();
     _headers_parsed = false;
     _body_size = 0;
-    _client_socket = -1;
-    _server = NULL;
 }
 
-bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *server) {
-    char buffer[REQUEST_BUFFER_SIZE];
+bool	RequestProccessor::receiveRequest(int client_socket) {
+    char buffer[REQUEST_BUFFER_SIZE] = {0};
     this->_client_socket = client_socket;
-    this->_server = server;
-    this->_port = port;
+    // this->_server = server;
+    // this->_port = port;
     while (true) {
         int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
         // cout << "bytesReceived: " << bytesReceived << endl;
@@ -571,4 +567,8 @@ void RequestProccessor::log() const {
     else
         cout << bold << red;
     cout << _method << def << " " << _uri << " " << _host << ":" << _port << endl;
+}
+
+void		RequestProccessor::setPort(string new_port) {
+    _port = new_port;
 }

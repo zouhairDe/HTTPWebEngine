@@ -1,14 +1,71 @@
 
 #include "Server.hpp"
-#include <cstring>
-#include <string>
-#include <cstddef>
 
 Server::Server(string hostname, string port, string root)
-	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(-1) {
+	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(-1), Socket(-1) {
 }
 
 Server::~Server() { }
+
+Server &Server::operator=(const Server &server) {
+	if (this != &server) {
+		this->HostName = server.HostName;
+		this->Port = server.Port;
+		this->Root = server.Root;
+		this->ClientMaxBodySize = server.ClientMaxBodySize;
+		this->Socket = server.Socket;
+		this->IndexFiles = server.IndexFiles;
+		this->ServerNames = server.ServerNames;
+		this->ErrorPage = server.ErrorPage;
+		this->_Routes = server._Routes;
+		this->_ServerFriends = server._ServerFriends;
+	}
+	return (*this);
+}
+
+int Server::init(int epoll_fd) {
+	int flags, opt;
+	struct sockaddr_in server_addr;
+	struct epoll_event new_event;
+	
+	this->Socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (this->Socket == -1) {
+		cerr << "Error creating socket" << endl;
+		return (1);
+	}
+	flags = fcntl(this->Socket, F_GETFL, 0);
+	if (fcntl(this->Socket, F_SETFL, flags | O_NONBLOCK) == -1) {
+		cerr << "Error setting socket to non-blocking" << endl;
+		return (1);
+	}
+	opt = 1;
+	if (setsockopt(this->Socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+		cerr << "Error setting socket options" << endl;
+		return (1);
+	}
+
+	cout << "port: " << this->getPort() << endl;
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = INADDR_ANY;
+	int port = atoi(this->getPort().c_str());
+	server_addr.sin_port = htons(port);
+	if (bind(this->Socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+		cerr << "Error binding socket" << endl;
+		return (1);
+	}
+	if (listen(this->Socket, 5) == -1) {
+		cerr << "Error listening on socket" << endl;
+		return (1);
+	}
+
+	new_event.events = EPOLLIN | EPOLLET;
+	new_event.data.fd = this->Socket;
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, this->Socket, &new_event) == -1) {
+		perror("Epoll ctl failed");
+		return (1);
+	}
+	return (0);
+}
 	
 string Server::getHostName() const {
 	return HostName;	

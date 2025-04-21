@@ -56,7 +56,7 @@ void POSTResponse::generateHttpHeaders(Server *server, int status_code)
 
 string   POSTResponse::generateResponse()
 {
-    //since mazal makankhdch upload_store andiro ./body/ default (ta ngnix kismig body)
+    //since mazal makankhdch upload_store andiro ./body/ default (ta ngnix kismih body)
     string store_path = "./body/";
     Route *route = _Request->_server->getRouteFromUri("\"" + _Request->getUri() + "\"");
     // cout << bold << red << "Server : " << *_Request->_server << def << endl;

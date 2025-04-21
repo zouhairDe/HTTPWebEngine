@@ -25,6 +25,9 @@
 
 # include <sys/types.h>
 # include <sys/epoll.h>
+# include <cstring>
+# include <string>
+# include <cstddef>
 
 class Route;
 // class Client;
@@ -50,9 +53,12 @@ class Server {
 		int					Socket;
 		Server(string hostname = "localhost", string port = "8080", string root = ".");
 		~Server();
+		
+		Server &operator=(const Server &server);
 		// Server(const Server &server);
 		// Server				&operator=(const Server &server);
 		
+		int					init(int epoll_fd);
 		void				addRoute(const Route& route);
 		void				updateAddress();
 		Route				*getRouteFromUri(string uri);

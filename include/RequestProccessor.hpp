@@ -22,24 +22,24 @@ class Server;
 
 class RequestProccessor {
     private:
-        string		_request;       //ex: GET /index.html HTTP/1.1\nHost: www.example.com\n....
-        string		_method;        //ex: GET
-        string		_uri;           //ex: /index.html
-        string		_host;          //ex: www.example.com
-        string		_port;          //ex: 80
-        string		_connection;    //for subject wa9ila always khas tkon keep alive mn 3ndna hna so hadi makathmch
-        size_t		_content_length;//ex: 123
-		string		_content_type;  //ex: application/x-www-form-urlencoded or multipart/form-data
-        string		_body;          //ex: name=Zouhair&age=22 or for upload file ex: file=@/path/to/file and this just for POST method
-        string		_query;         //l cgi mnb3d
-        string		_cookie;        //for bonus
-        string		_filename;      //for upload file
-        string		_fileContent;   //actual content of uploaded file
-		bool		_headers_parsed;   //true if headers are parsed
-		int			_client_socket; //socket of client from epoll
-		size_t		_body_size;      //current size of body
+        string				_request;       //ex: GET /index.html HTTP/1.1\nHost: www.example.com\n....
+        string				_method;        //ex: GET
+        string				_uri;           //ex: /index.html
+        string				_host;          //ex: www.example.com
+        string				_port;          //ex: 80
+        string				_connection;    //for subject wa9ila always khas tkon keep alive mn 3ndna hna so hadi makathmch
+        size_t				_content_length;//ex: 123
+		string				_content_type;  //ex: application/x-www-form-urlencoded or multipart/form-data
+        string				_body;          //ex: name=Zouhair&age=22 or for upload file ex: file=@/path/to/file and this just for POST method
+        string				_query;         //l cgi mnb3d
+        string				_cookie;        //for bonus
+        string				_filename;      //for upload file
+        string				_fileContent;   //actual content of uploaded file
+		bool				_headers_parsed;   //true if headers are parsed
+		int					_client_socket; //socket of client from epoll
+		size_t				_body_size;      //current size of body
         map<string, string>	_formFields; //for storing form fields
-        string		_fileContentType;
+        string				_fileContentType;
 		
 
     public:
@@ -56,7 +56,7 @@ class RequestProccessor {
 		void	parseTextPlainUpload(const string &body);
 		Server	*_server;
 
-		bool	receiveRequest(int client_socket, string port, Server *server);
+		bool	receiveRequest(int client_socket);
 		
 		/*getters*/
 		string		getRequest() const;
@@ -76,6 +76,9 @@ class RequestProccessor {
 		void		log() const;
 		map<string, string> getFormFields() const;
 		string getFileContentType() const;
+
+		/*setters*/
+		void		setPort(string new_port);
 
 };
 
