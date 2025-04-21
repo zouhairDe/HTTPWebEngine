@@ -1,6 +1,6 @@
 #include "Route.hpp"
 #include "File.hpp"
-#include "RequestProccessor.hpp"
+#include "RequestProcessor.hpp"
 
 string			cpp11_replace(string &str, string toReplace, string replacement);
 string			trim(const string &s);
@@ -113,8 +113,9 @@ void Route::CheckFiles() const
 		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Upload Store");
 }
 
-File* Route::handleFile(const string& path) const {
-	cout << "In HandleFile" << endl;
+File* Route::handleFile(string path) const {
+	// cout << "In HandleFile" << endl;
+	// cout << "	Path is : " << path << endl;
     if (access(path.c_str(), F_OK) == -1 || access(path.c_str(), R_OK) == -1)
         return NULL;
 	else
@@ -159,27 +160,75 @@ File* Route::handleDirectory(const string& path) const {
     return new File(tempPath);
 }
 
-File* Route::getGETResponse(RequestProccessor req, string root, string fullPath) const {
-	cout << "In GetGETResponse" << endl;
+File* Route::getGETResponse(RequestProcessor req, string root, string fullPath) const {
+	// cout << "In GetGETResponse" << endl;
 	(void)req;
-	(void)root;
+	// cout << "Fullpath: " << fullPath << endl;
     string routeName = RouteName;
-    // string originalPath = "/tmp/www/" + root;// + cpp11_replace(routeName, "\"", "").substr(1);
+	// cout << "Route Name: " << routeName << endl;
+    string originalPath = "/tmp/www/" + root + cpp11_replace(routeName, "\"", "").substr(1);
+	// cout << "Original Path: " << originalPath << endl;
+	// cout << "req uri: " << req.getUri() << endl;
+
+	if (fullPath == "/")
+	{
+		for (size_t i = 0; i < RouteIndexFiles.size(); i++)
+		{
+			// cout << "Route Index Files: " << RouteIndexFiles[i] << endl;
+			string indexPath = "/tmp/www/" + RouteIndexFiles[i];
+			// cout << "Looking 4 this Index Path: " << indexPath << endl;
+			if (access(indexPath.c_str(), F_OK) == 0)
+			{
+				fullPath = indexPath;
+				// cout << "Index Path: " << fullPath << endl;
+				break;
+			}
+		}
+	}
+	else
+	{
+		fullPath = originalPath + fullPath.substr(1);
+		// cout << "Else fullpath == " << fullPath << endl;
+	}
+
     // string fullPath = originalPath;
     
     // if (!fileFromUri.empty())
     //     fullPath += "/" + fileFromUri;
 
-	cout << "Full Path: " << fullPath << endl;
     struct stat pathStat;
     if (stat(fullPath.c_str(), &pathStat) == -1)
         return NULL;
 
     // Check if it's a directory
-    if (S_ISDIR(pathStat.st_mode)) {
+    if (S_ISDIR(pathStat.st_mode)/* && RouteDirectoryListing && fullPath != "/"*/) {
         return handleDirectory(fullPath);
     }
     
     // Handle as regular file
     return handleFile(fullPath);
+}
+
+ostream &operator<<(ostream &out, const Route &route)
+{
+	out << "Route Name: " << route.getRouteName() << endl;
+	out << "Index Files: ";
+	vector<string> indexFiles = route.getRouteIndexFiles();
+	for (size_t i = 0; i < indexFiles.size(); i++)
+	{
+		out << indexFiles[i];
+		if (i < indexFiles.size() - 1)
+			out << ", ";
+	}
+	out << endl;
+	out << "Directory Listing: " << (route.getRouteDirectoryListing() ? "on" : "off") << endl;
+	out << "Allowed Methods: ";
+	if (route.getRouteGETMethod())
+		out << "GET ";
+	if (route.getRoutePOSTMethod())
+		out << "POST";
+	out << endl;
+	out << "Upload Store: " << route.getUploadStore() << endl;
+	out << "Client Max Body Size: " << route.getClientMaxBodySize() << endl;
+	return out;
 }

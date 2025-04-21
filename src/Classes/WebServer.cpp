@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 # include "WebServer.hpp"
-# include "RequestProccessor.hpp"
+# include "RequestProcessor.hpp"
 # include "GETResponse.hpp"
 # include "POSTResponse.hpp"
 
@@ -137,7 +137,7 @@ void	WebServer::run(){
 		}
 	}
 
-	map<int, RequestProccessor> requests;
+	map<int, RequestProcessor> requests;
 
 	cout << bold << endl << "============== SERVER ON ==============" << def << endl << endl;
 
@@ -157,7 +157,7 @@ void	WebServer::run(){
 				Server *server = &Servers[s];
 				if (events[i].data.fd == server->Socket) {
 					int client_socket = handleNewConnection(server->Socket, epoll_fd);
-					requests[client_socket] = RequestProccessor();
+					requests[client_socket] = RequestProcessor();
 					requests[client_socket].setPort(server->getPort());
 					requests[client_socket]._server = server;
 					new_connection = true;
@@ -235,12 +235,35 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 /*
 	Handle the client data, meaning when the I/O events are ready to read from the client
 */
-int		WebServer::handleClientData(RequestProccessor &request) {
+int		WebServer::handleClientData(RequestProcessor &request) {
 	if (request.getMethod() == "GET") {
-		File *f = new File("./error/404.html");
-		GETResponse getResponse(&request, f);
-		string response = getResponse.generateResponse();
-		send(request.getSocket(), response.c_str(), response.length(), 0);
+		string response;
+		Server *Server = request._server;
+		if (Server == nullptr) {
+			cerr << "Error: Server not found" << endl;
+			return -1;
+		}
+		// cout << "URI: " << request.getUri() << endl;
+		Route *route = Server->getRouteFromUri(request.getUri());
+		if (route == nullptr) {
+			response = request.ReturnServerErrorPage(Server, 404);
+			cout << "Route not found" << endl;
+			send(request.getSocket(), response.c_str(), response.size(), 0);
+			return -1;
+		}
+		request._route = route;
+		File *file = request.GETResponse(Server->getRoot(), request.getUri());
+		if (file == nullptr)
+		{
+			response = request.ReturnServerErrorPage(Server, 404);
+		}
+		else
+		{
+			response = request.generateHttpHeaders(Server, 200, file->getSize());
+			response += file->getData();
+		}
+		send(request.getSocket(), response.c_str(), response.size(), 0);
+		delete file;
 	} else if (request.getMethod() == "POST") {
 		POSTResponse postResponse(&request);
 		string response = postResponse.generateResponse();
@@ -268,7 +291,7 @@ int		WebServer::handleClientData(RequestProccessor &request) {
 	Find the server that the client is trying to connect to
 	`Simply a getter for one server in the Servers vector`
 */
-Server* WebServer::findServerByHost(const RequestProccessor& req){
+Server* WebServer::findServerByHost(const RequestProcessor& req){
 	(void)req;
 	
 	return nullptr;

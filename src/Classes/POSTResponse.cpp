@@ -12,7 +12,7 @@
 
 # include "POSTResponse.hpp"
 
-POSTResponse::POSTResponse(RequestProccessor *Request)
+POSTResponse::POSTResponse(RequestProcessor *Request)
 {
     _Request = Request;
 }

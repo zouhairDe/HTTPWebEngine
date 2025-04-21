@@ -3,13 +3,13 @@ FLAGS = -std=c++98 -Wall -Wextra -Werror -Wshadow
 DEBUG_FLAGS = -g -fsanitize=address
 OPTIMIZATION_FLAGS = -O3
 HEADER_FILES = Global.hpp ConfigParser.hpp Server.hpp File.hpp WebServer.hpp \
-				Route.hpp Functions.hpp RequestProccessor.hpp GETResponse.hpp \
+				Route.hpp Functions.hpp RequestProcessor.hpp  \
 
 COLOR_HEADERS = IColor.hpp BlueColor.hpp GreenColor.hpp RedColor.hpp DefaultColor.hpp \
 				BoldFont.hpp
 FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp ServerFunctions.cpp
 CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp \
-				Route.cpp RequestProccessor.cpp GETResponse.cpp POSTResponse.cpp \
+				Route.cpp RequestProcessor.cpp POSTResponse.cpp \
 
 				
 MAIN_FILE = main.cpp

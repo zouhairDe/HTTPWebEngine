@@ -15,11 +15,11 @@
 
 #include "Global.hpp"
 # include "File.hpp"
-# include "RequestProccessor.hpp"
+# include "RequestProcessor.hpp"
 
 class Server;
 class File;
-class RequestProccessor;
+class RequestProcessor;
 
 class Route {
 	private:
@@ -53,12 +53,14 @@ class Route {
 		void setProperty(const string& key, const string& value);
 		
 		/* Methods */
-		File	*getGETResponse(RequestProccessor req, string root, string fileFromUri) const;
+		File	*getGETResponse(RequestProcessor req, string root, string fileFromUri) const;
 		string	createDirectoryListing(const string& path) const;
 		File	*handleDirectory(const string& path) const;
-		File	*handleFile(const string& path) const;
+		File	*handleFile(string path) const;
 		
 
 };
+
+ostream &operator<<(ostream &out, const Route &route);
 
 #endif
