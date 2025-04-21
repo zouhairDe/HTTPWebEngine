@@ -495,21 +495,18 @@ bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *s
     this->_port = port;
     while (true) {
         int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
-        cout << "bytesReceived: " << bytesReceived << endl;
+        // cout << "bytesReceived: " << bytesReceived << endl;
         if (bytesReceived > 0) {
             buffer[bytesReceived] = '\0';
-            _request += string(buffer);
-            if (_body_size)
-                _body_size += bytesReceived;
-            else if (_request.find("\r\n\r\n") != string::npos) {
-                _body_size = _request.length() - _request.find("\r\n\r\n") - 4;
+            _request.append(buffer, bytesReceived);
+            _body_size += bytesReceived;
+            if (string(buffer, bytesReceived).find("\r\n\r\n") != string::npos) {
+                _body_size -= (_request.find("\r\n\r\n") + 4);
             }
         } else if (bytesReceived == 0) {
-            // cout << "CLIENT DISCONNECTED" << endl;
             _client_socket = -1;
             return true;  // client sd connection
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            cout << "aaaaaaa" << endl;
             break ;  // no more data to read. took me 18 hours to figure this out
         } else {
             perror("recv() failed");
@@ -528,7 +525,7 @@ bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *s
         if (this->getMethod() == "GET") {
             return true;
         } else if (this->getMethod() == "POST") {
-            cout << _body_size << "B/" << _content_length << "B" << endl;
+            // cout << _body_size << "B/" << _content_length << "B" << endl;
             if (_body_size >= _content_length) {
                 this->parseBody(_request);
                 return true;
@@ -538,7 +535,6 @@ bool	RequestProccessor::receiveRequest(int client_socket, string port, Server *s
             return false;
         }
     }
-            cout << "aaaaaaa" << endl;
     return false;
 }
 

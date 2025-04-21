@@ -49,7 +49,7 @@ void POSTResponse::generateHttpHeaders(Server *server, int status_code)
     _Http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + " " + getStatusMessage(status_code);
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     _Http_headers += "Content-Type: text/html\r\n";
-    _Http_headers += "Connection: close\r\n";//to change ater , from request
+    _Http_headers += "Connection: keep-alive\r\n";//to change ater , from request
     _Http_headers += "Content-Length: 0\r\n";
     _Http_headers += "\r\n";
 }

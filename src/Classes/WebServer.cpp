@@ -252,8 +252,6 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 int		WebServer::handleClientData(RequestProccessor &request) {
 	if (request.getMethod() == "GET") {
 		File *f = new File("./error/404.html");
-
-        cout << "_File->getData(): " << f->getData() << endl;
 		GETResponse getResponse(&request, f);
 		string response = getResponse.generateResponse();
 		send(request.getSocket(), response.c_str(), response.length(), 0);
