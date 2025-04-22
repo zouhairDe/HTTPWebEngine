@@ -21,6 +21,7 @@ RequestProcessor::RequestProcessor() {
     _content_length = 0;
     _body_size = 0;
     _fully_sent = false;
+    _file = nullptr;
     fd = -1;
 }
 
@@ -98,13 +99,21 @@ string RequestProcessor::getResponseToSend() const
 
 string RequestProcessor::generateHttpHeaders(Server *server, int status_code, long fileSize)
 {
+    string date;
+    /*generate Date http*/
+    time_t now = time(0);
+    struct tm* gmt = gmtime(&now);
+    char date_buffer[128];
+    strftime(date_buffer, sizeof(date_buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+    date = "Date: " + string(date_buffer) + "\r\n";
     string _Http_headers;
     (void)server;
     _Http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
+    _Http_headers += date;
     _Http_headers += "Content-Type: " + (status_code >= 200 && status_code < 300 ? generateContentType() : "text/html") + "\r\n";
     _Http_headers += "Content-Length: " + cpp11_toString(fileSize) + "\r\n";
-    _Http_headers += "Connection: close \r\n";//to change ater , from request
+    _Http_headers += "Connection: " + _connection + "\r\n";
     _Http_headers += "\r\n";
     return _Http_headers;
 }
@@ -123,8 +132,6 @@ string RequestProcessor::getStatusMessage(int status_code) const
 }
 
 File *RequestProcessor::GetFile(string path) const {
-	// cout << "In HandleFile" << endl;
-	// cout << "	Path is : " << path << endl;
     if (access(path.c_str(), F_OK) == -1 || access(path.c_str(), R_OK) == -1)
         return NULL;
 	else
@@ -204,39 +211,25 @@ string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
 File* RequestProcessor::GETResponse(string root, string requestedPath) const {
     string routeName = _route->getRouteName();
     string reqUri = this->getUri();
-    // cout << "Request URI: " << reqUri << endl;
-    // cout << "Requested Path: " << requestedPath << endl;
-    // Normalize route name and create base path
     string basePath = "/tmp/www/" + root + reqUri.substr(1);
-    // cout << "Base path: " << basePath << endl;
-    // Handle root path - search for index files
     if (requestedPath == "/") {
         vector<string> indexFiles = _route->getRouteIndexFiles();
 
         basePath = processIndexFiles(indexFiles);
-        if (basePath.empty()) {
-            // cout << "No index file found for:" << basePath << ", returning directory listing" << endl;
-            return handleDirectory(basePath);//ghir ila dirlisting == on
+        if (basePath.empty() ) {//ghir ila dirlisting == on
+            return handleDirectory(basePath);
         }
     }
-
-    // cout << "Final base path: " << basePath << endl;
-
-
-
     struct stat pathStat;
     if (stat(basePath.c_str(), &pathStat) == -1) {
         return NULL;
     }
-
-    //first check if its a file
     if (S_ISREG(pathStat.st_mode)) {
         return GetFile(basePath);
     }
     if (S_ISDIR(pathStat.st_mode)) {
         return handleDirectory(basePath);
     }
-    // If it's neither a file nor a directory ???? wachno mok?, return NULL
     return NULL;
 }
 
@@ -414,29 +407,16 @@ int RequestProcessor::parseBody(string req) {
                 if (boundary[0] == '"' && boundary[boundary.length()-1] == '"') {
                     boundary = boundary.substr(1, boundary.length() - 2);
                 }
-                
-                // Don't add extra dashes - the boundary in header already has them
                 parseMultipartFormData(_body, boundary);
             }
         }
-        else if (_content_type.find("text/plain") != string::npos) {
-            // Handle plain text uploads
+        else if (_content_type.find("text/plain") != string::npos)
             parseTextPlainUpload(_body);
-        }
         else if (_content_type.find("application/json") != string::npos) {
-            // Handle JSON uploads (if needed)
-            // For now, just store the body as file content
             _fileContent = _body;
             _filename = "upload_" + cpp11_toString(time(NULL)) + ".json";
             _fileContentType = "application/json";
-        }//now we add support for images and binaries
-        // else if (_content_type.find("image/") != string::npos || _content_type.find("application/octet-stream") != string::npos) {
-        //     // Handle binary uploads (images, etc.)
-        //     _fileContent = _body;
-        //     _filename = "upload_" + cpp11_toString(time(NULL)) + "." + 
-        //                 getExtensionFromContentType(_content_type);
-        //     _fileContentType = _content_type;
-        // }
+        }
         else {
             cerr << "Unsupported Content-Type: " << _content_type << endl;
             return (1);
@@ -620,7 +600,7 @@ string RequestProcessor::generateContentType()
     if (_uri.find(".flac") != string::npos) {
         return "audio/flac";
     }
-    return "text/html"; // Default binary type
+    return "text/html";
 }
 
 
@@ -630,7 +610,6 @@ string RequestProcessor::getExtensionFromContentType(const string& contentType) 
     if (contentType.empty())
         return "bin";
     
-    // Map MIME types to common extensions
     if (contentType == "image/jpeg" || contentType == "image/jpg")
         return "jpg";
     if (contentType == "image/png")
@@ -661,7 +640,7 @@ string RequestProcessor::getExtensionFromContentType(const string& contentType) 
         return "tar";
     if (contentType == "application/x-gzip")
         return "gz";
-    return "text/html"; // Default binary extension
+    return "text/html";
 }
 
 
@@ -740,28 +719,71 @@ string RequestProcessor::createResponse(void) {
             }
         }
 	} else if (this->getMethod() == "POST") {
-		POSTResponse postResponse(this);
-		response = postResponse.generateResponse();
-		send(this->getSocket(), response.c_str(), response.length(), 0);
-		
-		if (!this->getFileContent().empty()) {
-			string uploadPath = "./body/" + this->getStoreFileName();
-			ofstream outFile(uploadPath.c_str(), ios::binary);
-			if (outFile.is_open()) {
-				outFile.write(this->getFileContent().c_str(), this->getFileContent().length());
-				outFile.close();
-			} else {
-				cerr << "Failed to save uploaded file" << endl;
-			}
-		} else {
-			cout << bold << red << "No file uploaded" << def << endl;
+        Server *Server = this->_server;
+		if (Server == nullptr) {
+			cerr << "Error: Server not found" << endl;
+			return "";//500 internal server error
 		}
+		Route *route = Server->getRouteFromUri(this->getUri());
+        if (route == nullptr) {
+			response = this->ReturnServerErrorPage(Server, 404);
+			cout << "Route not found hmmmm" << endl;
+		}
+        else
+        {
+            cerr << "Route found: " << route->getRouteName() << " and uri is: " << this->getUri() << endl;
+            cerr << red << "Server is " << *Server << def << endl;
+            this->_route = route;
+            _fully_sent = true;
+            response = POSTResponse();
+        }
 	}
     else {
         cerr << "Unsupported method: " << _method << endl;
         return "";
     }
     return response;
+}
+
+string  RequestProcessor::POSTResponse()
+{
+
+    cout << "In POSTResponse" << endl;
+
+    string response;
+    string initUploadPath = "./body/";
+    if (_route->getUploadStore() != "") {
+        initUploadPath = "/tmp/www/" + _route->getUploadStore();
+    }
+    cerr << blue << "Upload path: " << initUploadPath << def << endl;
+    if (access(initUploadPath.c_str(), R_OK) == -1) {
+        cerr << "Upload path does not exist, creating it" << endl;
+        if (mkdir(initUploadPath.c_str(), 0777) == -1) {
+            cerr << "Failed to create upload path" << endl;
+            return this->ReturnServerErrorPage(_server, 500);
+        }
+    }
+    if (!this->getFileContent().empty()) {
+        string uploadPath = initUploadPath + this->getStoreFileName();
+        ofstream outFile(uploadPath.c_str(), ios::binary);
+        if (outFile.is_open()) {
+            outFile.write(this->getFileContent().c_str(), this->getFileContent().length());
+            outFile.close();
+            response = generateHttpHeaders(_server, 200, 0);
+            // response += "<html><body><h1>File uploaded successfully</h1>";hmmm
+        } else {
+            cerr << "Failed to save uploaded file" << endl;
+            response = this->ReturnServerErrorPage(_server, 500);
+        }
+        send(this->getSocket(), response.c_str(), response.length(), 0);
+    } else {
+        cout << bold << red << "No file uploaded" << def << endl;
+        response = this->ReturnServerErrorPage(_server, 400);
+        send(this->getSocket(), response.c_str(), response.length(), 0);
+    }
+
+
+    return (response);
 }
 
 int    RequestProcessor::sendResponse(void)
@@ -790,6 +812,7 @@ int    RequestProcessor::sendResponse(void)
         if (this->fd == -1)
             this->fd = open(_file->getPath().c_str(), O_RDONLY);
         if (this->fd == -1) {
+            cout << _file->getPath() << " " << endl;
             perror("open() failed");
             return (-1);
         }

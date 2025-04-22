@@ -16,7 +16,6 @@
 # include "Global.hpp"
 # include "Server.hpp"
 
-# include "POSTResponse.hpp"
 
 # define REQUEST_BUFFER_SIZE 1024 * 16
 
@@ -76,6 +75,7 @@ class RequestProcessor {
 		File*				GETResponse(string root, string fullPath) const;
 		string 				processIndexFiles(vector<string> &indexFiles) const;
 		int					sendResponse();
+		string  			POSTResponse();
 
 		/*getters*/
 		string				getRequest() const;

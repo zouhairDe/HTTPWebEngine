@@ -35,13 +35,10 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 }
 
 bool ConfigParser::isRouteEndBlock(string line, const string& routeName) {
-	// cerr << "Checking if route end block, line: " << line << endl;
-	// cerr << "Route name: " << routeName << endl;
 	line = trim(line);
 	line = cpp11_replace(line, " ", "");
 	line = cpp11_replace(line, "[", "");
 	line = cpp11_replace(line, "]", "");
-	// cerr << "New line : " << line << endl;
 	if (line == routeName)
 		return true;
 	return false;

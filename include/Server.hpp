@@ -33,6 +33,7 @@ class Route;
 // class Client;
 
 // TODO: add a vector<Server> _Friends; to the Server class, khas ykono 3ndo ga3 friends li homa servers li mcharkin m3ah fl ip && port
+// TO_UNDO: add a vector<Server> _Friends; to the Server class, khas ykono 3ndo ga3 friends li homa servers li mcharkin m3ah fl ip && port
 
 class Server {
 	private:
@@ -45,7 +46,6 @@ class Server {
 		string				ErrorPage;
 		vector<Route>		_Routes;
 		vector<Server>		_ServerFriends;
-		// vector<Client>		_Clients;
 
 	public:
 		struct sockaddr_in	Address;

@@ -47,18 +47,10 @@ class Route {
 		string			getRouteName() const;
 		void			CheckFiles() const;
 
-		// ma3rftch ila chi rouote ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
+		// ma3rftch ila chi route ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
 
 		/* setters */
 		void setProperty(const string& key, const string& value);
-		
-		/* Methods */
-		File	*getGETResponse(RequestProcessor req, string root, string fileFromUri) const;
-		string	createDirectoryListing(const string& path) const;
-		File	*handleDirectory(const string& path) const;
-		File	*handleFile(string path) const;
-		
-
 };
 
 ostream &operator<<(ostream &out, const Route &route);

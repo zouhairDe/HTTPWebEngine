@@ -122,34 +122,21 @@ void	Server::setRoutes(vector<Route> routes) {
 }
 
 Route *Server::getRouteFromUri(string uri) {
-	// cout << "new URI: " << uri << endl;
-	// cout << "From getRouteFromUri(): " << uri << endl;
 	cout << "	URI: " << uri << endl;
     for (size_t i = 0; i < _Routes.size(); i++) {
-		// uri = uri.substr(0, uri.find_last_of('/') + 1);
-		// cout << "Comaparing " << _Routes[i].getRouteName() << " with " << uri << endl;
         if (_Routes[i].getRouteName() == string("\"" + uri + "\"")) {
-            // cerr << "Route found from *Server::getRouteFromUri(): " << _Routes[i].getRouteName() << endl;
             return &_Routes[i];
         }
     }
-
-	//Route not found, meanning khouna is trying to access a file
-	//so we need to nfr9o file w path mn uri
 	string fileFromUri = uri.substr(uri.find_last_of('/') + 1);
 	string uriWithoutFile = uri.substr(0, uri.find_last_of('/'));
-	// cout << "File from URI: " << fileFromUri << endl;
-	// cout << "URI without file: " << uriWithoutFile << endl;
 	if (uriWithoutFile.empty())
 		uriWithoutFile = "/";
 	for (size_t i = 0; i < _Routes.size(); i++) {
-		// cout << "Comaparing " << _Routes[i].getRouteName() << " with " << uriWithoutFile << endl;
 		if (_Routes[i].getRouteName() == string("\"" + uriWithoutFile + "\"")) {
-			// cerr << "Route found from *Server::getRouteFromUri(): " << _Routes[i].getRouteName() << endl;
 			return &_Routes[i];
 		}
 	}
-
     return NULL;
 }
 
@@ -226,14 +213,6 @@ vector<Server> Server::getFriends() const {
 
 void Server::CheckFiles()
 {
-	//check if the folder exists and we have access to it
-	//then check the existence of the files bhal err_pages
-	/*
-		Define a directory or a file from where the file should be searched (for example,
-		if url /kapouet is rooted to /tmp/www, url /kapouet/pouic/toto/pouet is
-		/tmp/www/pouic/toto/pouet).
-	*///so i dont think this is the thing
-	//TODO: check hta error pages path w routesRoot path ikono bhal def w fix python script dzb
     string rootPath = "/tmp/www/" + this->getRoot();
     
     struct stat s;

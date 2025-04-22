@@ -19,7 +19,6 @@ class File {
 	private:
 		string		_path;
 		size_t		_size;
-		// size_t		_offset;
 		char		*_data;
 		
 	public:
@@ -36,8 +35,6 @@ class File {
 		string		getPath() const;
 		bool		exists() const;
 		void		trimOldData(size_t pos);
-		// size_t		getOffset() const;
-		// void		setOffset(size_t offset);
 
 		void		clear();
 };

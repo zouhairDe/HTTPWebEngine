@@ -12,7 +12,6 @@
 
 # include "WebServer.hpp"
 # include "RequestProcessor.hpp"
-// # include "GETResponse.hpp"
 
 #define MAX_EVENTS 32
 
@@ -102,19 +101,6 @@ void WebServer::CheckFiles()
 		}
 	}
 }
-
-/*
-	The function responsable for ranning all the I/O functions
-	doe the servers `Creating a socket for all of them
-	and adding them to the WebServer::RunningSockets vector`
-*/
-
-// void	handleNewConnection(int server_fd, int epoll_fd)
-// {
-// }
-
-// void handleClientData
-// }
 
 int modifySocket(int epoll_fd, int socket, int events)
 {
@@ -208,24 +194,6 @@ void	WebServer::run(){
     }
 }
 
-
-/*
-	Communicate with the clients which means this function will be responsable for
-	reading and writing to the clients sockets after processing the request
-*/
-int		WebServer::communicate(){
-	
-	return 0;
-}
-
-/*
-	Find the server that the client is trying to connect to
-*/
-Server* WebServer::getServerBySocket(int socket_fd){
-	(void)socket_fd;
-	return nullptr;
-}
-
 /*
 	Handle the new connection from the client, meanning when a 
 	new client connects to the server
@@ -246,26 +214,5 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 		perror("Epoll_ctl client failed");
 		close(client_socket);
 	}
-
-	// cout << bold << green << "NEW CONNECTION" << def << endl;
-
 	return (client_socket);
-}
-
-/*
-	Handle the client data, meaning when the I/O events are ready to read from the client
-*/
-// int		WebServer::handleClientData(RequestProcessor &request) {
-	
-// 	return 1;
-// }
-
-/*
-	Find the server that the client is trying to connect to
-	`Simply a getter for one server in the Servers vector`
-*/
-Server* WebServer::findServerByHost(const RequestProcessor& req){
-	(void)req;
-	
-	return nullptr;
 }

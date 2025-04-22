@@ -18,9 +18,8 @@ File::File(string path) : _path(path), _size(0), _data(nullptr) {
 		cerr << "Failed to open the file.\n";
 		return ;
 	}
-	file.read(this->_data, this->_size);//hm manprotectiwch hna  azeggaf?
+	file.read(this->_data, this->_size);//hm manprotectiwch hna  azeggaf? if (read fails...)
 	this->_data[this->_size] = '\0';
-	// this->_offset = 0;
 }
 
 File::File() {}//huh?
