@@ -163,12 +163,7 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
 {
     /* File    error_page(server->getErrorPage());// till we have the server */(void)server;
     File    error_page("./error/404.html");
-    std::string response = "HTTP/1.1" + cpp11_toString(status_code) + " " + getStatusMessage(status_code);
-    response += "Server: webserv/1.0.0 (Ubuntu)\r\n";
-    response += "Content-Type: text/html\r\n";
-    response += "Content-Length: " + cpp11_toString(error_page.getSize()) + "\r\n";
-    response += "Connection: close\r\n";
-    response += "\r\n";
+    std::string response = generateHttpHeaders(server, status_code, error_page.getSize());
     response += error_page.getData();
     return response;
 }
@@ -569,15 +564,6 @@ string RequestProcessor::getExtensionFromContentType(const string& contentType) 
         return "tar";
     if (contentType == "application/x-gzip")
         return "gz";
-    
-    // For other types, extract extension from the main type
-    size_t slashPos = contentType.find('/');
-    if (slashPos != string::npos) {
-        string subtype = contentType.substr(slashPos + 1);
-        // Handle cases like "application/json" -> "json"
-        return subtype;
-    }
-    
     return "bin"; // Default binary extension
 }
 
