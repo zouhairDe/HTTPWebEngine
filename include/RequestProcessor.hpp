@@ -37,10 +37,13 @@ class RequestProcessor {
         string				_filename;      //for upload file
         string				_fileContent;   //actual content of uploaded file
 		bool				_headers_parsed;   //true if headers are parsed
+		bool				_fully_sent;      //true if the request is fully sent
 		int					_client_socket; //socket of client from epoll
 		size_t				_body_size;      //current size of body
         map<string, string>	_formFields; //for storing form fields
         string				_fileContentType;
+		string				_responseToSend;
+		// char *				_buffer;
 		
 
     public:
@@ -48,46 +51,53 @@ class RequestProcessor {
 		RequestProcessor(string request, string __port, Server *server);
 		~RequestProcessor();
 		
-		int		parseHeaders(string req);
-		int		parseBody(string req);
-		void	parseMultipartFormData(const string &body, const string &boundary);
-		void	parseFormUrlEncoded(const string &body);
-		void	debugRequest() const;
-		string  getExtensionFromContentType(const string& contentType) const;
-		void	parseTextPlainUpload(const string &body);
-		Server	*_server;
-		Route 	*_route;
+		int					parseHeaders(string req);
+		int					parseBody(string req);
+		void				parseMultipartFormData(const string &body, const string &boundary);
+		void				parseFormUrlEncoded(const string &body);
+		void				debugRequest() const;
+		string  			getExtensionFromContentType(const string& contentType) const;
+		void				parseTextPlainUpload(const string &body);
+		Server				*_server;
+		Route 				*_route;
 
-		bool	receiveRequest(int client_socket);
-		string	generateHttpHeaders(Server *server, int status_code, long fileSize);
-		string	getStatusMessage(int status_code) const;
-		File	*GetFile(string path) const;
-		string  createDirectoryListing(const string& path) const;
-		File*	handleDirectory(const string& path) const;
-		string  ReturnServerErrorPage(Server *server, int status_code);
-		File*	GETResponse(string root, string fullPath) const;
-		string 	processIndexFiles(vector<string> &indexFiles) const;
+		bool				receiveRequest(int client_socket);
+		string				generateHttpHeaders(Server *server, int status_code, long fileSize);
+		string 				generateContentType();
+		string				getStatusMessage(int status_code) const;
+		File				*GetFile(string path) const;
+		string  			createDirectoryListing(const string& path) const;
+		File*				handleDirectory(const string& path) const;
+		string  			ReturnServerErrorPage(Server *server, int status_code);
+		File*				GETResponse(string root, string fullPath) const;
+		string 				processIndexFiles(vector<string> &indexFiles) const;
+		bool				sendResponse();
+
 		/*getters*/
-		string		getRequest() const;
-		string		getMethod() const;
-		string		getUri() const;
-		string		getHost() const;
-		string		getPort() const;
-		string		getConnection() const;
-		int			getContentLength() const;
-		string		getBody() const;
-		string		getQuery() const;
-		string		getCookie() const;
-		string		getStoreFileName() const;
-		string      getFileContent() const;
-		int			getSocket() const;
-		void		clear();
-		void		log() const;
+		string				getRequest() const;
+		string				getMethod() const;
+		string				getUri() const;
+		string				getHost() const;
+		string				getPort() const;
+		string				getConnection() const;
+		int					getContentLength() const;
+		string				getBody() const;
+		string				getQuery() const;
+		string				getCookie() const;
+		string				getStoreFileName() const;
+		string      		getFileContent() const;
+		int					getSocket() const;
+		void				clear();
+		void				log() const;
 		map<string, string> getFormFields() const;
-		string getFileContentType() const;
+		string 				getFileContentType() const;
+		bool				isSent() const;
+		string				getResponseToSend() const;
 
 		/*setters*/
-		void		setPort(string new_port);
+		void				setPort(string new_port);
+		void				setIsSent(bool sent);
+		void				setResponseToSend(string response);
 
 };
 

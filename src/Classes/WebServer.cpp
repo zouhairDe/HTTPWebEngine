@@ -143,13 +143,10 @@ void	WebServer::run(){
 
 	while (true) {
 		int event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-		// std::cout << bold << green << "Waiting for events..." << def << endl;
-		// std::cout << bold << green << "Event count: " << event_count << def << endl;
 		if (event_count == -1) {
 			perror("Epoll wait failed");
 			exit(EXIT_FAILURE);
 		}
-			// cout << bold << green << "Server " << server->getPort() << " is waiting for events..." << def << endl;
 		for (int i = 0; i < event_count; i++) {
 			cout << bold << green << "Event " << i << " on fd: " << events[i].data.fd << def << endl;
 			bool new_connection = false;
@@ -167,10 +164,10 @@ void	WebServer::run(){
 			if (new_connection)
 				continue ;
 			int client_socket = events[i].data.fd;
-			bool done = requests[client_socket].receiveRequest(client_socket);
-			if (done) {
+			if (requests[client_socket].receiveRequest(client_socket)) {
 				requests[client_socket].log();
 				handleClientData(requests[client_socket]);
+				requests[client_socket].sendResponse();
 				if (requests[client_socket].getConnection() == "close") {
 					if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_socket, NULL) == -1) {
 						perror("Epoll ctl failed");
@@ -186,8 +183,28 @@ void	WebServer::run(){
 				}
 			}
 		}
+		
+		/* loop over requests to finish sending data */
+		for(map<int, RequestProcessor>::iterator it = requests.begin(); it != requests.end(); ++it) {
+			int client_socket = it->first;
+			RequestProcessor &request = it->second;
+			if (request.isSent()) {
+				// cout << bold << green << "Request fully sent" << def << endl;
+				// request.clear();
+				if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_socket, NULL) == -1) {
+					perror("Epoll ctl failed");
+					exit(EXIT_FAILURE);
+				}
+				close(client_socket);
+				requests.erase(client_socket);
+			} else {
+				// cout << bold << green << "Request not fully sent" << def << endl;
+				request.sendResponse();
+			}
+		}
     }
 }
+
 
 /*
 	Communicate with the clients which means this function will be responsable for
@@ -237,32 +254,36 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 */
 int		WebServer::handleClientData(RequestProcessor &request) {
 	if (request.getMethod() == "GET") {
-		string response;
+		// string _responseToSend;
 		Server *Server = request._server;
 		if (Server == nullptr) {
 			cerr << "Error: Server not found" << endl;
 			return -1;
 		}
-		// cout << "URI: " << request.getUri() << endl;
 		Route *route = Server->getRouteFromUri(request.getUri());
 		if (route == nullptr) {
-			response = request.ReturnServerErrorPage(Server, 404);
+			request.setResponseToSend(request.ReturnServerErrorPage(Server, 404));
 			cout << "Route not found" << endl;
-			send(request.getSocket(), response.c_str(), response.size(), 0);
+			// send(request.getSocket(), _responseToSend.c_str(), _responseToSend.size(), 0);
 			return -1;
 		}
 		request._route = route;
 		File *file = request.GETResponse(Server->getRoot(), request.getUri());
 		if (file == nullptr)
 		{
-			response = request.ReturnServerErrorPage(Server, 404);
+			request.setResponseToSend(request.ReturnServerErrorPage(Server, 404));
 		}
 		else
 		{
-			response = request.generateHttpHeaders(Server, 200, file->getSize());
-			response += file->getData();
+			string str;
+			str = request.generateHttpHeaders(Server, 200, file->getSize());
+			str.append(file->getData(), file->getSize());
+			str += "\r\n";
+			request.setResponseToSend(str);
+			// cerr << red << "Response has been set to: " << request.getResponseToSend() << def << endl;
 		}
-		send(request.getSocket(), response.c_str(), response.size(), 0);
+		// send(request.getSocket(), request.getResponseToSend().c_str(), request.getResponseToSend().size(), 0);
+		request.sendResponse();
 		delete file;
 	} else if (request.getMethod() == "POST") {
 		POSTResponse postResponse(&request);
