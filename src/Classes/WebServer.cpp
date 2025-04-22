@@ -284,6 +284,8 @@ int		WebServer::handleClientData(RequestProcessor &request) {
 			request.setResponseToSend(request.ReturnServerErrorPage(Server, 404));
 			cout << "Route not found" << endl;
 			// send(request.getSocket(), _responseToSend.c_str(), _responseToSend.size(), 0);
+			request.sendResponse();
+			request.setIsSent(true);
 			return -1;
 		}
 		request._route = route;
@@ -291,18 +293,16 @@ int		WebServer::handleClientData(RequestProcessor &request) {
 		if (file == nullptr)
 		{
 			request.setResponseToSend(request.ReturnServerErrorPage(Server, 404));
+			request.sendResponse();
+			request.setIsSent(true);
 			cout << "File not found" << endl;
 		}
 		else
 		{
 			request._file = file;
-			// request.fd = open(request._file->getPath().c_str(), O_RDONLY);
 			request.setResponseToSend(request.generateHttpHeaders(Server, 200, file->getSize()));
-			// cerr << red << "Response has been set to: " << request.getResponseToSend() << def << endl;
+			request.sendResponse();
 		}
-		// send(request.getSocket(), request.getResponseToSend().c_str(), request.getResponseToSend().size(), 0);
-		request.sendResponse();
-		// delete file;
 	} else if (request.getMethod() == "POST") {
 		POSTResponse postResponse(&request);
 		string response = postResponse.generateResponse();

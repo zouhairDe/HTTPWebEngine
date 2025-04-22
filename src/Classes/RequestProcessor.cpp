@@ -102,7 +102,7 @@ string RequestProcessor::generateHttpHeaders(Server *server, int status_code, lo
     (void)server;
     _Http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
-    _Http_headers += "Content-Type: " + generateContentType() + "\r\n";
+    _Http_headers += "Content-Type: " + (status_code >= 200 && status_code < 300 ? generateContentType() : "text/html") + "\r\n";
     _Http_headers += "Content-Length: " + cpp11_toString(fileSize) + "\r\n";
     _Http_headers += "Connection: \r\n";//to change ater , from request
     _Http_headers += "\r\n";
@@ -722,7 +722,6 @@ bool    RequestProcessor::sendResponse()
         return false;
 
     cout << "From sendResponse: the response size is: " << _responseToSend.length() << endl;
-
     if (!_responseToSend.empty())
     {
         int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), 0);
@@ -731,18 +730,18 @@ bool    RequestProcessor::sendResponse()
             return false;
         }
         cout << "Sent " << bytesSent << " bytes to client" << endl;
+        cout << "Response: " << _responseToSend << endl;
         _responseToSend.clear();
-        // _responseToSend.resize(_responseToSend.length());
     }
     else if (_file)
     {
         if (this->fd == -1)
             this->fd = open(_file->getPath().c_str(), O_RDONLY);
-        if (this->fd == -1) {
+        if (this->fd == -1)
+        {
             perror("open() failed");
             return false;
         }
-        
         char buffer[REQUEST_BUFFER_SIZE];
         ssize_t bytesRead = read(this->fd, buffer, REQUEST_BUFFER_SIZE);
         if (bytesRead == -1) {
@@ -758,6 +757,7 @@ bool    RequestProcessor::sendResponse()
             return true;
         }
         send(_client_socket, buffer, bytesRead, 0);
+        cout << "Sending file: " << buffer << endl;
         cout << "Sent " << bytesRead << " bytes to client" << endl;
     }
     return true;
