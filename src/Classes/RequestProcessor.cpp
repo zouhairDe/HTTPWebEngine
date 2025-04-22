@@ -721,7 +721,7 @@ bool    RequestProcessor::sendResponse()
     if (_client_socket == -1)
         return false;
 
-    cout << "From sendResponse: tHE response size is: " << _responseToSend.length() << endl;
+    cout << "From sendResponse: the response size is: " << _responseToSend.length() << endl;
 
     if (!_responseToSend.empty())
     {
@@ -734,7 +734,7 @@ bool    RequestProcessor::sendResponse()
         _responseToSend.clear();
         // _responseToSend.resize(_responseToSend.length());
     }
-    else
+    else if (_file)
     {
         if (this->fd == -1)
             this->fd = open(_file->getPath().c_str(), O_RDONLY);

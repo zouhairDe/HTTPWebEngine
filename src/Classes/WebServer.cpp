@@ -291,10 +291,12 @@ int		WebServer::handleClientData(RequestProcessor &request) {
 		if (file == nullptr)
 		{
 			request.setResponseToSend(request.ReturnServerErrorPage(Server, 404));
+			cout << "File not found" << endl;
 		}
 		else
 		{
 			request._file = file;
+			// request.fd = open(request._file->getPath().c_str(), O_RDONLY);
 			request.setResponseToSend(request.generateHttpHeaders(Server, 200, file->getSize()));
 			// cerr << red << "Response has been set to: " << request.getResponseToSend() << def << endl;
 		}
