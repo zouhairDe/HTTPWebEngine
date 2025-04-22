@@ -21,6 +21,7 @@ RequestProcessor::RequestProcessor() {
     _content_length = 0;
     _body_size = 0;
     _fully_sent = false;
+    fd = -1;
 }
 
 RequestProcessor::~RequestProcessor() {}
@@ -717,31 +718,47 @@ void RequestProcessor::clear() {
 
 bool    RequestProcessor::sendResponse()
 {
-    if (_client_socket == -1 || _responseToSend.empty())
+    if (_client_socket == -1)
         return false;
-        
-    cout << "From sendResponse: teh response size is: " << _responseToSend.length() << endl;
-    size_t bytesToSend = (size_t)std::min(_responseToSend.length(), (size_t)REQUEST_BUFFER_SIZE);
-    string responseChunk = _responseToSend.substr(0, bytesToSend);
-    int bytesSent = send(getSocket(), responseChunk.c_str(), bytesToSend, 0);
-    cout << "Sending " << bytesSent << " bytes to client" << endl;
-    // cout << "Response chunk: " << responseChunk << endl;
-    if (bytesSent == -1) {
-        perror("send() failed");
-        return false;
+
+    cout << "From sendResponse: tHE response size is: " << _responseToSend.length() << endl;
+
+    if (!_responseToSend.empty())
+    {
+        int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), 0);
+        if (bytesSent == -1) {
+            perror("send() failed");
+            return false;
+        }
+        cout << "Sent " << bytesSent << " bytes to client" << endl;
+        _responseToSend.clear();
+        // _responseToSend.resize(_responseToSend.length());
     }
-
-    _responseToSend.erase(0, bytesSent);
-    _responseToSend.resize(_responseToSend.length());
-
-    cout << "Remaining response to send: " << _responseToSend.length() << " bytes" << endl;
-
-    if (_responseToSend.empty()) {
-        cout << "Response fully sent" << endl;
-        _fully_sent = true;
-    } else {
-        cout << "Response not fully sent, remaining: " << _responseToSend.length() << " bytes" << endl;
-        _fully_sent = false;
+    else
+    {
+        if (this->fd == -1)
+            this->fd = open(_file->getPath().c_str(), O_RDONLY);
+        if (this->fd == -1) {
+            perror("open() failed");
+            return false;
+        }
+        
+        char buffer[REQUEST_BUFFER_SIZE];
+        ssize_t bytesRead = read(this->fd, buffer, REQUEST_BUFFER_SIZE);
+        if (bytesRead == -1) {
+            perror("read() failed");
+            close(this->fd);
+            return false;
+        }
+        if (bytesRead == 0) {
+            cout << "File fully sent" << endl;
+            close(this->fd);
+            this->fd = -1;
+            _fully_sent = true;
+            return true;
+        }
+        send(_client_socket, buffer, bytesRead, 0);
+        cout << "Sent " << bytesRead << " bytes to client" << endl;
     }
     return true;
 }

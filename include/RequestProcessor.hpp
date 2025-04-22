@@ -20,6 +20,7 @@
 
 class Server;
 class Route;
+class File;
 
 class RequestProcessor {
     private:
@@ -43,10 +44,9 @@ class RequestProcessor {
         map<string, string>	_formFields; //for storing form fields
         string				_fileContentType;
 		string				_responseToSend;
-		// char *				_buffer;
 		
-
-    public:
+		
+		public:
 		RequestProcessor();
 		RequestProcessor(string request, string __port, Server *server);
 		~RequestProcessor();
@@ -60,7 +60,8 @@ class RequestProcessor {
 		void				parseTextPlainUpload(const string &body);
 		Server				*_server;
 		Route 				*_route;
-
+		File				*_file;
+		int					fd;
 		bool				receiveRequest(int client_socket);
 		string				generateHttpHeaders(Server *server, int status_code, long fileSize);
 		string 				generateContentType();

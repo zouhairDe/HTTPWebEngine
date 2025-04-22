@@ -18,8 +18,9 @@ File::File(string path) : _path(path), _size(0), _data(nullptr) {
 		cerr << "Failed to open the file.\n";
 		return ;
 	}
-	file.read(this->_data, this->_size);
+	file.read(this->_data, this->_size);//hm manprotectiwch hna  azeggaf?
 	this->_data[this->_size] = '\0';
+	// this->_offset = 0;
 }
 
 File::File() {}//huh?
@@ -63,4 +64,28 @@ char	*File::getData() const {
 
 string	File::getPath() const {
 	return (this->_path);
+}
+
+// void	File::setOffset(size_t offset) {
+// 	this->_offset = offset;
+// }
+
+// size_t	File::getOffset() const {
+// 	return (this->_offset);
+// }
+
+void	File::trimOldData(size_t pos)
+{
+	char	*newData = new char[this->_size - pos + 1];
+	memcpy(newData, this->_data + pos, this->_size - pos);
+	newData[this->_size - pos] = '\0';
+	delete[] this->_data;
+	this->_data = newData;
+	this->_size -= pos;
+	return ;
+}
+
+void	File::clear() {
+	delete[] this->_data;
+	this->_data = nullptr;
 }

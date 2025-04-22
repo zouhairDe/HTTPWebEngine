@@ -183,25 +183,44 @@ void	WebServer::run(){
 				}
 			}
 		}
-		
 		/* loop over requests to finish sending data */
 		for(map<int, RequestProcessor>::iterator it = requests.begin(); it != requests.end(); ++it) {
-			int client_socket = it->first;
+			int client_sockett = it->first;
 			RequestProcessor &request = it->second;
 			if (request.isSent()) {
-				// cout << bold << green << "Request fully sent" << def << endl;
+
+
+				// All data sent, revert to read-only monitoring
+				struct epoll_event ev;
+				ev.events = EPOLLIN | EPOLLET;
+				ev.data.fd = client_sockett;
+				epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_sockett, &ev);
+
+
+				cout << "From MAP IT , WE ARE DONE SENDING" << endl;
 				// request.clear();
-				if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_socket, NULL) == -1) {
+				if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_sockett, NULL) == -1) {
 					perror("Epoll ctl failed");
 					exit(EXIT_FAILURE);
 				}
-				close(client_socket);
-				requests.erase(client_socket);
+				close(client_sockett);
+				requests.erase(client_sockett);
 			} else {
-				// cout << bold << green << "Request not fully sent" << def << endl;
+
+				struct epoll_event ev;
+				ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+				ev.data.fd = client_sockett;
+
+
+				if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_sockett, &ev) == -1) {
+					perror("Epoll ctl modify failed");
+					exit(EXIT_FAILURE);
+				}
 				request.sendResponse();
+				cout << bold << green << "Request not fully sent" << def << endl;
 			}
 		}
+		
     }
 }
 
@@ -275,16 +294,13 @@ int		WebServer::handleClientData(RequestProcessor &request) {
 		}
 		else
 		{
-			string str;
-			str = request.generateHttpHeaders(Server, 200, file->getSize());
-			str.append(file->getData(), file->getSize());
-			str += "\r\n";
-			request.setResponseToSend(str);
+			request._file = file;
+			request.setResponseToSend(request.generateHttpHeaders(Server, 200, file->getSize()));
 			// cerr << red << "Response has been set to: " << request.getResponseToSend() << def << endl;
 		}
 		// send(request.getSocket(), request.getResponseToSend().c_str(), request.getResponseToSend().size(), 0);
 		request.sendResponse();
-		delete file;
+		// delete file;
 	} else if (request.getMethod() == "POST") {
 		POSTResponse postResponse(&request);
 		string response = postResponse.generateResponse();
