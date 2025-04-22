@@ -104,7 +104,7 @@ string RequestProcessor::generateHttpHeaders(Server *server, int status_code, lo
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     _Http_headers += "Content-Type: " + (status_code >= 200 && status_code < 300 ? generateContentType() : "text/html") + "\r\n";
     _Http_headers += "Content-Length: " + cpp11_toString(fileSize) + "\r\n";
-    _Http_headers += "Connection: \r\n";//to change ater , from request
+    _Http_headers += "Connection: close \r\n";//to change ater , from request
     _Http_headers += "\r\n";
     return _Http_headers;
 }
@@ -620,7 +620,7 @@ string RequestProcessor::generateContentType()
     if (_uri.find(".flac") != string::npos) {
         return "audio/flac";
     }
-    return "application/octet-stream"; // Default binary type
+    return "text/html"; // Default binary type
 }
 
 
@@ -661,7 +661,7 @@ string RequestProcessor::getExtensionFromContentType(const string& contentType) 
         return "tar";
     if (contentType == "application/x-gzip")
         return "gz";
-    return "bin"; // Default binary extension
+    return "text/html"; // Default binary extension
 }
 
 
@@ -716,61 +716,115 @@ void RequestProcessor::clear() {
     _body_size = 0;
 }
 
-bool    RequestProcessor::sendResponse()
-{
-    if (_client_socket == -1)
-        return false;
+string RequestProcessor::createResponse(void) {
+    string response;
+    if (this->getMethod() == "GET") {
+		Server *Server = this->_server;
+		if (Server == nullptr) {
+			cerr << "Error: Server not found" << endl;
+			return "";
+		}
+		Route *route = Server->getRouteFromUri(this->getUri());
+		if (route == nullptr) {
+			response = this->ReturnServerErrorPage(Server, 404);
+			cout << "Route not found" << endl;
+		} else {
+            this->_route = route;
+            File *file = this->GETResponse(Server->getRoot(), this->getUri());
+            if (file == nullptr) {
+                response = this->ReturnServerErrorPage(Server, 404);
+                cout << "File not found" << endl;
+            } else {
+                this->_file = file;
+                response = this->generateHttpHeaders(Server, 200, file->getSize());
+            }
+        }
+	} else if (this->getMethod() == "POST") {
+		POSTResponse postResponse(this);
+		response = postResponse.generateResponse();
+		send(this->getSocket(), response.c_str(), response.length(), 0);
+		
+		if (!this->getFileContent().empty()) {
+			string uploadPath = "./body/" + this->getStoreFileName();
+			ofstream outFile(uploadPath.c_str(), ios::binary);
+			if (outFile.is_open()) {
+				outFile.write(this->getFileContent().c_str(), this->getFileContent().length());
+				outFile.close();
+			} else {
+				cerr << "Failed to save uploaded file" << endl;
+			}
+		} else {
+			cout << bold << red << "No file uploaded" << def << endl;
+		}
+	}
+    else {
+        cerr << "Unsupported method: " << _method << endl;
+        return "";
+    }
+    return response;
+}
 
-    cout << "From sendResponse: the response size is: " << _responseToSend.length() << endl;
-    if (!_responseToSend.empty())
-    {
+int    RequestProcessor::sendResponse(void)
+{
+    if (_client_socket == -1) {
+        cout << "Client socket is closed" << endl;
+        return (-1);
+    }
+
+    if (_responseToSend.empty()) {
+
+        _responseToSend = this->createResponse();
+
+        cout << "Sending response: " << _responseToSend << endl;
         int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), 0);
         if (bytesSent == -1) {
             perror("send() failed");
-            return false;
+            return (-1);
         }
         cout << "Sent " << bytesSent << " bytes to client" << endl;
-        cout << "Response: " << _responseToSend << endl;
-        _responseToSend.clear();
+        cout << "Response sent: " << _responseToSend << endl;
     }
-    else if (_file)
+
+    if (_file)
     {
         if (this->fd == -1)
             this->fd = open(_file->getPath().c_str(), O_RDONLY);
-        if (this->fd == -1)
-        {
+        if (this->fd == -1) {
             perror("open() failed");
-            return false;
+            return (-1);
         }
         char buffer[REQUEST_BUFFER_SIZE];
-        ssize_t bytesRead = read(this->fd, buffer, REQUEST_BUFFER_SIZE);
+        ssize_t bytesRead = read(this->fd, buffer, REQUEST_BUFFER_SIZE - 1);
+        cout << "Sent " << bytesRead << " bytes to client" << endl;
         if (bytesRead == -1) {
             perror("read() failed");
             close(this->fd);
-            return false;
+            this->fd = -1;
+            _fully_sent = true;
+            return (-1);
         }
-        if (bytesRead == 0) {
+        if ((size_t)bytesRead == 0) {
             cout << "File fully sent" << endl;
             close(this->fd);
             this->fd = -1;
             _fully_sent = true;
-            return true;
+            return (0);
         }
+        buffer[bytesRead] = '\0';
         send(_client_socket, buffer, bytesRead, 0);
         cout << "Sending file: " << buffer << endl;
-        cout << "Sent " << bytesRead << " bytes to client" << endl;
+    } else {
+        cout << "No file to send" << endl;
+        _fully_sent = true;
     }
-    return true;
+    return (1);
 }
 
 bool	RequestProcessor::receiveRequest(int client_socket) {
     char buffer[REQUEST_BUFFER_SIZE] = {0};
     this->_client_socket = client_socket;
-    // this->_server = server;
-    // this->_port = port;
     while (true) {
         int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
-        // cout << "bytesReceived: " << bytesReceived << endl;
         if (bytesReceived > 0) {
             buffer[bytesReceived] = '\0';
             _request.append(buffer, bytesReceived);
@@ -782,10 +836,10 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
             _client_socket = -1;
             return true;  // client sd connection
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            break ;  // no more data to read. took me 18 hours to figure this out, goodjob
+            break ;
         } else {
             perror("recv() failed");
-            return false;  // if this: 9awdnaha
+            return false;
         }
     }
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
@@ -800,7 +854,6 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
         if (this->getMethod() == "GET") {
             return true;
         } else if (this->getMethod() == "POST") {
-            // cout << _body_size << "B/" << _content_length << "B" << endl;
             if (_body_size >= _content_length) {
                 this->parseBody(_request);
                 return true;

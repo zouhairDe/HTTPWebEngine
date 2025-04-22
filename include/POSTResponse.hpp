@@ -18,6 +18,9 @@
 #include "File.hpp"
 #include "Server.hpp"
 
+class RequestProcessor;
+class Server;
+
 class POSTResponse {
     public:
     POSTResponse(RequestProcessor *Request);

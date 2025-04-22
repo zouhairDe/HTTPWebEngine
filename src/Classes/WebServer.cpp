@@ -13,7 +13,6 @@
 # include "WebServer.hpp"
 # include "RequestProcessor.hpp"
 // # include "GETResponse.hpp"
-# include "POSTResponse.hpp"
 
 #define MAX_EVENTS 32
 
@@ -117,6 +116,27 @@ void WebServer::CheckFiles()
 // void handleClientData
 // }
 
+int modifySocket(int epoll_fd, int socket, int events)
+{
+    struct epoll_event ev;
+    ev.events = events;
+    ev.data.fd = socket;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socket, &ev) == -1) {
+        perror("Epoll ctl modify failed");
+        return (1);
+    }
+    return (0);
+}
+
+int deleteSocket(int epoll_fd, int socket)
+{
+	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, socket, NULL) == -1) {
+		perror("Epoll ctl delete failed");
+		return (1);
+	}
+	return (0);
+}
+
 void	WebServer::run(){
 	struct epoll_event events[MAX_EVENTS];
 
@@ -164,63 +184,27 @@ void	WebServer::run(){
 			if (new_connection)
 				continue ;
 			int client_socket = events[i].data.fd;
-			if (requests[client_socket].receiveRequest(client_socket)) {
+			if (requests[client_socket].isSent() || \
+				requests[client_socket].receiveRequest(client_socket)) {
 				requests[client_socket].log();
-				handleClientData(requests[client_socket]);
-				requests[client_socket].sendResponse();
-				if (requests[client_socket].getConnection() == "close") {
-					if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_socket, NULL) == -1) {
-						perror("Epoll ctl failed");
-						exit(EXIT_FAILURE);
-					};
-					// cout << bold << green << "CLOSED" << def << endl;
+				if (requests[client_socket].sendResponse() == 1)
+					modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLOUT | EPOLLET);
+				
+				if (requests[client_socket].getConnection() == "keep-alive") {
+					cout << bold << green << "KEEP-ALIVE" << def << endl;
+					if (requests[client_socket].isSent()) {
+						cout << "send? " << requests[client_socket].isSent() << endl;
+						modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLET);
+						requests[client_socket].clear();
+					}
+				} else {
+					deleteSocket(epoll_fd, client_socket);
 					close(client_socket);
 					requests.erase(client_socket);
-				} else {
-					// cout << bold << green << "KEEP-ALIVE" << def << endl;
-					requests[client_socket].clear();
-					
+					cout << bold << green << "CLOSED" << def << endl;
 				}
 			}
 		}
-		/* loop over requests to finish sending data */
-		for(map<int, RequestProcessor>::iterator it = requests.begin(); it != requests.end(); ++it) {
-			int client_sockett = it->first;
-			RequestProcessor &request = it->second;
-			if (request.isSent()) {
-
-
-				// All data sent, revert to read-only monitoring
-				struct epoll_event ev;
-				ev.events = EPOLLIN | EPOLLET;
-				ev.data.fd = client_sockett;
-				epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_sockett, &ev);
-
-
-				cout << "From MAP IT , WE ARE DONE SENDING" << endl;
-				// request.clear();
-				if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_sockett, NULL) == -1) {
-					perror("Epoll ctl failed");
-					exit(EXIT_FAILURE);
-				}
-				close(client_sockett);
-				requests.erase(client_sockett);
-			} else {
-
-				struct epoll_event ev;
-				ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
-				ev.data.fd = client_sockett;
-
-
-				if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_sockett, &ev) == -1) {
-					perror("Epoll ctl modify failed");
-					exit(EXIT_FAILURE);
-				}
-				request.sendResponse();
-				cout << bold << green << "Request not fully sent" << def << endl;
-			}
-		}
-		
     }
 }
 
@@ -271,60 +255,10 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 /*
 	Handle the client data, meaning when the I/O events are ready to read from the client
 */
-int		WebServer::handleClientData(RequestProcessor &request) {
-	if (request.getMethod() == "GET") {
-		// string _responseToSend;
-		Server *Server = request._server;
-		if (Server == nullptr) {
-			cerr << "Error: Server not found" << endl;
-			return -1;
-		}
-		Route *route = Server->getRouteFromUri(request.getUri());
-		if (route == nullptr) {
-			request.setResponseToSend(request.ReturnServerErrorPage(Server, 404));
-			cout << "Route not found" << endl;
-			// send(request.getSocket(), _responseToSend.c_str(), _responseToSend.size(), 0);
-			request.sendResponse();
-			request.setIsSent(true);
-			return -1;
-		}
-		request._route = route;
-		File *file = request.GETResponse(Server->getRoot(), request.getUri());
-		if (file == nullptr)
-		{
-			request.setResponseToSend(request.ReturnServerErrorPage(Server, 404));
-			request.sendResponse();
-			request.setIsSent(true);
-			cout << "File not found" << endl;
-		}
-		else
-		{
-			request._file = file;
-			request.setResponseToSend(request.generateHttpHeaders(Server, 200, file->getSize()));
-			request.sendResponse();
-		}
-	} else if (request.getMethod() == "POST") {
-		POSTResponse postResponse(&request);
-		string response = postResponse.generateResponse();
-		send(request.getSocket(), response.c_str(), response.length(), 0);
-		
-		if (!request.getFileContent().empty()) {
-			string uploadPath = "./body/" + request.getStoreFileName();
-			ofstream outFile(uploadPath.c_str(), ios::binary);
-			if (outFile.is_open()) {
-				outFile.write(request.getFileContent().c_str(), request.getFileContent().length());
-				outFile.close();
-				// cout << bold << green << "File saved: " << uploadPath << def << endl;
-			} else {
-				cerr << "Failed to save uploaded file" << endl;
-			}
-		} else {
-			cout << bold << red << "No file uploaded" << def << endl;
-		}
-	}
-
-	return 1;
-}
+// int		WebServer::handleClientData(RequestProcessor &request) {
+	
+// 	return 1;
+// }
 
 /*
 	Find the server that the client is trying to connect to

@@ -16,6 +16,8 @@
 # include "Global.hpp"
 # include "Server.hpp"
 
+# include "POSTResponse.hpp"
+
 # define REQUEST_BUFFER_SIZE 1024 * 16
 
 class Server;
@@ -63,6 +65,7 @@ class RequestProcessor {
 		File				*_file;
 		int					fd;
 		bool				receiveRequest(int client_socket);
+		string				createResponse(void);
 		string				generateHttpHeaders(Server *server, int status_code, long fileSize);
 		string 				generateContentType();
 		string				getStatusMessage(int status_code) const;
@@ -72,7 +75,7 @@ class RequestProcessor {
 		string  			ReturnServerErrorPage(Server *server, int status_code);
 		File*				GETResponse(string root, string fullPath) const;
 		string 				processIndexFiles(vector<string> &indexFiles) const;
-		bool				sendResponse();
+		int					sendResponse();
 
 		/*getters*/
 		string				getRequest() const;
