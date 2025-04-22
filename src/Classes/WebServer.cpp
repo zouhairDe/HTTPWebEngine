@@ -12,7 +12,7 @@
 
 # include "WebServer.hpp"
 # include "RequestProcessor.hpp"
-# include "GETResponse.hpp"
+// # include "GETResponse.hpp"
 # include "POSTResponse.hpp"
 
 #define MAX_EVENTS 32
