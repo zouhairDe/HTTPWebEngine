@@ -378,6 +378,27 @@ int    RequestProcessor::parseHeaders(string req) {
             }
         }
     }
+
+    Server *server = this->_server;
+    if (server->getFriends().size() > 0)
+    {
+        for ( size_t k = 0; k < server->getFriends().size(); k++)
+        {
+            Server *ss = new Server(server->getFriends()[k]);
+            vector<string> ss_names = ss->getServerNames();
+            for (size_t j = 0; j < ss_names.size(); j++)
+            {
+                if (ss_names[j] == this->getHost())
+                {
+                    this->_server = ss;
+                    break ;
+                }
+                delete ss;
+            }
+        }
+    }
+
+
     
     return (0);
 }
@@ -715,6 +736,8 @@ void RequestProcessor::clear() {
     _formFields.clear();
     _headers_parsed = false;
     _body_size = 0;
+    // delete _server;
+    // _server = nullptr;
 }
 
 string RequestProcessor::createResponse(void) {
@@ -792,14 +815,11 @@ int    RequestProcessor::sendResponse(void)
 
         _responseToSend = this->createResponse();
 
-        // cout << "Sending response: " << _responseToSend << endl;
         int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), 0);
         if (bytesSent == -1) {
             perror("send() failed");
             return (-1);
         }
-        // cout << "Sent " << bytesSent << " bytes to client" << endl;
-        // cout << "Response sent: " << _responseToSend << endl;
     }
 
     if (_file)
@@ -846,8 +866,8 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
             buffer[bytesReceived] = '\0';
             _request.append(buffer, bytesReceived);
             _body_size += bytesReceived;
-            if (string(buffer, bytesReceived).find("\r\n\r\n") != string::npos && \
-                _headers_parsed == false) {
+            if (string(buffer, bytesReceived).find("\r\n\r\n") != \
+                string::npos && _headers_parsed == false) {
                 _body_size -= (_request.find("\r\n\r\n") + 4);
             }
         } else if (bytesReceived == 0) {
@@ -862,7 +882,6 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
     }
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
         if (this->parseHeaders(_request) == 0) {
-            // cout << "headers: " << _request << endl;
             _headers_parsed = true;
         } else {
             cerr << "Error parsing request" << endl;
@@ -878,10 +897,8 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
                 cout << "No content length specified" << endl;
                 return false;
             }
-            cout << "currently: " << _body_size << "b/" << _content_length << "b" << endl;
             if (_body_size >= _content_length) {
                 this->parseBody(_request);
-                cout << "POST body size: " << _body_size << "b" << endl;
                 return true;
             }
         } else {

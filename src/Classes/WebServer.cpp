@@ -170,15 +170,17 @@ void	WebServer::run(){
 			// cout << bold << green << "Event " << i << " on fd: " << events[i].data.fd << def << endl;
 			bool new_connection = false;
 			for (size_t s = 0; s < Servers.size(); s++) {
-				Server *server = &Servers[s];
+				Server *server = &Servers[s];//new Server(Servers[s]);
 				if (events[i].data.fd == server->Socket) {
 					int client_socket = handleNewConnection(server->Socket, epoll_fd);
 					requests[client_socket] = RequestProcessor();
 					requests[client_socket].setPort(server->getPort());
+
 					requests[client_socket]._server = server;
 					new_connection = true;
 					break ;
 				}
+				// delete server;
 			}
 			if (new_connection)
 				continue ;
