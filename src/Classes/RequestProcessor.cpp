@@ -758,7 +758,7 @@ string RequestProcessor::createResponse(void) {
         std::string filename = getStoreFileName();
         std::string file_path = store_path;
 
-        generateHttpHeaders(_server, 200, 0);
+        response = generateHttpHeaders(_server, 200, 0);
 		send(this->getSocket(), response.c_str(), response.length(), 0);
 		
 		if (!this->getFileContent().empty()) {
