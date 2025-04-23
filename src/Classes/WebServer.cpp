@@ -165,10 +165,9 @@ void	WebServer::run(){
 		int event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
 		if (event_count == -1) {
 			perror("Epoll wait failed");
-			exit(EXIT_FAILURE);
 		}
 		for (int i = 0; i < event_count; i++) {
-			cout << bold << green << "Event " << i << " on fd: " << events[i].data.fd << def << endl;
+			// cout << bold << green << "Event " << i << " on fd: " << events[i].data.fd << def << endl;
 			bool new_connection = false;
 			for (size_t s = 0; s < Servers.size(); s++) {
 				Server *server = &Servers[s];
@@ -198,10 +197,10 @@ void	WebServer::run(){
 						requests[client_socket].clear();
 					}
 				} else {
+					cout << bold << green << "CLOSED" << def << endl;
 					deleteSocket(epoll_fd, client_socket);
 					close(client_socket);
 					requests.erase(client_socket);
-					cout << bold << green << "CLOSED" << def << endl;
 				}
 			}
 		}

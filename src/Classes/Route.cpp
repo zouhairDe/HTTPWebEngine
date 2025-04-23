@@ -99,7 +99,7 @@ void Route::setProperty(const string &key, const string &value)
 	else
 	{
 		throw runtime_error("\033[31m Unknown property: " + key + ",  for Route: " + RouteName);
-		exit(1);
+		return ;
 	}
 }
 

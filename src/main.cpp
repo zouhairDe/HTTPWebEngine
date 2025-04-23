@@ -25,6 +25,7 @@ int main(int ac, char **av)
 		// webserv.printData();
 		webserv.CheckFiles();
 		webserv.run();
+        cout << bold << green << "Server exited???? WHYY?" << def << endl;
     }
     catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
