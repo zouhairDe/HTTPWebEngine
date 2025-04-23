@@ -5,6 +5,11 @@
         "ostream": "cpp",
         "string": "cpp",
         "*.tcc": "cpp",
-        "stdexcept": "cpp"
+        "stdexcept": "cpp",
+        "string_view": "cpp",
+        "unordered_map": "cpp",
+        "ranges": "cpp",
+        "deque": "cpp",
+        "vector": "cpp"
     }
 }

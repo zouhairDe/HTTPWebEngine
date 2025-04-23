@@ -44,6 +44,8 @@ class RequestProcessor {
         map<string, string>	_formFields; //for storing form fields
         string				_fileContentType;
 		string				_responseToSend;
+		string				_authorization;
+		vector<string>		dangerousPatterns;
 		
 		
 		public:
@@ -62,6 +64,7 @@ class RequestProcessor {
 		Route 				*_route;
 		File				*_file;
 		int					fd;
+		void    			init_dangerousePatterns();
 		bool				receiveRequest(int client_socket);
 		string				createResponse(void);
 		string				generateHttpHeaders(Server *server, int status_code, long fileSize);
@@ -71,9 +74,12 @@ class RequestProcessor {
 		string  			createDirectoryListing(const string& path) const;
 		File*				handleDirectory(const string& path) const;
 		string  			ReturnServerErrorPage(Server *server, int status_code);
-		File*				GETResponse(string root, string fullPath) const;
+		File*				GETResponse(string root, string fullPath);
 		string 				processIndexFiles(vector<string> &indexFiles) const;
 		int					sendResponse();
+		string 				DELETEResponse(string root, string requestedPath);
+		// string				isUriDangerous(string uri);
+		bool 				isUriBad(string uri);
 
 		/*getters*/
 		string				getRequest() const;

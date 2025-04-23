@@ -17,6 +17,7 @@ string trim(const string &str);
 vector<string> splitByString(string str, string delimiter);
 
 RequestProcessor::RequestProcessor() {
+    init_dangerousePatterns();
     _headers_parsed = false;
     _content_length = 0;
     _body_size = 0;
@@ -103,7 +104,7 @@ string RequestProcessor::generateHttpHeaders(Server *server, int status_code, lo
     _Http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     _Http_headers += "Content-Type: " + (status_code >= 200 && status_code < 300 ? generateContentType() : "text/html") + "\r\n";
-    if (fileSize > 0)
+    // if (fileSize > 0)
         _Http_headers += "Content-Length: " + cpp11_toString(fileSize) + "\r\n";
     _Http_headers += "Connection: close \r\n";//to change ater , from request
     _Http_headers += "\r\n";
@@ -202,42 +203,43 @@ string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
     return "";
 }
 
-File* RequestProcessor::GETResponse(string root, string requestedPath) const {
-    string routeName = _route->getRouteName();
+File* RequestProcessor::GETResponse(string root, string requestedPath) {
     string reqUri = this->getUri();
     // cout << "Request URI: " << reqUri << endl;
-    // cout << "Requested Path: " << requestedPath << endl;
+    cout << "Requested Path: " << requestedPath << endl;
     // Normalize route name and create base path
     string basePath = "/tmp/www/" + root + reqUri.substr(1);
     // cout << "Base path: " << basePath << endl;
-    // Handle root path - search for index files
     if (requestedPath == "/") {
+        Route *route = _server->getRouteFromUri("/");
+        _route = route;
         vector<string> indexFiles = _route->getRouteIndexFiles();
-
         basePath = processIndexFiles(indexFiles);
-        if (basePath.empty()) {
-            // cout << "No index file found for:" << basePath << ", returning directory listing" << endl;
-            return handleDirectory(basePath);//ghir ila dirlisting == on
+        cout << "Base path after processing index files: " << basePath << endl;
+        if (basePath.empty() && _route->getRouteDirectoryListing()) {
+            return handleDirectory(basePath);
+        }
+        else if (basePath.empty()) {
+            return NULL;
         }
     }
 
-    // cout << "Final base path: " << basePath << endl;
-
-
-
+    Route *route = _server->getRouteFromUri(getUri());
+    if (!route) {
+        cout << "Route not found for URI: " << getUri() << endl;
+        return NULL;
+    } else
+        _route = route;
     struct stat pathStat;
     if (stat(basePath.c_str(), &pathStat) == -1) {
         return NULL;
     }
-
-    //first check if its a file
     if (S_ISREG(pathStat.st_mode)) {
         return GetFile(basePath);
     }
-    if (S_ISDIR(pathStat.st_mode)) {
+    if (S_ISDIR(pathStat.st_mode) && _route->getRouteDirectoryListing()) {
         return handleDirectory(basePath);
     }
-    // If it's neither a file nor a directory ???? wachno mok?, return NULL
     return NULL;
 }
 
@@ -339,7 +341,7 @@ int    RequestProcessor::parseHeaders(string req) {
     }
     
     _method = requestLine[0];
-    if (_method != "GET" && _method != "POST") {
+    if (_method != "GET" && _method != "POST" && _method != "DELETE") {
         cerr << "Unsupported HTTP method: " << _method << endl;
         return (1);
     }
@@ -375,6 +377,8 @@ int    RequestProcessor::parseHeaders(string req) {
                 _connection = value;
             } else if (key == "Cookie") {
                 _cookie = value;
+            } else if (key == "Authorization") {
+                _authorization = value;
             }
         }
     }
@@ -403,7 +407,55 @@ int    RequestProcessor::parseHeaders(string req) {
     return (0);
 }
 
+
+/*
+Default Nginx Behavior: Returns 403 Forbidden or 405 Method Not Allowed for DELETE / requests.​
+
+To Handle DELETE Requests: Configure Nginx to proxy these requests to your backend server.​
+
+Security: Implement authentication, validation, and logging to protect against unauthorized deletions.
+*/
+string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
+    string routeName = _route->getRouteName();
+    string reqUri = this->getUri();
+    string basePath = "/tmp/www/" + root + reqUri.substr(1);
+    cout << "Base path: " << basePath << endl;
+    // Handle root path - search for index files
+    if (requestedPath == "/") {
+        return this->generateHttpHeaders(_server, FORBIDDEN_STATUS_CODE, 0);
+    }
+    struct stat pathStat;
+    if (stat(basePath.c_str(), &pathStat) == -1)
+        return this->generateHttpHeaders(_server, NOT_FOUND_STATUS_CODE, 0);
+
+    if (S_ISREG(pathStat.st_mode)) {
+        if (remove(basePath.c_str()) == 0) {
+            cout << bold << green << "File at " << basePath << " deleted successfully." << def << endl;
+            return this->generateHttpHeaders(_server, OK_STATUS_CODE, 0);
+        } else {
+            return this->generateHttpHeaders(_server, FORBIDDEN_STATUS_CODE, 0);
+        }
+    }
+
+    if (S_ISDIR(pathStat.st_mode)) {
+            return this->generateHttpHeaders(_server, FORBIDDEN_STATUS_CODE, 0);
+    }
+    return this->generateHttpHeaders(_server, OK_STATUS_CODE, 0);
+}
+
 int RequestProcessor::parseBody(string req) {
+    if (_method == "DELETE") {
+        // DELETE requests typically don't have a body, but we can still handle it wnsiftoh l cgi
+        // if we have a cgi, pass it, else try delete the file
+
+        cout << "DELETE request received" << endl;
+        cout << "URI: " << _uri << endl;
+        cout << "Query: " << _query << endl;
+
+        return (0);
+    }
+
+
     if (_method == "POST") {
         size_t headerEnd = req.find("\r\n\r\n");
         if (headerEnd == string::npos) {
@@ -422,7 +474,7 @@ int RequestProcessor::parseBody(string req) {
         if (headerEnd + 4 < req.length()) {
             _body = req.substr(headerEnd + 4); // Skip "\r\n\r\n"
         } else if (headerEnd + 2 < req.length()) {
-            _body = req.substr(headerEnd + 2); // Skip "\n\n" for non-standard
+            _body = req.substr(headerEnd + 2);
         }
 
         if (_content_type.find("application/x-www-form-urlencoded") != string::npos) {
@@ -451,15 +503,7 @@ int RequestProcessor::parseBody(string req) {
             _fileContent = _body;
             _filename = "upload_" + cpp11_toString(time(NULL)) + ".json";
             _fileContentType = "application/json";
-        }//now we add support for images and binaries
-        // else if (_content_type.find("image/") != string::npos || _content_type.find("application/octet-stream") != string::npos) {
-        //     // Handle binary uploads (images, etc.)
-        //     _fileContent = _body;
-        //     _filename = "upload_" + cpp11_toString(time(NULL)) + "." + 
-        //                 getExtensionFromContentType(_content_type);
-        //     _fileContentType = _content_type;
-        // }
-        else {
+        } else {
             cerr << "Unsupported Content-Type: " << _content_type << endl;
             return (1);
         }
@@ -642,7 +686,7 @@ string RequestProcessor::generateContentType()
     if (_uri.find(".flac") != string::npos) {
         return "audio/flac";
     }
-    return "text/html"; // Default binary type
+    return "text/html";
 }
 
 
@@ -740,20 +784,101 @@ void RequestProcessor::clear() {
     // _server = nullptr;
 }
 
+void    RequestProcessor::init_dangerousePatterns() {
+    dangerousPatterns.push_back("..");
+    dangerousPatterns.push_back("/./");
+    dangerousPatterns.push_back("%2e");
+    dangerousPatterns.push_back("%2e.");
+    dangerousPatterns.push_back(".%2e");
+    dangerousPatterns.push_back("%2e%2e");
+
+    dangerousPatterns.push_back("%2f");
+    dangerousPatterns.push_back("%2F");
+    dangerousPatterns.push_back("%5c");
+    dangerousPatterns.push_back("%5C");
+
+    dangerousPatterns.push_back("%00"); dangerousPatterns.push_back("%01");
+    dangerousPatterns.push_back("%02"); dangerousPatterns.push_back("%03");
+    dangerousPatterns.push_back("%04"); dangerousPatterns.push_back("%05");
+    dangerousPatterns.push_back("%06"); dangerousPatterns.push_back("%07");
+    dangerousPatterns.push_back("%08"); dangerousPatterns.push_back("%09");
+    dangerousPatterns.push_back("%0a"); dangerousPatterns.push_back("%0b");
+    dangerousPatterns.push_back("%0c"); dangerousPatterns.push_back("%0d");
+    dangerousPatterns.push_back("%0e"); dangerousPatterns.push_back("%0f");
+
+    dangerousPatterns.push_back("%10"); dangerousPatterns.push_back("%11");
+    dangerousPatterns.push_back("%12"); dangerousPatterns.push_back("%13");
+    dangerousPatterns.push_back("%14"); dangerousPatterns.push_back("%15");
+    dangerousPatterns.push_back("%16"); dangerousPatterns.push_back("%17");
+    dangerousPatterns.push_back("%18"); dangerousPatterns.push_back("%19");
+    dangerousPatterns.push_back("%1a"); dangerousPatterns.push_back("%1b");
+    dangerousPatterns.push_back("%1c"); dangerousPatterns.push_back("%1d");
+    dangerousPatterns.push_back("%1e"); dangerousPatterns.push_back("%1f");
+
+    dangerousPatterns.push_back("%22"); // "
+    dangerousPatterns.push_back("%27"); // '
+    dangerousPatterns.push_back("%3c"); dangerousPatterns.push_back("%3C"); // <
+    dangerousPatterns.push_back("%3e"); dangerousPatterns.push_back("%3E"); // >
+    dangerousPatterns.push_back("%3b"); dangerousPatterns.push_back("%3B"); // ;
+    dangerousPatterns.push_back("%26"); // &
+    dangerousPatterns.push_back("%7c"); dangerousPatterns.push_back("%7C"); // |
+}
+
+
+
+bool RequestProcessor::isUriBad(std::string uri) {
+    for (size_t i = 0; i < dangerousPatterns.size(); i++) {
+        if (uri.find(dangerousPatterns[i]) != std::string::npos) {
+            std::cout << "⚠️ Dangerous pattern found in URI: " << dangerousPatterns[i] << std::endl;
+            return true;
+        }
+    }
+    return false;
+}
+
+// string RequestProcessor::isUriDangerous(string uri) {
+//     string base_path = "/tmp/www/" + this->_server->getRoot() + uri.substr(1);
+// 	cout << "Base path: " << base_path << endl;
+// 	char resolvedPath[PATH_MAX];
+//     if (!realpath(base_path.c_str(), resolvedPath)) {
+//         // realpath failed -> path doesn't exist or is invalid
+// 		cout << red << "Path doesn't exist or is invalid: " << base_path << def << endl;
+//         return this->generateHttpHeaders(_server, NOT_FOUND_STATUS_CODE, 0);
+//     }
+
+//     string absPath(resolvedPath);
+//     cout << green << "Resolved path: " << absPath << endl;
+
+//     // Make sure the file is INSIDE /tmp/www
+//     if (absPath.rfind("/tmp/www/", 0) != 0) {
+//         // Path is outside /tmp/www
+//         cout << blue << "Path is outside /tmp/www, path is: " << absPath << endl;
+//         return this->generateHttpHeaders(_server, FORBIDDEN_STATUS_CODE, 0);
+//     }
+//     return "";
+// }
+
 string RequestProcessor::createResponse(void) {
     string response;
+    if (isUriBad(this->getUri())) { // && isUriDangerous(this->getUri())) {
+        cout << red << "Dangerous URI detected: " << this->getUri() << def << endl;
+        response = this->ReturnServerErrorPage(_server, FORBIDDEN_STATUS_CODE);//need to change this to server certain error page not dima 404
+        return response;
+    }
     if (this->getMethod() == "GET") {
 		Server *Server = this->_server;
 		if (Server == nullptr) {
 			cerr << "Error: Server not found" << endl;
 			return "";
 		}
-		Route *route = Server->getRouteFromUri(this->getUri());
-		if (route == nullptr) {
-			response = this->ReturnServerErrorPage(Server, 404);
-			cout << "Route not found" << endl;
-		} else {
-            this->_route = route;
+		// Route *route = Server->getRouteFromUri(this->getUri());
+        // cout << "getUri: " << this->getUri() << endl;
+		// if (route == nullptr) {
+		// 	response = this->ReturnServerErrorPage(Server, 404);
+		// 	cout << "Route not found-get" << endl;
+		// } else
+        // {
+            // this->_route = route;
             File *file = this->GETResponse(Server->getRoot(), this->getUri());
             if (file == nullptr) {
                 response = this->ReturnServerErrorPage(Server, 404);
@@ -762,22 +887,12 @@ string RequestProcessor::createResponse(void) {
                 this->_file = file;
                 response = this->generateHttpHeaders(Server, 200, file->getSize());
             }
-        }
+        // }
 	} else if (this->getMethod() == "POST") {
         string store_path = "./body/";
-        Route *route = _server->getRouteFromUri("\"" + getUri() + "\"");
+        Route *route = _server->getRouteFromUri(getUri());
         if (route && !route->getUploadStore().empty())
-            store_path = route->getUploadStore();
-        
-        //create the directory if it does not exist
-        if (mkdir(store_path.c_str(), 0777) == -1)
-        {
-            if (errno != EEXIST)
-            {
-                std::cerr << "Error creating directory: " << std::endl;
-                return "";
-            }
-        }
+            store_path = "/tmp/www/" + route->getUploadStore(), cout << "Upload store pathhhhhh: " << store_path << endl;
         std::string filename = getStoreFileName();
         std::string file_path = store_path;
 
@@ -785,8 +900,9 @@ string RequestProcessor::createResponse(void) {
 		send(this->getSocket(), response.c_str(), response.length(), 0);
 		
 		if (!this->getFileContent().empty()) {
-			string uploadPath = "./body/" + this->getStoreFileName();
-			ofstream outFile(uploadPath.c_str(), ios::binary);
+			string uploadPath = store_path + filename;
+            cout << "Saving uploaded file to: " << uploadPath << endl;
+			ofstream outFile(uploadPath.c_str(), ios::binary | ios::trunc);
 			if (outFile.is_open()) {
 				outFile.write(this->getFileContent().c_str(), this->getFileContent().length());
 				outFile.close();
@@ -797,6 +913,28 @@ string RequestProcessor::createResponse(void) {
 			cout << bold << red << "No file uploaded" << def << endl;
 		}
 	}
+    else if (this->getMethod() == "DELETE") {
+        cout << "DELETE request received" << endl;
+        Server *Server = this->_server;
+        if (Server == nullptr) {
+            cerr << "Error: Server not found" << endl;
+            return "";
+        }
+        // Route *route = Server->getRouteFromUri(this->getUri());
+        // if (route == nullptr) {
+        //     response = this->ReturnServerErrorPage(Server, 404);
+        //     cout << "Route not founddd" << endl;
+        // }
+        // else
+        // {
+            // this->_route = route;
+            response = this->DELETEResponse(Server->getRoot(), this->getUri());
+            if (response.empty()) {
+                response = this->ReturnServerErrorPage(Server, 404);
+                cout << "File not found" << endl;
+            }
+        // }
+    }
     else {
         cerr << "Unsupported method: " << _method << endl;
         return "";
@@ -851,7 +989,7 @@ int    RequestProcessor::sendResponse(void)
         send(_client_socket, buffer, bytesRead, 0);
         cout << "Sending file: " << buffer << endl;
     } else {
-        cout << "No file to send" << endl;
+        // cout << "No file to send" << endl;
         _fully_sent = true;
     }
     return (1);
@@ -889,22 +1027,25 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
         }
     }
     if (_headers_parsed) {
-        if (this->getMethod() == "GET") {
+        // if (this->getMethod() == "GET") {
+        //     return true;
+        // } else if (this->getMethod() == "POST") {
+        //     cout << "POST request received" << endl;
+        //     if (_content_length == 0) {
+        //         cout << "No content length specified" << endl;
+        //         return false;
+        //     }
+        //     if (_body_size >= _content_length) {
+        //         this->parseBody(_request);
+        //         return true;
+        //     }
+        // } else {
+        //     cerr << "Unsupported method: " << _method << endl;
+        //     return false;
+        // }
+        //kanhandliw body dima makihmch chmn request hit ansindiwh l cgi
+        this->parseBody(_request);
             return true;
-        } else if (this->getMethod() == "POST") {
-            cout << "POST request received" << endl;
-            if (_content_length == 0) {
-                cout << "No content length specified" << endl;
-                return false;
-            }
-            if (_body_size >= _content_length) {
-                this->parseBody(_request);
-                return true;
-            }
-        } else {
-            cerr << "Unsupported method: " << _method << endl;
-            return false;
-        }
     }
     return false;
 }

@@ -40,10 +40,17 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fstream>
+#include <stdlib.h>
 
 using namespace std;
 
 #define nullptr NULL
+#define FORBIDDEN_STATUS_CODE 403
+#define NOT_FOUND_STATUS_CODE 404
+#define OK_STATUS_CODE 200
+#define BAD_REQUEST_STATUS_CODE 400
+#define METHOD_NOT_ALLOWED_STATUS_CODE 405
+#define INTERNAL_SERVER_ERROR_STATUS_CODE 500
 
 // #include "functions.hpp"
 // #include "Route.hpp"
