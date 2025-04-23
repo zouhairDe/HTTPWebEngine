@@ -9,7 +9,7 @@ COLOR_HEADERS = IColor.hpp BlueColor.hpp GreenColor.hpp RedColor.hpp DefaultColo
 				BoldFont.hpp
 FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp ServerFunctions.cpp
 CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp \
-				Route.cpp RequestProcessor.cpp POSTResponse.cpp \
+				Route.cpp RequestProcessor.cpp \
 
 				
 MAIN_FILE = main.cpp

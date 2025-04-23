@@ -103,7 +103,8 @@ string RequestProcessor::generateHttpHeaders(Server *server, int status_code, lo
     _Http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     _Http_headers += "Content-Type: " + (status_code >= 200 && status_code < 300 ? generateContentType() : "text/html") + "\r\n";
-    _Http_headers += "Content-Length: " + cpp11_toString(fileSize) + "\r\n";
+    if (fileSize > 0)
+        _Http_headers += "Content-Length: " + cpp11_toString(fileSize) + "\r\n";
     _Http_headers += "Connection: close \r\n";//to change ater , from request
     _Http_headers += "\r\n";
     return _Http_headers;
@@ -740,8 +741,24 @@ string RequestProcessor::createResponse(void) {
             }
         }
 	} else if (this->getMethod() == "POST") {
-		POSTResponse postResponse(this);
-		response = postResponse.generateResponse();
+        string store_path = "./body/";
+        Route *route = _server->getRouteFromUri("\"" + getUri() + "\"");
+        if (route && !route->getUploadStore().empty())
+            store_path = route->getUploadStore();
+        
+        //create the directory if it does not exist
+        if (mkdir(store_path.c_str(), 0777) == -1)
+        {
+            if (errno != EEXIST)
+            {
+                std::cerr << "Error creating directory: " << std::endl;
+                return "";
+            }
+        }
+        std::string filename = getStoreFileName();
+        std::string file_path = store_path;
+
+        generateHttpHeaders(_server, 200, 0);
 		send(this->getSocket(), response.c_str(), response.length(), 0);
 		
 		if (!this->getFileContent().empty()) {

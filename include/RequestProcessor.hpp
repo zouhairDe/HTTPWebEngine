@@ -16,8 +16,6 @@
 # include "Global.hpp"
 # include "Server.hpp"
 
-# include "POSTResponse.hpp"
-
 # define REQUEST_BUFFER_SIZE 1024 * 16
 
 class Server;
