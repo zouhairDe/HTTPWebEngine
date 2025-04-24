@@ -200,10 +200,7 @@ void Server::setProperty(const string &key, string value) {
 		if (url.find("http://") != string::npos || url.find("https://") != string::npos)
 			_redirectionUrl = make_pair(url, status_code);
 		else
-			_redirectionUrl = make_pair("http://" + this->getHostName() + ":" + this->getPort() + url, status_code);
-
-		cout << bold << red << "Redirection URL: " << _redirectionUrl.first << endl;
-		cout << bold << red << "Redirection status code: " << _redirectionUrl.second << def << endl;
+			throw runtime_error("\033[31m Invalid URL: " + url + "\nRedirection URL should be a valid URL, e.g: http://example.com");
 	}
 	else {
 		throw runtime_error("\033[31m Unknown property: " + key);

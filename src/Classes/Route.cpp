@@ -112,7 +112,7 @@ void Route::setProperty(const string &key, const string &value)
 		if (status_code < 100 || status_code > 599)
 			throw runtime_error("\033[31m Invalid status code: " + parts[1]);
 		if (url.find("http://") != string::npos || url.find("https://") != string::npos)
-			throw runtime_error("\033[31m Invalid URL: " + url + "\nRedirection URL should not contain http:// or https://: should be a Route");
+			throw runtime_error("\033[31m Invalid URL: " + url + "\nRedirection URL should be a route e.g: /...");
 		else
 			_redirectionUrl = make_pair(url, status_code);
 
