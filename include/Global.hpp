@@ -41,6 +41,7 @@
 #include <dirent.h>
 #include <fstream>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 using namespace std;
 
@@ -51,6 +52,8 @@ using namespace std;
 #define BAD_REQUEST_STATUS_CODE 400
 #define METHOD_NOT_ALLOWED_STATUS_CODE 405
 #define INTERNAL_SERVER_ERROR_STATUS_CODE 500
+#define MOVED_PERMANENTLY_STATUS_CODE 301
+#define FOUND_STATUS_CODE 302
 
 // #include "functions.hpp"
 // #include "Route.hpp"

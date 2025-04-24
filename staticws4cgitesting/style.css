@@ -1,0 +1,44 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f9f9f9;
+    margin: 0;
+    padding: 0;
+    color: #333;
+  }
+  
+  nav {
+    background: #333;
+    padding: 1em;
+    text-align: center;
+  }
+  
+  nav a {
+    color: white;
+    text-decoration: none;
+    margin: 0 1em;
+  }
+  
+  main {
+    padding: 2em;
+    max-width: 700px;
+    margin: auto;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    margin-top: 2em;
+  }
+  
+  form input, form textarea {
+    display: block;
+    width: 100%;
+    margin-bottom: 1em;
+    padding: 0.5em;
+  }
+  
+  button {
+    background-color: #007BFF;
+    color: white;
+    padding: 0.6em 1em;
+    border: none;
+    border-radius: 4px;
+  }
+  

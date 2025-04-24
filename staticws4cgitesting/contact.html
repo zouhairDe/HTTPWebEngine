@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contact Us</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="contact.html">Contact</a>
+    <a href="blog.html">Blog</a>
+  </nav>
+  <main>
+    <h2>Contact Form</h2>
+    <form action="/cgi/contact.cgi" method="POST">
+      <label for="name">Name:</label>
+      <input name="name" id="name" required />
+
+      <label for="email">Email:</label>
+      <input name="email" id="email" type="email" required />
+
+      <label for="message">Message:</label>
+      <textarea name="message" id="message" rows="5"></textarea>
+
+      <button type="submit">Send</button>
+    </form>
+  </main>
+</body>
+</html>

@@ -174,6 +174,11 @@ void Server::setProperty(const string &key, string value) {
 		else if (unit == 'K') ClientMaxBodySize *= 1024;
 	}
 	else if (key == "error_page_404") ErrorPage = "/tmp/www/" + value;
+	else if (key == "cgi_bin") cgi_bin = value;
+	else if (key == "return") _redirectUrl = value;
+	else {
+		throw runtime_error("\033[31m Unknown property: " + key);
+	}
 	
 }
 

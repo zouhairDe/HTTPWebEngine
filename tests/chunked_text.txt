@@ -1,3 +1,0 @@
-7\r\nMozilla\r\n
-9\r\nDeveloper\r\n
-7\r\nNetwork\r\n

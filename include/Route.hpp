@@ -26,6 +26,7 @@ class Route {
 		string			RouteName;
 		vector<string>	RouteIndexFiles;
 		string			UploadStore;
+		string			_redirectionUrl;
 		bool			RouteDirectoryListing;
 		bool			RouteGETMethod;
 		bool			RoutePOSTMethod;

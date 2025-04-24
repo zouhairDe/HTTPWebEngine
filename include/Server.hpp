@@ -43,9 +43,11 @@ class Server {
 		vector<string>		ServerNames;
 		long				ClientMaxBodySize; /* in bytes */
 		string				ErrorPage;
+		string				_redirectUrl;
 		vector<Route>		_Routes;
 		vector<Server>		_ServerFriends;
-		// vector<Client>		_Clients;
+		string				cgi_bin;
+		// string				cgi_bin_path;
 
 	public:
 		struct sockaddr_in	Address;

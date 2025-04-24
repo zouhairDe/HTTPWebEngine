@@ -97,6 +97,14 @@ docker-all: docker-build docker-run
 
 # ==== CLEAN ==== #
 
+test:
+	@echo "Creating Test Directories and files"
+	exec python3 tests/setConfigFile.py config/server.conf
+	exec cp staticws4cgitesting/* /tmp/www/chatroom/cgiTime/
+	exec cp staticWebsite/* /tmp/www/chatroom/test/
+	mkdir -p /tmp/www/chatroom/cgi/
+	exec cp cpp-cgi/contact.cgi /tmp/www/chatroom/cgi/
+
 clean:
 	rm -f $(OBJ_FILES)
 	rm -f $(DEBUG_OBJ_FILES)

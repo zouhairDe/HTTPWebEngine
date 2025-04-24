@@ -97,6 +97,11 @@ string RequestProcessor::getResponseToSend() const
     return _responseToSend;
 }
 
+string RequestProcessor::getContentType() const
+{
+    return _content_type;
+}
+
 string RequestProcessor::generateHttpHeaders(Server *server, int status_code, long fileSize)
 {
     string _Http_headers;
@@ -212,7 +217,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     // cout << "Base path: " << basePath << endl;
     if (requestedPath == "/") {
         Route *route = _server->getRouteFromUri("/");
-        _route = route;
+        _route = route;// hna khass nchecking wach get allowed methond l had route wlala
         vector<string> indexFiles = _route->getRouteIndexFiles();
         basePath = processIndexFiles(indexFiles);
         cout << "Base path after processing index files: " << basePath << endl;
@@ -228,7 +233,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     if (!route) {
         cout << "Route not found for URI: " << getUri() << endl;
         return NULL;
-    } else
+    } else// hna khass nchecking wach get allowed methond l had route wlala
         _route = route;
     struct stat pathStat;
     if (stat(basePath.c_str(), &pathStat) == -1) {
@@ -408,13 +413,6 @@ int    RequestProcessor::parseHeaders(string req) {
 }
 
 
-/*
-Default Nginx Behavior: Returns 403 Forbidden or 405 Method Not Allowed for DELETE / requests.​
-
-To Handle DELETE Requests: Configure Nginx to proxy these requests to your backend server.​
-
-Security: Implement authentication, validation, and logging to protect against unauthorized deletions.
-*/
 string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
     string routeName = _route->getRouteName();
     string reqUri = this->getUri();
@@ -836,28 +834,6 @@ bool RequestProcessor::isUriBad(std::string uri) {
     return false;
 }
 
-// string RequestProcessor::isUriDangerous(string uri) {
-//     string base_path = "/tmp/www/" + this->_server->getRoot() + uri.substr(1);
-// 	cout << "Base path: " << base_path << endl;
-// 	char resolvedPath[PATH_MAX];
-//     if (!realpath(base_path.c_str(), resolvedPath)) {
-//         // realpath failed -> path doesn't exist or is invalid
-// 		cout << red << "Path doesn't exist or is invalid: " << base_path << def << endl;
-//         return this->generateHttpHeaders(_server, NOT_FOUND_STATUS_CODE, 0);
-//     }
-
-//     string absPath(resolvedPath);
-//     cout << green << "Resolved path: " << absPath << endl;
-
-//     // Make sure the file is INSIDE /tmp/www
-//     if (absPath.rfind("/tmp/www/", 0) != 0) {
-//         // Path is outside /tmp/www
-//         cout << blue << "Path is outside /tmp/www, path is: " << absPath << endl;
-//         return this->generateHttpHeaders(_server, FORBIDDEN_STATUS_CODE, 0);
-//     }
-//     return "";
-// }
-
 string RequestProcessor::createResponse(void) {
     string response;
     if (isUriBad(this->getUri())) { // && isUriDangerous(this->getUri())) {
@@ -871,30 +847,89 @@ string RequestProcessor::createResponse(void) {
 			cerr << "Error: Server not found" << endl;
 			return "";
 		}
-		// Route *route = Server->getRouteFromUri(this->getUri());
-        // cout << "getUri: " << this->getUri() << endl;
-		// if (route == nullptr) {
-		// 	response = this->ReturnServerErrorPage(Server, 404);
-		// 	cout << "Route not found-get" << endl;
-		// } else
-        // {
-            // this->_route = route;
-            File *file = this->GETResponse(Server->getRoot(), this->getUri());
-            if (file == nullptr) {
-                response = this->ReturnServerErrorPage(Server, 404);
-                cout << "File not found" << endl;
-            } else {
-                this->_file = file;
-                response = this->generateHttpHeaders(Server, 200, file->getSize());
-            }
-        // }
+        File *file = this->GETResponse(Server->getRoot(), this->getUri());
+        if (file == nullptr) {
+            response = this->ReturnServerErrorPage(Server, 404);
+            cout << "File not found" << endl;
+        } else {
+            this->_file = file;
+            response = this->generateHttpHeaders(Server, 200, file->getSize());
+        }
 	} else if (this->getMethod() == "POST") {
+
+        /*----------------------Hardcoded path so far khasn mn b3d nakhdoh mn conf_file*/
+        if (this->getUri().find("/cgi/") != std::string::npos) {
+            std::cout << "CGI request received" << std::endl;
+        
+            std::vector<std::string> envVars;
+            envVars.push_back("REQUEST_METHOD=" + this->getMethod());
+            envVars.push_back("REQUEST_URI=" + this->getUri());
+            envVars.push_back("CONTENT_TYPE=" + this->getContentType());
+            envVars.push_back("CONTENT_LENGTH=" + cpp11_toString(this->getContentLength()));
+        
+            std::vector<char*> envp;
+            for (size_t i = 0; i < envVars.size(); ++i)
+                envp.push_back(const_cast<char*>(envVars[i].c_str()));
+            envp.push_back(NULL);
+        
+            std::string cgiPath = "/tmp/www/chatroom/cgi/contact.cgi";
+        
+            int cgiOutput[2]; // child stdout → parent
+            int cgiInput[2];  // parent stdin  → child
+            pipe(cgiOutput);
+            pipe(cgiInput);
+        
+            pid_t pid = fork();
+            if (pid < 0) {
+                std::cerr << "Fork failed" << std::endl;
+                return generateHttpHeaders(_server, INTERNAL_SERVER_ERROR_STATUS_CODE, 0);
+            } else if (pid == 0) {
+                // Child process
+                dup2(cgiOutput[1], STDOUT_FILENO);
+                dup2(cgiInput[0], STDIN_FILENO);
+                close(cgiOutput[0]);
+                close(cgiOutput[1]);
+                close(cgiInput[0]);
+                close(cgiInput[1]);
+        
+                char* argv[] = { const_cast<char*>(cgiPath.c_str()), NULL };
+                execve(cgiPath.c_str(), argv, envp.data());
+                perror("execve failed");
+                exit(1);
+            } else {
+                // Parent process
+                close(cgiOutput[1]); // Parent reads from this
+                close(cgiInput[0]);  // Parent writes to this
+        
+                //  Send POST body to child if needed
+                if (this->getMethod() == "POST" && this->getContentLength() > 0) {
+                    std::string body = this->getBody(); // <-- Implement this
+                    write(cgiInput[1], body.c_str(), body.size());
+                }
+                close(cgiInput[1]);
+        
+                // Read child output
+                std::string cgiResponse;
+                char buffer[1024];
+                ssize_t bytes;
+                while ((bytes = read(cgiOutput[0], buffer, sizeof(buffer))) > 0) {
+                    cgiResponse.append(buffer, bytes);
+                }
+                close(cgiOutput[0]);
+                waitpid(pid, NULL, 0);
+                cout << "CGI response: " << cgiResponse << endl;
+                return cgiResponse;
+            }
+        }
+        
+
+
         string store_path = "./body/";
         Route *route = _server->getRouteFromUri(getUri());
         if (route && !route->getUploadStore().empty())
             store_path = "/tmp/www/" + route->getUploadStore(), cout << "Upload store pathhhhhh: " << store_path << endl;
-        std::string filename = getStoreFileName();
-        std::string file_path = store_path;
+        string filename = getStoreFileName();
+        string file_path = store_path;
 
         response = generateHttpHeaders(_server, 200, 0);
 		send(this->getSocket(), response.c_str(), response.length(), 0);
@@ -920,20 +955,11 @@ string RequestProcessor::createResponse(void) {
             cerr << "Error: Server not found" << endl;
             return "";
         }
-        // Route *route = Server->getRouteFromUri(this->getUri());
-        // if (route == nullptr) {
-        //     response = this->ReturnServerErrorPage(Server, 404);
-        //     cout << "Route not founddd" << endl;
-        // }
-        // else
-        // {
-            // this->_route = route;
-            response = this->DELETEResponse(Server->getRoot(), this->getUri());
-            if (response.empty()) {
-                response = this->ReturnServerErrorPage(Server, 404);
-                cout << "File not found" << endl;
-            }
-        // }
+        response = this->DELETEResponse(Server->getRoot(), this->getUri());
+        if (response.empty()) {
+            response = this->ReturnServerErrorPage(Server, 404);
+            cout << "File not found" << endl;
+        }
     }
     else {
         cerr << "Unsupported method: " << _method << endl;

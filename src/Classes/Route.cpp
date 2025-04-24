@@ -95,6 +95,11 @@ void Route::setProperty(const string &key, const string &value)
 			ClientMaxBodySize *= 1024 * 1024;
 		else if (unit == 'K')
 			ClientMaxBodySize *= 1024;
+	} else if (key == "return")
+	{
+		_redirectionUrl = value;
+		if (_redirectionUrl.find("http://") == string::npos && _redirectionUrl.find("https://") == string::npos)
+			throw runtime_error("\033[31m Invalid redirection URL: " + _redirectionUrl);
 	}
 	else
 	{

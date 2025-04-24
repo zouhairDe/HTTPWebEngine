@@ -12,7 +12,6 @@
 
 # include "WebServer.hpp"
 # include "RequestProcessor.hpp"
-// # include "GETResponse.hpp"
 
 #define MAX_EVENTS 32
 
@@ -170,6 +169,7 @@ void	WebServer::run(){
 			// cout << bold << green << "Event " << i << " on fd: " << events[i].data.fd << def << endl;
 			bool new_connection = false;
 			for (size_t s = 0; s < Servers.size(); s++) {
+				/* hna ancheckiw if dak server 3ndo return (redirectionUrl 9adlo response dialo nichan w sindiga w nafs l haja hta l routes) */
 				Server *server = &Servers[s];//new Server(Servers[s]);
 				if (events[i].data.fd == server->Socket) {
 					int client_socket = handleNewConnection(server->Socket, epoll_fd);

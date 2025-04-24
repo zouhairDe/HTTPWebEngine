@@ -89,6 +89,7 @@ class RequestProcessor {
 		string				getPort() const;
 		string				getConnection() const;
 		int					getContentLength() const;
+		string				getContentType() const;	
 		string				getBody() const;
 		string				getQuery() const;
 		string				getCookie() const;
