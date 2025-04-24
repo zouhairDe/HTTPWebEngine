@@ -44,6 +44,7 @@ class RequestProcessor {
         map<string, string>	_formFields; //for storing form fields
         string				_fileContentType;
 		string				_responseToSend;
+		int					_status;
 		string				_authorization;
 		vector<string>		dangerousPatterns;
 		

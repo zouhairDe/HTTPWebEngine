@@ -106,6 +106,7 @@ string RequestProcessor::generateHttpHeaders(Server *server, int status_code, lo
 {
     string _Http_headers;
     (void)server;
+    _status = status_code;
     _Http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     _Http_headers += "Content-Type: " + (status_code >= 200 && status_code < 300 ? generateContentType() : "text/html") + "\r\n";
@@ -169,7 +170,7 @@ File* RequestProcessor::handleDirectory(const string& path) const {
     {
         string indexPath = processIndexFiles(indexFiles);
         if (!indexPath.empty()) {
-            cout << "Found index file: " << indexPath << endl;
+            // cout << "Found index file: " << indexPath << endl;
             return GetFile(indexPath);
         }
     }
@@ -200,7 +201,7 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
 string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
     for (size_t i = 0; i < indexFiles.size(); i++) {
         string indexPath = "/tmp/www/" + indexFiles[i];
-        cout << "Checking index path: " << indexPath << endl;
+        // cout << "Checking index path: " << indexPath << endl;
         if (access(indexPath.c_str(), F_OK) == 0) {
             return indexPath;
         }
@@ -211,7 +212,7 @@ string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
 File* RequestProcessor::GETResponse(string root, string requestedPath) {
     string reqUri = this->getUri();
     // cout << "Request URI: " << reqUri << endl;
-    cout << "Requested Path: " << requestedPath << endl;
+    // cout << "Requested Path: " << requestedPath << endl;
     // Normalize route name and create base path
     string basePath = "/tmp/www/" + root + reqUri.substr(1);
     // cout << "Base path: " << basePath << endl;
@@ -220,7 +221,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         _route = route;// hna khass nchecking wach get allowed methond l had route wlala
         vector<string> indexFiles = _route->getRouteIndexFiles();
         basePath = processIndexFiles(indexFiles);
-        cout << "Base path after processing index files: " << basePath << endl;
+        // cout << "Base path after processing index files: " << basePath << endl;
         if (basePath.empty() && _route->getRouteDirectoryListing()) {
             return handleDirectory(basePath);
         }
@@ -838,6 +839,7 @@ string RequestProcessor::createResponse(void) {
     string response;
     if (isUriBad(this->getUri())) { // && isUriDangerous(this->getUri())) {
         cout << red << "Dangerous URI detected: " << this->getUri() << def << endl;
+        _status = FORBIDDEN_STATUS_CODE;
         response = this->ReturnServerErrorPage(_server, FORBIDDEN_STATUS_CODE);//need to change this to server certain error page not dima 404
         return response;
     }
@@ -849,11 +851,13 @@ string RequestProcessor::createResponse(void) {
 		}
         File *file = this->GETResponse(Server->getRoot(), this->getUri());
         if (file == nullptr) {
-            response = this->ReturnServerErrorPage(Server, 404);
-            cout << "File not found" << endl;
+            _status = NOT_FOUND_STATUS_CODE;
+            response = this->ReturnServerErrorPage(Server, NOT_FOUND_STATUS_CODE);
+            // cout << "File not found" << endl;
         } else {
             this->_file = file;
-            response = this->generateHttpHeaders(Server, 200, file->getSize());
+            _status = OK_STATUS_CODE;
+            response = this->generateHttpHeaders(Server, OK_STATUS_CODE, file->getSize());
         }
 	} else if (this->getMethod() == "POST") {
 
@@ -958,7 +962,7 @@ string RequestProcessor::createResponse(void) {
         response = this->DELETEResponse(Server->getRoot(), this->getUri());
         if (response.empty()) {
             response = this->ReturnServerErrorPage(Server, 404);
-            cout << "File not found" << endl;
+            // cout << "File not found" << endl;
         }
     }
     else {
@@ -996,7 +1000,7 @@ int    RequestProcessor::sendResponse(void)
         }
         char buffer[REQUEST_BUFFER_SIZE];
         ssize_t bytesRead = read(this->fd, buffer, REQUEST_BUFFER_SIZE - 1);
-        cout << "Sent " << bytesRead << " bytes to client" << endl;
+        // cout << "Sent " << bytesRead << " bytes to client" << endl;
         if (bytesRead == -1) {
             perror("read() failed");
             close(this->fd);
@@ -1005,7 +1009,7 @@ int    RequestProcessor::sendResponse(void)
             return (-1);
         }
         if ((size_t)bytesRead == 0) {
-            cout << "File fully sent" << endl;
+            // cout << "File fully sent" << endl;
             close(this->fd);
             this->fd = -1;
             _fully_sent = true;
@@ -1013,7 +1017,7 @@ int    RequestProcessor::sendResponse(void)
         }
         buffer[bytesRead] = '\0';
         send(_client_socket, buffer, bytesRead, 0);
-        cout << "Sending file: " << buffer << endl;
+        // cout << "Sending file: " << buffer << endl;
     } else {
         // cout << "No file to send" << endl;
         _fully_sent = true;
@@ -1098,8 +1102,8 @@ void RequestProcessor::log() const {
     cout << def << "[";
     print_time();
     cout << "] ";
-    if (_client_socket == -1) {
-        cout << "DISCONNECTED" << endl;
+    if (_uri.empty()) {
+        cout << bold << "CONNECTION CLOSED" << def << endl;
         return;
     }
     if (_method == "POST")
@@ -1108,7 +1112,12 @@ void RequestProcessor::log() const {
         cout << bold << green;
     else
         cout << bold << red;
-    cout << _method << def << " " << _uri << " " << _host << ":" << _port << endl;
+    cout << _method << def << " " << _uri << " " << _host << ":" << _port << " ";
+    if (_status == OK_STATUS_CODE)
+        cout << bold << green;
+    else
+        cout << bold << red;
+    cout << _status << def << endl;
 }
 
 void		RequestProcessor::setPort(string new_port) {

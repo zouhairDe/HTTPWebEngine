@@ -125,7 +125,7 @@ void	Server::setRoutes(vector<Route> routes) {
 Route *Server::getRouteFromUri(string uri) {
 	// cout << "new URI: " << uri << endl;
 	// cout << "From getRouteFromUri(): " << uri << endl;
-	cout << "	URI: " << uri << endl;
+	// cout << "	URI: " << uri << endl;
 
     for (size_t i = 0; i < _Routes.size(); i++) {
 		// uri = uri.substr(0, uri.find_last_of('/') + 1);

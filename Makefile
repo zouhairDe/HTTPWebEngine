@@ -112,6 +112,8 @@ clean:
 fclean: clean
 	rm -f $(NAME) $(NAME_DEBUG)
 
+fcln: fclean
+
 re: fclean all
 
 .PHONY: all debug clean fclean re
