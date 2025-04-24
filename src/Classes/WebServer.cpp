@@ -191,20 +191,20 @@ void	WebServer::run(){
 				if (requests[client_socket].sendResponse() == 1)
 					modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLOUT | EPOLLET);
 				
-				if (requests[client_socket].getConnection() == "keep-alive") {
+				if (requests[client_socket].isSent()) {
+					if (requests[client_socket].getConnection() == "keep-alive") {
 					// cout << bold << green << "KEEP-ALIVE" << def << endl;
-					if (requests[client_socket].isSent()) {
 
 						requests[client_socket].log();
 						// cout << "send? " << requests[client_socket].isSent() << endl;
 						modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLET);
 						requests[client_socket].clear();
+					} else {
+						// cout << bold << green << "CLOSED" << def << endl;
+						deleteSocket(epoll_fd, client_socket);
+						close(client_socket);
+						requests.erase(client_socket);
 					}
-				} else {
-					// cout << bold << green << "CLOSED" << def << endl;
-					deleteSocket(epoll_fd, client_socket);
-					close(client_socket);
-					requests.erase(client_socket);
 				}
 			}
 		}

@@ -22,7 +22,6 @@
 # include <fcntl.h>
 # include <sys/socket.h>
 # include <netinet/tcp.h>
-
 # include <sys/types.h>
 # include <sys/epoll.h>
 # include <cstring>
@@ -43,11 +42,10 @@ class Server {
 		vector<string>		ServerNames;
 		long				ClientMaxBodySize; /* in bytes */
 		string				ErrorPage;
-		string				_redirectUrl;
+		pair<string, int>	_redirectionUrl;
 		vector<Route>		_Routes;
 		vector<Server>		_ServerFriends;
 		string				cgi_bin;
-		// string				cgi_bin_path;
 
 	public:
 		struct sockaddr_in	Address;
@@ -75,6 +73,8 @@ class Server {
 		string				getRoot() const;
 		vector<string>		getIndexFiles() const;
 		vector<Server>		getFriends() const;
+		pair<string, int>	getRedirectUrl() const;
+		bool				isRouteExist(string route);
 
 		/* setters */
 		void				setRoot(string root);

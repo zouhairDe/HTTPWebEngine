@@ -126,6 +126,14 @@ string RequestProcessor::getStatusMessage(int status_code) const
         case 405: return " Method Not Allowed\r\n";
         case 404: return " Not Found\r\n";
         case 500: return " Internal Server Error\r\n";
+        case 501: return " Not Implemented\r\n";
+        case 502: return " Bad Gateway\r\n";
+        case 503: return " Service Unavailable\r\n";
+        case 301: return " Moved Permanently\r\n";
+        case 302: return " Found\r\n";
+        case 303: return " See Other\r\n";
+        case 307: return " Temporary Redirect\r\n";
+        case 308: return " Permanent Redirect\r\n";
         default: return " Unknown Status\r\n";
     }
 }
@@ -211,22 +219,32 @@ string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
 
 File* RequestProcessor::GETResponse(string root, string requestedPath) {
     string reqUri = this->getUri();
-    // cout << "Request URI: " << reqUri << endl;
-    // cout << "Requested Path: " << requestedPath << endl;
-    // Normalize route name and create base path
     string basePath = "/tmp/www/" + root + reqUri.substr(1);
     // cout << "Base path: " << basePath << endl;
     if (requestedPath == "/") {
         Route *route = _server->getRouteFromUri("/");
         _route = route;// hna khass nchecking wach get allowed methond l had route wlala
+        if (_route->getRedirectUrl().second != -1) {
+            if (!_server->isRouteExist(_route->getRedirectUrl().first)) {
+                return NULL;
+            }
+            else
+            {
+                _status = _route->getRedirectUrl().second;
+                _route = _server->getRouteFromUri(_route->getRedirectUrl().first);
+            }
+        }
         vector<string> indexFiles = _route->getRouteIndexFiles();
         basePath = processIndexFiles(indexFiles);
-        // cout << "Base path after processing index files: " << basePath << endl;
         if (basePath.empty() && _route->getRouteDirectoryListing()) {
             return handleDirectory(basePath);
         }
         else if (basePath.empty()) {
             return NULL;
+        }
+        else {
+            _status = 200;
+            return GetFile(basePath);
         }
     }
 
@@ -236,11 +254,23 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         return NULL;
     } else// hna khass nchecking wach get allowed methond l had route wlala
         _route = route;
+    if (_route->getRedirectUrl().second != -1) {
+        string newRouteName = _route->getRedirectUrl().first;
+        int newStatusCode = _route->getRedirectUrl().second;
+        if (!_server->isRouteExist(newRouteName)) {
+            return NULL;
+        }
+        else {
+            _route = _server->getRouteFromUri(newRouteName);
+            _status = newStatusCode;
+        }
+    }
     struct stat pathStat;
     if (stat(basePath.c_str(), &pathStat) == -1) {
         return NULL;
     }
     if (S_ISREG(pathStat.st_mode)) {
+        _status = 200;
         return GetFile(basePath);
     }
     if (S_ISDIR(pathStat.st_mode) && _route->getRouteDirectoryListing()) {
@@ -778,6 +808,7 @@ void RequestProcessor::clear() {
     _fileContentType.clear();
     _formFields.clear();
     _headers_parsed = false;
+    _responseToSend.clear();
     _body_size = 0;
     // delete _server;
     // _server = nullptr;
@@ -823,8 +854,6 @@ void    RequestProcessor::init_dangerousePatterns() {
     dangerousPatterns.push_back("%7c"); dangerousPatterns.push_back("%7C"); // |
 }
 
-
-
 bool RequestProcessor::isUriBad(std::string uri) {
     for (size_t i = 0; i < dangerousPatterns.size(); i++) {
         if (uri.find(dangerousPatterns[i]) != std::string::npos) {
@@ -833,6 +862,16 @@ bool RequestProcessor::isUriBad(std::string uri) {
         }
     }
     return false;
+}
+
+string RequestProcessor::RedirectionPage(string redirectionUrl, int status_code) {
+    string response = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
+    response += "Server: webserv/1.0.0 (Ubuntu)\r\n";
+    response += "Content-Length: 0\r\n";
+    response += "Connection: " + this->getConnection() + "\r\n";
+    response += "Location: " + redirectionUrl + "\r\n";
+    response += "\r\n";
+    return response;
 }
 
 string RequestProcessor::createResponse(void) {
@@ -849,15 +888,18 @@ string RequestProcessor::createResponse(void) {
 			cerr << "Error: Server not found" << endl;
 			return "";
 		}
+        if (Server->getRedirectUrl().second != -1) {
+            response = this->RedirectionPage(Server->getRedirectUrl().first, Server->getRedirectUrl().second);
+            return response;
+        }
+
         File *file = this->GETResponse(Server->getRoot(), this->getUri());
         if (file == nullptr) {
             _status = NOT_FOUND_STATUS_CODE;
             response = this->ReturnServerErrorPage(Server, NOT_FOUND_STATUS_CODE);
-            // cout << "File not found" << endl;
         } else {
             this->_file = file;
-            _status = OK_STATUS_CODE;
-            response = this->generateHttpHeaders(Server, OK_STATUS_CODE, file->getSize());
+            response = this->generateHttpHeaders(Server, _status, file->getSize());
         }
 	} else if (this->getMethod() == "POST") {
 
@@ -925,9 +967,6 @@ string RequestProcessor::createResponse(void) {
                 return cgiResponse;
             }
         }
-        
-
-
         string store_path = "./body/";
         Route *route = _server->getRouteFromUri(getUri());
         if (route && !route->getUploadStore().empty())
@@ -953,7 +992,7 @@ string RequestProcessor::createResponse(void) {
 		}
 	}
     else if (this->getMethod() == "DELETE") {
-        cout << "DELETE request received" << endl;
+        // cout << "DELETE request received" << endl;
         Server *Server = this->_server;
         if (Server == nullptr) {
             cerr << "Error: Server not found" << endl;
@@ -966,7 +1005,7 @@ string RequestProcessor::createResponse(void) {
         }
     }
     else {
-        cerr << "Unsupported method: " << _method << endl;
+        // cerr << "Unsupported method: " << _method << endl;
         return "";
     }
     return response;
@@ -1057,23 +1096,6 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
         }
     }
     if (_headers_parsed) {
-        // if (this->getMethod() == "GET") {
-        //     return true;
-        // } else if (this->getMethod() == "POST") {
-        //     cout << "POST request received" << endl;
-        //     if (_content_length == 0) {
-        //         cout << "No content length specified" << endl;
-        //         return false;
-        //     }
-        //     if (_body_size >= _content_length) {
-        //         this->parseBody(_request);
-        //         return true;
-        //     }
-        // } else {
-        //     cerr << "Unsupported method: " << _method << endl;
-        //     return false;
-        // }
-        //kanhandliw body dima makihmch chmn request hit ansindiwh l cgi
         this->parseBody(_request);
             return true;
     }

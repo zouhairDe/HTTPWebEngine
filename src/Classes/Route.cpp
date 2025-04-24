@@ -11,6 +11,7 @@ Route::Route()
 	: RouteDirectoryListing(false), RouteGETMethod(false),
 	  RoutePOSTMethod(false), ClientMaxBodySize(0)
 {
+	_redirectionUrl = make_pair("", -1);
 }
 
 Route::~Route() {}
@@ -55,6 +56,11 @@ Route::Route(const Route &route)
 	*this = route;
 }
 
+pair<string, int> Route::getRedirectUrl() const
+{
+	return _redirectionUrl;
+}
+
 Route &Route::operator=(const Route &route)
 {
 	RouteName = route.RouteName;
@@ -64,6 +70,7 @@ Route &Route::operator=(const Route &route)
 	RoutePOSTMethod = route.RoutePOSTMethod;
 	UploadStore = route.UploadStore;
 	ClientMaxBodySize = route.ClientMaxBodySize;
+	_redirectionUrl = route._redirectionUrl;
 	return *this;
 }
 
@@ -97,9 +104,20 @@ void Route::setProperty(const string &key, const string &value)
 			ClientMaxBodySize *= 1024;
 	} else if (key == "return")
 	{
-		_redirectionUrl = value;
-		if (_redirectionUrl.find("http://") == string::npos && _redirectionUrl.find("https://") == string::npos)
-			throw runtime_error("\033[31m Invalid redirection URL: " + _redirectionUrl);
+		vector<string> parts = split(value, ',');
+		if (parts.size() != 2)
+			throw runtime_error("\033[31m Invalid return value: " + value + "\nExpected format: \"return <url>, <status_code>\"");
+		string url = parts[0];
+		int status_code = atoi(parts[1].c_str());
+		if (status_code < 100 || status_code > 599)
+			throw runtime_error("\033[31m Invalid status code: " + parts[1]);
+		if (url.find("http://") != string::npos || url.find("https://") != string::npos)
+			throw runtime_error("\033[31m Invalid URL: " + url + "\nRedirection URL should not contain http:// or https://: should be a Route");
+		else
+			_redirectionUrl = make_pair(url, status_code);
+
+		cout << bold << red << "Redirection URL: " << _redirectionUrl.first << endl;
+		cout << bold << red << "Redirection status code: " << _redirectionUrl.second << def << endl;
 	}
 	else
 	{

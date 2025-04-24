@@ -79,7 +79,7 @@ class RequestProcessor {
 		string 				processIndexFiles(vector<string> &indexFiles) const;
 		int					sendResponse();
 		string 				DELETEResponse(string root, string requestedPath);
-		// string				isUriDangerous(string uri);
+		string 				RedirectionPage(string redirectionUrl, int status_code);
 		bool 				isUriBad(string uri);
 
 		/*getters*/

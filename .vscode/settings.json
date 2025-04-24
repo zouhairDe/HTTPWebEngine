@@ -11,6 +11,16 @@
         "ranges": "cpp",
         "deque": "cpp",
         "vector": "cpp",
-        "atomic": "cpp"
+        "atomic": "cpp",
+        "tuple": "cpp",
+        "optional": "cpp",
+        "istream": "cpp",
+        "system_error": "cpp",
+        "array": "cpp",
+        "functional": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "span": "cpp",
+        "typeinfo": "cpp"
     }
 }

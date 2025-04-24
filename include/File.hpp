@@ -35,11 +35,8 @@ class File {
 		char		*getData() const;
 		string		getPath() const;
 		bool		exists() const;
-		void		trimOldData(size_t pos);
-		// size_t		getOffset() const;
-		// void		setOffset(size_t offset);
+		void		setData(string Data, size_t size);
 
-		void		clear();
 };
 
 #endif

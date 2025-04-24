@@ -23,14 +23,14 @@ class RequestProcessor;
 
 class Route {
 	private:
-		string			RouteName;
-		vector<string>	RouteIndexFiles;
-		string			UploadStore;
-		string			_redirectionUrl;
-		bool			RouteDirectoryListing;
-		bool			RouteGETMethod;
-		bool			RoutePOSTMethod;
-		long			ClientMaxBodySize;
+		string				RouteName;
+		vector<string>		RouteIndexFiles;
+		string				UploadStore;
+		pair<string, int>	_redirectionUrl;
+		bool				RouteDirectoryListing;
+		bool				RouteGETMethod;
+		bool				RoutePOSTMethod;
+		long				ClientMaxBodySize;
 
 	public:
 		Route();
@@ -47,6 +47,7 @@ class Route {
 		long			getClientMaxBodySize() const;
 		string			getRouteName() const;
 		void			CheckFiles() const;
+		pair<string, int>	getRedirectUrl() const;
 
 		// ma3rftch ila chi rouote ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
 

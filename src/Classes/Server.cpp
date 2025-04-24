@@ -3,6 +3,7 @@
 
 Server::Server(string hostname, string port, string root)
 	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(-1), Socket(-1) {
+		_redirectionUrl = make_pair("", -1);
 }
 
 Server::~Server() { }
@@ -19,6 +20,8 @@ Server &Server::operator=(const Server &server) {
 		this->ErrorPage = server.ErrorPage;
 		this->_Routes = server._Routes;
 		this->_ServerFriends = server._ServerFriends;
+		this->cgi_bin = server.cgi_bin;
+		this->_redirectionUrl = server._redirectionUrl;
 	}
 	return (*this);
 }
@@ -121,9 +124,19 @@ void	Server::setRoutes(vector<Route> routes) {
 	_Routes = routes;
 }
 
+pair<string, int>	Server::getRedirectUrl() const {
+	return _redirectionUrl;
+}
+
+bool	Server::isRouteExist(string route) {
+	for (size_t i = 0; i < _Routes.size(); i++) {
+		if (_Routes[i].getRouteName() == "\"" + route + "\"") 
+			return true;
+	}
+	return false;
+}
 
 Route *Server::getRouteFromUri(string uri) {
-	// cout << "new URI: " << uri << endl;
 	// cout << "From getRouteFromUri(): " << uri << endl;
 	// cout << "	URI: " << uri << endl;
 
@@ -175,7 +188,23 @@ void Server::setProperty(const string &key, string value) {
 	}
 	else if (key == "error_page_404") ErrorPage = "/tmp/www/" + value;
 	else if (key == "cgi_bin") cgi_bin = value;
-	else if (key == "return") _redirectUrl = value;
+	else if (key == "return") {
+		//we split the value by , then we check if its string and number or not
+		vector<string> parts = split(value, ',');
+		if (parts.size() != 2)
+			throw runtime_error("\033[31m Invalid return value: " + value + "\nExpected format: \"return <url>, <status_code>\"");
+		string url = parts[0];
+		int status_code = atoi(parts[1].c_str());
+		if (status_code < 100 || status_code > 599)
+			throw runtime_error("\033[31m Invalid status code: " + parts[1]);
+		if (url.find("http://") != string::npos || url.find("https://") != string::npos)
+			_redirectionUrl = make_pair(url, status_code);
+		else
+			_redirectionUrl = make_pair("http://" + this->getHostName() + ":" + this->getPort() + url, status_code);
+
+		cout << bold << red << "Redirection URL: " << _redirectionUrl.first << endl;
+		cout << bold << red << "Redirection status code: " << _redirectionUrl.second << def << endl;
+	}
 	else {
 		throw runtime_error("\033[31m Unknown property: " + key);
 	}
