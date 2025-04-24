@@ -237,6 +237,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         vector<string> indexFiles = _route->getRouteIndexFiles();
         basePath = processIndexFiles(indexFiles);
         if (basePath.empty() && _route->getRouteDirectoryListing()) {
+            _status = 200;
             return handleDirectory(basePath);
         }
         else if (basePath.empty()) {
@@ -274,6 +275,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         return GetFile(basePath);
     }
     if (S_ISDIR(pathStat.st_mode) && _route->getRouteDirectoryListing()) {
+        _status = 200;
         return handleDirectory(basePath);
     }
     return NULL;
