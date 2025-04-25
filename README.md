@@ -1,8 +1,6 @@
 
 # TODO:
 
-## zouhairDe
-	handle client requests and generate responses (RequestProcessor)
-
-## AccioMo
-	handle server synchronization for simultaneous requests (epoll/poll)
+    * check for limited_client_body_size before processing request
+	* check for allowed methods before processing request
+	* Fix cgi implementation
