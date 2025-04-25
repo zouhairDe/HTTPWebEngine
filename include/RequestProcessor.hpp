@@ -38,7 +38,8 @@ class RequestProcessor {
         string				_filename;      //for upload file
         string				_fileContent;   //actual content of uploaded file
 		bool				_headers_parsed;   //true if headers are parsed
-		bool				_fully_sent;      //true if the request is fully sent
+		bool				_received;      //true if the request is fully received
+		bool				_responded;      //true if the request is fully sent
 		int					_client_socket; //socket of client from epoll
 		size_t				_body_size;      //current size of body
         map<string, string>	_formFields; //for storing form fields
@@ -101,12 +102,14 @@ class RequestProcessor {
 		void				log() const;
 		map<string, string> getFormFields() const;
 		string 				getFileContentType() const;
-		bool				isSent() const;
+		bool				responded() const;
+		bool				received() const;
 		string				getResponseToSend() const;
 
 		/*setters*/
 		void				setPort(string new_port);
-		void				setIsSent(bool sent);
+		void				setResponded(bool responded);
+		void				setReceived(bool received);
 		void				setResponseToSend(string response);
 
 };

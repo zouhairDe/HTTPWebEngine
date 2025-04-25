@@ -166,7 +166,6 @@ void	WebServer::run(){
 			perror("Epoll wait failed");
 		}
 		for (int i = 0; i < event_count; i++) {
-			// cout << bold << green << "Event " << i << " on fd: " << events[i].data.fd << def << endl;
 			bool new_connection = false;
 			for (size_t s = 0; s < Servers.size(); s++) {
 				/* hna ancheckiw if dak server 3ndo return (redirectionUrl 9adlo response dialo nichan w sindiga w nafs l haja hta l routes) */
@@ -180,32 +179,46 @@ void	WebServer::run(){
 					new_connection = true;
 					break ;
 				}
-				// delete server;
 			}
 			if (new_connection)
 				continue ;
+			/*
+				first time a client connects to the server, a new 
+				connection is established and we create a request.
+				On the next iteration, we receive the request in 
+				batches of REQUEST_BUFFER_SIZE. if the request is
+				complete, `.received()` is true, we process it and 
+				send the response. else we wait for the next 
+				iteration to receive the rest of the request.
+				Once the request is complete, we process it and
+				send the response in batches as well.
+
+			*/
 			int client_socket = events[i].data.fd;
-			if (requests[client_socket].isSent() || \
-				requests[client_socket].receiveRequest(client_socket)) {
-
-				if (requests[client_socket].sendResponse() == 1)
+			requests[client_socket].receiveRequest(client_socket);
+			cout << bold << green << "RECEIVED? " << requests[client_socket].received() << def << endl;
+			if (requests[client_socket].received()) {
+				cout << "ll: " << requests[client_socket].getConnection() << endl;
+				requests[client_socket].sendResponse();
+				cout << bold << green << "SENT? " << requests[client_socket].responded() << def << endl;
+				if (requests[client_socket].responded() == false) {
 					modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLOUT | EPOLLET);
-				
-				if (requests[client_socket].isSent()) {
-					if (requests[client_socket].getConnection() == "keep-alive") {
-					// cout << bold << green << "KEEP-ALIVE" << def << endl;
-
-						requests[client_socket].log();
-						// cout << "send? " << requests[client_socket].isSent() << endl;
-						modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLET);
+				} else {
+					requests[client_socket].log();
+					if (requests[client_socket].getConnection() == "close") {
+						cout << bold << green << "CLOSED" << def << endl;
 						requests[client_socket].clear();
-					} else {
-						// cout << bold << green << "CLOSED" << def << endl;
 						deleteSocket(epoll_fd, client_socket);
 						close(client_socket);
 						requests.erase(client_socket);
+					} else {
+						cout << bold << green << "KEEP-ALIVE" << def << endl;
+						modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLET);
+						requests[client_socket].clear();
 					}
 				}
+			} else {
+				
 			}
 		}
     }

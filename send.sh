@@ -18,7 +18,7 @@ case $REQUEST_TYPE in
         ;;
     "post")
         while true; do
-            curl -X POST -F "image=@image.png" http://localhost:8081/
+            curl -X POST -F "filename=@/home/mzeggaf/vscode.tar.gz" http://localhost:8081/
             # sleep 1  # Optional: add a delay to avoid flooding the server
         done
         ;;

@@ -21,7 +21,8 @@ RequestProcessor::RequestProcessor() {
     _headers_parsed = false;
     _content_length = 0;
     _body_size = 0;
-    _fully_sent = false;
+    _responded = false;
+    _received = false;
     fd = -1;
 }
 
@@ -77,14 +78,24 @@ string RequestProcessor::getCookie() const
 	return _cookie;
 }
 
-void    RequestProcessor::setIsSent(bool sent)
+void    RequestProcessor::setReceived(bool received)
 {
-    _fully_sent = sent;
+    _received = received;
 }
 
-bool RequestProcessor::isSent() const
+bool RequestProcessor::received() const
 {
-    return _fully_sent;
+    return _received;
+}
+
+void    RequestProcessor::setResponded(bool responded)
+{
+    _responded = responded;
+}
+
+bool RequestProcessor::responded() const
+{
+    return _responded;
 }
 
 void RequestProcessor::setResponseToSend(string response)
@@ -112,7 +123,10 @@ string RequestProcessor::generateHttpHeaders(Server *server, int status_code, lo
     _Http_headers += "Content-Type: " + (status_code >= 200 && status_code < 300 ? generateContentType() : "text/html") + "\r\n";
     // if (fileSize > 0)
         _Http_headers += "Content-Length: " + cpp11_toString(fileSize) + "\r\n";
-    _Http_headers += "Connection: close \r\n";//to change ater , from request
+    if (this->getConnection() == "close")
+        _Http_headers += "Connection: close\r\n";
+    else
+        _Http_headers += "Connection: keep-alive\r\n";
     _Http_headers += "\r\n";
     return _Http_headers;
 }
@@ -334,7 +348,7 @@ RequestProcessor::RequestProcessor(string req, string __port, Server *server)
     _request = req;
     _server = server;
     _port = __port;
-    _fully_sent = false;
+    _responded = false;
     
     if (this->parseHeaders(req))
         cerr << "Error parsing headers" << endl;
@@ -484,10 +498,7 @@ int RequestProcessor::parseBody(string req) {
         cout << "Query: " << _query << endl;
 
         return (0);
-    }
-
-
-    if (_method == "POST") {
+    } else if (_method == "POST") {
         size_t headerEnd = req.find("\r\n\r\n");
         if (headerEnd == string::npos) {
             headerEnd = req.find("\n\n"); // Fallback for non-standard requests
@@ -797,23 +808,26 @@ map<string, string> RequestProcessor::getFormFields() const
 }
 
 void RequestProcessor::clear() {
-    _request.clear();
-    _method.clear();
     _uri.clear();
-    _connection.clear();
-    _content_length = 0;
     _body.clear();
     _query.clear();
     _cookie.clear();
     _filename.clear();
     _fileContent.clear();
     _fileContentType.clear();
-    _formFields.clear();
     _headers_parsed = false;
     _responseToSend.clear();
+    _responseToSend.clear();
+    _connection.clear();
+    _content_length = 0;
+    _formFields.clear();
+    _responded = false;
+    _received = false;
+    _request.clear();
+    _method.clear();
     _body_size = 0;
-    // delete _server;
-    // _server = nullptr;
+    _file = NULL;
+    _status = 0;
 }
 
 void    RequestProcessor::init_dangerousePatterns() {
@@ -977,7 +991,7 @@ string RequestProcessor::createResponse(void) {
         string file_path = store_path;
 
         response = generateHttpHeaders(_server, 200, 0);
-		send(this->getSocket(), response.c_str(), response.length(), 0);
+		// send(this->getSocket(), response.c_str(), response.length(), 0);
 		
 		if (!this->getFileContent().empty()) {
 			string uploadPath = store_path + filename;
@@ -1017,6 +1031,7 @@ int    RequestProcessor::sendResponse(void)
 {
     if (_client_socket == -1) {
         cout << "Client socket is closed" << endl;
+        _responded = true;
         return (-1);
     }
 
@@ -1033,6 +1048,7 @@ int    RequestProcessor::sendResponse(void)
 
     if (_file)
     {
+        cout << "Sending file: " << _file->getPath() << endl;
         if (this->fd == -1)
             this->fd = open(_file->getPath().c_str(), O_RDONLY);
         if (this->fd == -1) {
@@ -1046,22 +1062,28 @@ int    RequestProcessor::sendResponse(void)
             perror("read() failed");
             close(this->fd);
             this->fd = -1;
-            _fully_sent = true;
+            _responded = true;
             return (-1);
         }
         if ((size_t)bytesRead == 0) {
             // cout << "File fully sent" << endl;
             close(this->fd);
             this->fd = -1;
-            _fully_sent = true;
+            _responded = true;
             return (0);
         }
         buffer[bytesRead] = '\0';
-        send(_client_socket, buffer, bytesRead, 0);
+        if (send(_client_socket, buffer, bytesRead, 0) == -1) {
+            perror("send() failed");
+            close(this->fd);
+            this->fd = -1;
+            _responded = true;
+            return (-1);
+        };
         // cout << "Sending file: " << buffer << endl;
     } else {
-        // cout << "No file to send" << endl;
-        _fully_sent = true;
+        cout << "No file to send" << endl;
+        _responded = true;
     }
     return (1);
 }
@@ -1081,7 +1103,10 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
             }
         } else if (bytesReceived == 0) {
             _client_socket = -1;
-            return true;  // client sd connection
+            _connection = "close";
+            cout << "Client disconnected" << endl;
+            _received = true;
+            return true;
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
             break ;
         } else {
@@ -1098,8 +1123,12 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
         }
     }
     if (_headers_parsed) {
+        if (this->getMethod() == "POST" && _body_size < _content_length) {
+            return false;
+        }
         this->parseBody(_request);
-            return true;
+        _received = true;
+        return true;
     }
     return false;
 }
