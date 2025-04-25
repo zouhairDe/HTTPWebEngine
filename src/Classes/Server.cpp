@@ -139,9 +139,12 @@ bool	Server::isRouteExist(string route) {
 Route *Server::getRouteFromUri(string uri) {
 	// cout << "From getRouteFromUri(): " << uri << endl;
 	// cout << "	URI: " << uri << endl;
+	//hadi 9bl man9ad query string d cgi
+	//if uri ends with /, we need to remove it
+	if (uri[uri.length() - 1] == '/' && uri != "/") 
+		uri = uri.substr(0, uri.length() - 1);/* cout << "	NEW URI: " << uri << endl;*/
 
     for (size_t i = 0; i < _Routes.size(); i++) {
-		// uri = uri.substr(0, uri.find_last_of('/') + 1);
 		// cout << "Comaparing " << _Routes[i].getRouteName() << " with " << uri << endl;
         if (_Routes[i].getRouteName() == string("\"" + uri + "\"")) {
             // cerr << "Route found from *Server::getRouteFromUri(): " << _Routes[i].getRouteName() << endl;
@@ -152,20 +155,16 @@ Route *Server::getRouteFromUri(string uri) {
 	//Route not found, meanning khouna is trying to access a file
 	//so we need to nfr9o file w path mn uri
 	string fileFromUri = uri.substr(uri.find_last_of('/') + 1);
-	string uriWithoutFile = uri.substr(0, uri.find_last_of('/'));
-	// cout << "File from URI: " << fileFromUri << endl;
-	// cout << "URI without file: " << uriWithoutFile << endl;
-	if (uriWithoutFile.empty())
-		uriWithoutFile = "/";
-	for (size_t i = 0; i < _Routes.size(); i++) {
-		// cout << "Comaparing " << _Routes[i].getRouteName() << " with " << uriWithoutFile << endl;
-		if (_Routes[i].getRouteName() == string("\"" + uriWithoutFile + "\"")) {
-			// cerr << "Route found from *Server::getRouteFromUri(): " << _Routes[i].getRouteName() << endl;
-			return &_Routes[i];
-		}
+	string uriWithoutFile = cpp11_replace(uri, fileFromUri, "");
+	// cout << "Routes isnt found, recursing with: " << uriWithoutFile << endl;
+	//recursive call to check if the file is in a route
+	if (uriWithoutFile == "/")//bzz khas ykon "/" route
+	{
+		// cout << "Returning default route" << endl;
+		return &_Routes[0];
 	}
+	return getRouteFromUri(uriWithoutFile);
 
-    return NULL;
 }
 
 void Server::setProperty(const string &key, string value) {

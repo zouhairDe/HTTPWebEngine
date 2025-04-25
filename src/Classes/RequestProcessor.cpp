@@ -164,42 +164,34 @@ File *RequestProcessor::GetFile(string path) const {
 
 string  RequestProcessor::createDirectoryListing(const string& path) const {
 	cout << "In Directory Listing" << endl;
+    cout << "	Path is : " << path << endl;
     string htmlContent = "<html><head><title>Directory Listing</title></head><body><h1>Directory Listing</h1><ul>";
     DIR* dir = opendir(path.c_str());
     string routeName = _route->getRouteName();
     routeName = cpp11_replace(routeName, "\"", "");
+    cout << "   Route name: " << routeName << endl;
     if (dir != NULL) {
         struct dirent* entry;
         while ((entry = readdir(dir)) != NULL) {
             string name = entry->d_name;
-            if (name != "." && name != "..") {
+                if (routeName != "/")
+                {
+                    name = routeName + "/" + name;
+                }
                 htmlContent += "<li><a href=\"";
-                htmlContent += routeName + "/" + name;
+                htmlContent += name;
                 htmlContent += "\">";
-                htmlContent += routeName + "/" + name;
+                htmlContent += name;
                 htmlContent += "</a></li>";
-            }
         }
         closedir(dir);
     }
     htmlContent += "</ul></body></html>";
+    cout << "HTML Content: " << htmlContent << endl;
     return htmlContent;
 }
 
 File* RequestProcessor::handleDirectory(const string& path) const {
-    vector<string> indexFiles = _route->getRouteIndexFiles();
-    if (!indexFiles.empty())
-    {
-        string indexPath = processIndexFiles(indexFiles);
-        if (!indexPath.empty()) {
-            // cout << "Found index file: " << indexPath << endl;
-            return GetFile(indexPath);
-        }
-    }
-
-    if (!this->_route->getRouteDirectoryListing())
-        return NULL;
-
     string htmlContent = createDirectoryListing(path);
     string tempPath = "/tmp/dirlist_" + cpp11_toString(time(NULL)) + ".html";
     ofstream tempFile(tempPath.c_str());
@@ -252,7 +244,12 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         basePath = processIndexFiles(indexFiles);
         if (basePath.empty() && _route->getRouteDirectoryListing()) {
             _status = 200;
-            return handleDirectory(basePath);
+            if (requestedPath == "/") {
+                return handleDirectory("/tmp/www/" + root);
+            }
+            else {
+                return handleDirectory(basePath);
+            }
         }
         else if (basePath.empty()) {
             return NULL;
@@ -264,9 +261,10 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     }
 
     Route *route = _server->getRouteFromUri(getUri());
+    cout << "Uri == " << getUri() << endl;
     if (!route) {
         cout << "Route not found for URI: " << getUri() << endl;
-        return NULL;
+        return NULL;//never gonna occur daba: good
     } else// hna khass nchecking wach get allowed methond l had route wlala
         _route = route;
     if (_route->getRedirectUrl().second != -1) {
@@ -288,9 +286,19 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         _status = 200;
         return GetFile(basePath);
     }
-    if (S_ISDIR(pathStat.st_mode) && _route->getRouteDirectoryListing()) {
-        _status = 200;
-        return handleDirectory(basePath);
+    if (S_ISDIR(pathStat.st_mode)) {
+        vector<string> indexFiles = _route->getRouteIndexFiles();
+        basePath = processIndexFiles(indexFiles);
+        if (!basePath.empty()) {
+            // cout << "Iam here" << endl;
+            _status = 200;
+            return GetFile(basePath);
+        }
+        if (_route->getRouteDirectoryListing()) {
+            // cout << "Iam here too" << endl;
+            _status = 200;
+            return handleDirectory(basePath);
+        }
     }
     return NULL;
 }
