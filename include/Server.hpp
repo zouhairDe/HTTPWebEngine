@@ -45,7 +45,7 @@ class Server {
 		pair<string, int>	_redirectionUrl;
 		vector<Route>		_Routes;
 		vector<Server>		_ServerFriends;
-		string				cgi_bin;
+		// string				cgi_bin;
 
 	public:
 		struct sockaddr_in	Address;

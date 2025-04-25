@@ -119,6 +119,43 @@ void Route::setProperty(const string &key, const string &value)
 		cout << bold << red << "Redirection URL: " << _redirectionUrl.first << endl;
 		cout << bold << red << "Redirection status code: " << _redirectionUrl.second << def << endl;
 	}
+	else if (key == "cgi_bin")
+	{
+		vector<string> parts = split(value, ',');
+		if (parts.size() != 2)
+			throw runtime_error("\033[31m Only 2 CGI access allowed");
+		for (size_t i = 0; i < parts.size(); i++)
+		{
+			//split extension and path usin :
+			vector<string> cgi_parts = split(parts[i], ':');
+			if (cgi_parts.size() != 2)
+				throw runtime_error("\033[31m Invalid CGI value: " + parts[i] + "\nExpected format: \"cgi_bin <extention>:<path>\"");
+			string extention = cgi_parts[0];
+			string path = cgi_parts[1];
+			if (extention.empty() || path.empty())
+				throw runtime_error("\033[31m Invalid CGI value: " + parts[i] + "\nExpected format: \"cgi_bin <extention>:<path>\"");
+			if (extention[0] != '.')
+				throw runtime_error("\033[31m Invalid CGI value: " + parts[i] + "\nExpected format: \"cgi_bin <extention>:<path>\"\nExtention should start with a dot");
+			
+			CGIs.push_back(make_pair(extention, path));
+			cout << bold << red << "CGI extention: " << extention << endl;
+			cout << bold << red << "CGI path: " << path << endl;
+		}
+	}
+	else if (key == "redirection")
+	{
+		vector<string> parts = split(value, ',');
+		if (parts.size() != 2)
+			throw runtime_error("\033[31m Invalid redirection value: " + value + "\nExpected format: \"redirection <url>, <status_code>\"");
+		string url = parts[0];
+		int status_code = atoi(parts[1].c_str());
+		if (status_code < 100 || status_code > 599)
+			throw runtime_error("\033[31m Invalid status code: " + parts[1]);
+		if (url.find("http://") != string::npos || url.find("https://") != string::npos)
+			throw runtime_error("\033[31m Invalid URL: " + url + "\nRedirection URL should be a route e.g: /...");
+		else
+			_redirectionUrl = make_pair(url, status_code);
+	}
 	else
 	{
 		throw runtime_error("\033[31m Unknown property: " + key + ",  for Route: " + RouteName);
@@ -181,55 +218,6 @@ File* Route::handleDirectory(const string& path) const {
     tempFile << htmlContent;
     tempFile.close();
     return new File(tempPath);
-}
-
-File* Route::getGETResponse(RequestProcessor req, string root, string fullPath) const {
-	// cout << "In GetGETResponse" << endl;
-	(void)req;
-	// cout << "Fullpath: " << fullPath << endl;
-    string routeName = RouteName;
-	// cout << "Route Name: " << routeName << endl;
-    string originalPath = "/tmp/www/" + root + cpp11_replace(routeName, "\"", "").substr(1);
-	// cout << "Original Path: " << originalPath << endl;
-	// cout << "req uri: " << req.getUri() << endl;
-
-	if (fullPath == "/")
-	{
-		for (size_t i = 0; i < RouteIndexFiles.size(); i++)
-		{
-			// cout << "Route Index Files: " << RouteIndexFiles[i] << endl;
-			string indexPath = "/tmp/www/" + RouteIndexFiles[i];
-			// cout << "Looking 4 this Index Path: " << indexPath << endl;
-			if (access(indexPath.c_str(), F_OK) == 0)
-			{
-				fullPath = indexPath;
-				// cout << "Index Path: " << fullPath << endl;
-				break;
-			}
-		}
-	}
-	else
-	{
-		fullPath = originalPath + fullPath.substr(1);
-		// cout << "Else fullpath == " << fullPath << endl;
-	}
-
-    // string fullPath = originalPath;
-    
-    // if (!fileFromUri.empty())
-    //     fullPath += "/" + fileFromUri;
-
-    struct stat pathStat;
-    if (stat(fullPath.c_str(), &pathStat) == -1)
-        return NULL;
-
-    // Check if it's a directory
-    if (S_ISDIR(pathStat.st_mode)/* && RouteDirectoryListing && fullPath != "/"*/) {
-        return handleDirectory(fullPath);
-    }
-    
-    // Handle as regular file
-    return handleFile(fullPath);
 }
 
 ostream &operator<<(ostream &out, const Route &route)

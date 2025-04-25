@@ -24,6 +24,8 @@ RequestProcessor::RequestProcessor() {
     _responded = false;
     _received = false;
     fd = -1;
+    _file = NULL;
+    _server = NULL;
 }
 
 RequestProcessor::~RequestProcessor() {}
@@ -223,6 +225,20 @@ string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
     return "";
 }
 
+string RequestProcessor::checkRedirectionFile(string path) {
+    struct stat pathStat;
+    string pathToCheck = "/tmp/www/" + this->_server->getRoot() + path.substr(1);
+    cout << "Checking redirection file: " << pathToCheck << endl;
+    if (stat(pathToCheck.c_str(), &pathStat) == -1) {
+        return "";
+    }
+    if (S_ISREG(pathStat.st_mode)) {
+        cout << "Redirection file exists: " << pathToCheck << endl;
+        return pathToCheck;
+    }
+    return "";
+}
+
 File* RequestProcessor::GETResponse(string root, string requestedPath) {
     string reqUri = this->getUri();
     string basePath = "/tmp/www/" + root + reqUri.substr(1);
@@ -231,6 +247,12 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         Route *route = _server->getRouteFromUri("/");
         _route = route;// hna khass nchecking wach get allowed methond l had route wlala
         if (_route->getRedirectUrl().second != -1) {
+            //if the path is file and exists return it
+            string newPath = checkRedirectionFile(_route->getRedirectUrl().first);
+            if (newPath.empty() == false) {
+                _status = _route->getRedirectUrl().second;
+                return GetFile(newPath);
+            }
             if (!_server->isRouteExist(_route->getRedirectUrl().first)) {
                 return NULL;
             }
@@ -244,18 +266,13 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         basePath = processIndexFiles(indexFiles);
         if (basePath.empty() && _route->getRouteDirectoryListing()) {
             _status = 200;
-            if (requestedPath == "/") {
-                return handleDirectory("/tmp/www/" + root);
-            }
-            else {
-                return handleDirectory(basePath);
-            }
+            return handleDirectory("/tmp/www/" + root);
         }
         else if (basePath.empty()) {
             return NULL;
         }
         else {
-            _status = 200;
+            _status = (_status >= 300 && _status < 400) ? _status : 200;
             return GetFile(basePath);
         }
     }
@@ -270,6 +287,12 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     if (_route->getRedirectUrl().second != -1) {
         string newRouteName = _route->getRedirectUrl().first;
         int newStatusCode = _route->getRedirectUrl().second;
+        //if the path is file and exists return it
+        string newPath = checkRedirectionFile(_route->getRedirectUrl().first);
+        if (newPath.empty() == false) {
+            _status = _route->getRedirectUrl().second;
+            return GetFile(newPath);
+        }
         if (!_server->isRouteExist(newRouteName)) {
             return NULL;
         }
@@ -291,12 +314,12 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         basePath = processIndexFiles(indexFiles);
         if (!basePath.empty()) {
             // cout << "Iam here" << endl;
-            _status = 200;
+            _status = (_status >=300 && _status < 400) ? _status : 200;
             return GetFile(basePath);
         }
         if (_route->getRouteDirectoryListing()) {
             // cout << "Iam here too" << endl;
-            _status = 200;
+            _status = (_status >=300 && _status < 400) ? _status : 200;
             return handleDirectory(basePath);
         }
     }
@@ -895,6 +918,7 @@ string RequestProcessor::RedirectionPage(string redirectionUrl, int status_code)
     response += "Connection: " + this->getConnection() + "\r\n";
     response += "Location: " + redirectionUrl + "\r\n";
     response += "\r\n";
+    cout << "Redirection response: " << response << endl;
     return response;
 }
 
@@ -913,6 +937,7 @@ string RequestProcessor::createResponse(void) {
 			return "";
 		}
         if (Server->getRedirectUrl().second != -1) {
+            cout << "Redirection URL: " << Server->getRedirectUrl().first << endl;
             response = this->RedirectionPage(Server->getRedirectUrl().first, Server->getRedirectUrl().second);
             return response;
         }
@@ -1043,8 +1068,8 @@ int    RequestProcessor::sendResponse(void)
         return (-1);
     }
 
-    if (_responseToSend.empty()) {
-
+    if (_responseToSend.empty())
+    {
         _responseToSend = this->createResponse();
 
         int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), 0);
@@ -1058,7 +1083,7 @@ int    RequestProcessor::sendResponse(void)
     {
         cout << "Sending file: " << _file->getPath() << endl;
         if (this->fd == -1)
-            this->fd = open(_file->getPath().c_str(), O_RDONLY);
+            this->fd = open(_file->getPath().c_str(), O_RDONLY);//wtf is going on here
         if (this->fd == -1) {
             perror("open() failed");
             return (-1);

@@ -20,7 +20,6 @@ Server &Server::operator=(const Server &server) {
 		this->ErrorPage = server.ErrorPage;
 		this->_Routes = server._Routes;
 		this->_ServerFriends = server._ServerFriends;
-		this->cgi_bin = server.cgi_bin;
 		this->_redirectionUrl = server._redirectionUrl;
 	}
 	return (*this);
@@ -186,7 +185,6 @@ void Server::setProperty(const string &key, string value) {
 		else if (unit == 'K') ClientMaxBodySize *= 1024;
 	}
 	else if (key == "error_page_404") ErrorPage = "/tmp/www/" + value;
-	else if (key == "cgi_bin") cgi_bin = value;
 	else if (key == "return") {
 		//we split the value by , then we check if its string and number or not
 		vector<string> parts = split(value, ',');

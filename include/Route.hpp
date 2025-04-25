@@ -23,14 +23,15 @@ class RequestProcessor;
 
 class Route {
 	private:
-		string				RouteName;
-		vector<string>		RouteIndexFiles;
-		string				UploadStore;
-		pair<string, int>	_redirectionUrl;
-		bool				RouteDirectoryListing;
-		bool				RouteGETMethod;
-		bool				RoutePOSTMethod;
-		long				ClientMaxBodySize;
+		string							RouteName;
+		vector<string>					RouteIndexFiles;
+		string							UploadStore;
+		pair<string, int>				_redirectionUrl;
+		bool							RouteDirectoryListing;
+		bool							RouteGETMethod;
+		bool							RoutePOSTMethod;
+		long							ClientMaxBodySize;
+		vector<pair<string, string> >	CGIs;//pair<extention, path>
 
 	public:
 		Route();
@@ -55,7 +56,6 @@ class Route {
 		void setProperty(const string& key, const string& value);
 		
 		/* Methods */
-		File	*getGETResponse(RequestProcessor req, string root, string fileFromUri) const;
 		string	createDirectoryListing(const string& path) const;
 		File	*handleDirectory(const string& path) const;
 		File	*handleFile(string path) const;

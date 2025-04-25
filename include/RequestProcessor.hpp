@@ -82,6 +82,7 @@ class RequestProcessor {
 		string 				DELETEResponse(string root, string requestedPath);
 		string 				RedirectionPage(string redirectionUrl, int status_code);
 		bool 				isUriBad(string uri);
+		string 				checkRedirectionFile(string path);
 
 		/*getters*/
 		string				getRequest() const;

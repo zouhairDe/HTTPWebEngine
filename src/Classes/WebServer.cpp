@@ -182,18 +182,6 @@ void	WebServer::run(){
 			}
 			if (new_connection)
 				continue ;
-			/*
-				first time a client connects to the server, a new 
-				connection is established and we create a request.
-				On the next iteration, we receive the request in 
-				batches of REQUEST_BUFFER_SIZE. if the request is
-				complete, `.received()` is true, we process it and 
-				send the response. else we wait for the next 
-				iteration to receive the rest of the request.
-				Once the request is complete, we process it and
-				send the response in batches as well.
-
-			*/
 			int client_socket = events[i].data.fd;
 			requests[client_socket].receiveRequest(client_socket);
 			cout << bold << green << "RECEIVED? " << requests[client_socket].received() << def << endl;
