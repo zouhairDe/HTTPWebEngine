@@ -20,6 +20,9 @@ int main() {
     responseToSend +=  "<h1>Thank you!</h1>";
     responseToSend +=  "<p>Your form was received by the CGI script.</p>";
     responseToSend +=  "<pre>" + postData + "</pre>";
+	responseToSend +=  "<h2> Query String</h2>";
+	string queryString = getenv("QUERY_STRING") ? getenv("QUERY_STRING") : "";
+	responseToSend +=  "<pre>" + queryString + "</pre>";
     responseToSend +=  "</body></html>";
 
     cout << "HTTP/1.1 200 OK\r\n";
