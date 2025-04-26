@@ -48,6 +48,7 @@ class RequestProcessor {
 		int					_status;
 		string				_authorization;
 		vector<string>		dangerousPatterns;
+		ofstream			*_fileStream;
 		
 		
 		public:
@@ -57,7 +58,7 @@ class RequestProcessor {
 		
 		int					parseHeaders(string req);
 		int					parseBody(string req);
-		void				parseMultipartFormData(const string &body, const string &boundary);
+		bool				processMultipartFormData(const string &boundary);
 		void				parseFormUrlEncoded(const string &body);
 		void				debugRequest() const;
 		string  			getExtensionFromContentType(const string& contentType) const;

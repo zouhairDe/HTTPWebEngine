@@ -26,6 +26,7 @@ RequestProcessor::RequestProcessor() {
     fd = -1;
     _file = NULL;
     _server = NULL;
+    _fileStream = new ofstream();
 }
 
 RequestProcessor::~RequestProcessor() {}
@@ -563,7 +564,7 @@ int RequestProcessor::parseBody(string req) {
                 }
                 
                 // Don't add extra dashes - the boundary in header already has them
-                parseMultipartFormData(_body, boundary);
+                processMultipartFormData(boundary);
             }
         }
         else if (_content_type.find("text/plain") != string::npos) {
@@ -589,81 +590,119 @@ string RequestProcessor::getFileContentType() const
     return _fileContentType;
 }
 
-void RequestProcessor::parseMultipartFormData(const string &body, const string &boundary)
-{
-    // The boundary in the Content-Type header doesn't include the leading "--"
-    // but in the request body, each boundary starts with "--"
-    string boundaryDelimiter = "--" + boundary;
-    string endBoundary = boundaryDelimiter + "--";
-    
-    // cout << "Searching with boundary: '" << boundaryDelimiter << "'" << endl;
+bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
+    /* the complete boundary in the multipart content is preceded by "--" */
+    std::string completeBoundary = "--" + boundary;
+    std::string endBoundary = "--" + boundary + "--";  /* final boundary has additional "--" */
     
     size_t pos = 0;
-    size_t nextBoundaryPos;
-    
-    while ((nextBoundaryPos = body.find(boundaryDelimiter, pos)) != string::npos) {
-        // Skip past the current boundary line
-        size_t partStart = body.find("\r\n", nextBoundaryPos);
-        if (partStart == string::npos) break;
-        partStart += 2; // Skip "\r\n"
+    cout << "hehe\n";
+    while (pos < _body.size()) {
+        /* find the next boundary */
+        size_t boundaryPos = _body.find(completeBoundary, pos);
         
-        // Find the next boundary
-        size_t partEnd = body.find(boundaryDelimiter, partStart);
-        if (partEnd == string::npos) break;
-        // Extract the part content (includes headers and data)
-        string part = body.substr(partStart, partEnd - partStart);
-        
-        // Split headers from content
-        size_t headerEnd = part.find("\r\n\r\n");
-        if (headerEnd == string::npos) continue;
-        
-        string headers = part.substr(0, headerEnd);
-        string content = part.substr(headerEnd + 4); // Skip "\r\n\r\n"
-        
-        // Remove trailing CRLF if present
-        if (content.length() >= 2 && content.substr(content.length() - 2) == "\r\n") {
-            content = content.substr(0, content.length() - 2);
+        if (boundaryPos == std::string::npos) {
+            /* if no boundary is found, read until _body.size() - boundary.size() */
+            /* this handles the case where a boundary might be split across chunks */
+            size_t safeReadLimit = _body.size() - completeBoundary.length();
+            if (pos < safeReadLimit) {
+                if (_fileStream && _fileStream->is_open()) {
+                    _fileStream->write(&_body[pos], safeReadLimit - pos);
+                }
+                pos = safeReadLimit;
+            }
+            break;
         }
         
-        // Parse Content-Disposition to get field name and filename
-        size_t namePos = headers.find("name=\"");
+        /* if we're not at the beginning, write data to the current file */
+        if (pos > 0 && _fileStream && _fileStream->is_open()) {
+            _fileStream->write(&_body[pos], boundaryPos - pos);
+        }
+        
+        /* move position to after the boundary */
+        pos = boundaryPos + completeBoundary.length();
+        
+        /* check if this is the end boundary */
+        if (_body.substr(boundaryPos, endBoundary.length()) == endBoundary) {
+            /* end of multipart data */
+            pos = boundaryPos + endBoundary.length();
+            break;
+        }
+        
+        /* skip over the CRLF after the boundary */
+        if (pos + 2 <= _body.size() && _body[pos] == '\r' && _body[pos+1] == '\n') {
+            pos += 2;
+        }
+        
+        /* parse headers to get filename and content type */
+        std::string filename;
+        std::string contentType;
+        
+        /* read headers until an empty line (CRLFCRLF) */
+        size_t headerEnd = _body.find("\r\n\r\n", pos);
+        if (headerEnd == std::string::npos) {
+            /* incomplete headers, wait for more data */
+            break;
+        }
+        
+        std::string headers = _body.substr(pos, headerEnd - pos);
+        pos = headerEnd + 4;  /* skip CRLFCRLF */
+        
+        /* extract filename from Content-Disposition header */
         size_t filenamePos = headers.find("filename=\"");
-        
-        string fieldName;
-        if (namePos != string::npos) {
-            namePos += 6; // Skip 'name="'
-            size_t nameEnd = headers.find("\"", namePos);
-            if (nameEnd != string::npos)
-                fieldName = headers.substr(namePos, nameEnd - namePos);
-        }
-        
-        // Store form field value
-        if (!fieldName.empty()) {
-            _formFields[fieldName] = content;
-            // cout << "Found field: " << fieldName << " with length: " << content.length() << endl;
-        }
-        
-        // Handle file upload
-        if (filenamePos != string::npos) {
-            filenamePos += 10; // Skip 'filename="'
+        if (filenamePos != std::string::npos) {
+            filenamePos += 10;  /* skip 'filename="' */
             size_t filenameEnd = headers.find("\"", filenamePos);
-            if (filenameEnd != string::npos) {
-                _filename = headers.substr(filenamePos, filenameEnd - filenamePos);
-                _fileContent = content;
+            if (filenameEnd != std::string::npos) {
+                filename = headers.substr(filenamePos, filenameEnd - filenamePos);
                 
-                // Get content type
-                size_t contentTypePos = headers.find("Content-Type:");
-                if (contentTypePos != string::npos) {
-                    contentTypePos += 13; // Skip "Content-Type:"
-                    size_t ctEnd = headers.find("\r\n", contentTypePos);
-                    if (ctEnd != string::npos)
-                        _fileContentType = trim(headers.substr(contentTypePos, ctEnd - contentTypePos));
-                    else
-                        _fileContentType = trim(headers.substr(contentTypePos));
+                /* close any previously opened file */
+                if (_fileStream && _fileStream->is_open()) {
+                    _fileStream->close();
+                }
+                
+                /* open a new file for this part */
+                if (_fileStream) {
+                    _fileStream->open(("./body/"+filename).c_str(), std::ios::binary);
                 }
             }
         }
-        pos = partEnd;
+        
+        /* find the next boundary to determine content length */
+        size_t nextBoundaryPos = _body.find(completeBoundary, pos);
+        if (nextBoundaryPos == std::string::npos) {
+            /* no complete boundary found, read until the safe limit */
+            size_t safeReadLimit = _body.size() - completeBoundary.length();
+            if (pos < safeReadLimit && _fileStream && _fileStream->is_open()) {
+                _fileStream->write(&_body[pos], safeReadLimit - pos);
+            }
+            pos = safeReadLimit;
+            break;
+        } else {
+            /* found next boundary, write content to file */
+            if (_fileStream && _fileStream->is_open()) {
+                /* adjust for CRLF before the boundary */
+                size_t contentEnd = nextBoundaryPos;
+                if (contentEnd >= 2 && _body[contentEnd-2] == '\r' && _body[contentEnd-1] == '\n') {
+                    contentEnd -= 2;
+                }
+                
+                if (contentEnd > pos) {
+                    _fileStream->write(&_body[pos], contentEnd - pos);
+                }
+            }
+            /* move to the next boundary position (will be processed in next iteration) */
+            pos = nextBoundaryPos;
+        }
+    }
+    
+    /* redefine _body to remaining unprocessed part */
+    if (pos < _body.size()) {
+        _body = _body.substr(pos);
+        return false;  /* more data to process */
+    } else {
+        _body.clear();
+        return true;  /* all data processed */
     }
 }
 
