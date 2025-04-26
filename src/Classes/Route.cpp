@@ -61,6 +61,11 @@ pair<string, int> Route::getRedirectUrl() const
 	return _redirectionUrl;
 }
 
+vector<pair<string, string> > Route::getCGIs() const
+{
+	return CGIs;
+}
+
 Route &Route::operator=(const Route &route)
 {
 	RouteName = route.RouteName;
@@ -71,6 +76,7 @@ Route &Route::operator=(const Route &route)
 	UploadStore = route.UploadStore;
 	ClientMaxBodySize = route.ClientMaxBodySize;
 	_redirectionUrl = route._redirectionUrl;
+	CGIs = route.CGIs;
 	return *this;
 }
 
@@ -138,8 +144,6 @@ void Route::setProperty(const string &key, const string &value)
 				throw runtime_error("\033[31m Invalid CGI value: " + parts[i] + "\nExpected format: \"cgi_bin <extention>:<path>\"\nExtention should start with a dot");
 			
 			CGIs.push_back(make_pair(extention, path));
-			cout << bold << red << "CGI extention: " << extention << endl;
-			cout << bold << red << "CGI path: " << path << endl;
 		}
 	}
 	else if (key == "redirection")
@@ -182,43 +186,6 @@ File* Route::handleFile(string path) const {
     	return new File(path);
 }
 
-string Route::createDirectoryListing(const string& path) const {
-	cout << "In Directory Listing" << endl;
-    string htmlContent = "<html><head><title>Directory Listing</title></head><body><h1>Directory Listing</h1><ul>";
-    DIR* dir = opendir(path.c_str());
-    if (dir != NULL) {
-        struct dirent* entry;
-        while ((entry = readdir(dir)) != NULL) {
-            string name = entry->d_name;
-            if (name != "." && name != "..") {
-                htmlContent += "<li><a href=\"";
-                htmlContent += name;
-                htmlContent += "\">";
-                htmlContent += name;
-                htmlContent += "</a></li>";
-            }
-        }
-        closedir(dir);
-    }
-    htmlContent += "</ul></body></html>";
-    return htmlContent;
-}
-
-File* Route::handleDirectory(const string& path) const {
-	cout << "In HandleDirectory" << endl;
-    if (!RouteDirectoryListing)
-        return NULL;
-
-    string htmlContent = createDirectoryListing(path);
-    string tempPath = "/tmp/dirlist_" + cpp11_toString(time(NULL)) + ".html";
-    ofstream tempFile(tempPath.c_str());
-    if (!tempFile.is_open())
-        return NULL;
-    
-    tempFile << htmlContent;
-    tempFile.close();
-    return new File(tempPath);
-}
 
 ostream &operator<<(ostream &out, const Route &route)
 {
@@ -241,5 +208,16 @@ ostream &operator<<(ostream &out, const Route &route)
 	out << endl;
 	out << "Upload Store: " << route.getUploadStore() << endl;
 	out << "Client Max Body Size: " << route.getClientMaxBodySize() << endl;
+	out << "Redirection URL: " << route.getRedirectUrl().first << endl;
+	out << "Redirection Status Code: " << route.getRedirectUrl().second << endl;
+	out << "CGIs: ";
+	vector<pair<string, string> > cgis = route.getCGIs();
+	for (size_t i = 0; i < cgis.size(); i++)
+	{
+		out << cgis[i].first << ":" << cgis[i].second;
+		if (i < cgis.size() - 1)
+			out << ", ";
+	}
+	cout << endl;
 	return out;
 }

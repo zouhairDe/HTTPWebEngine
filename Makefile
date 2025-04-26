@@ -3,13 +3,13 @@ FLAGS = -std=c++98 -Wall -Wextra -Werror -Wshadow
 DEBUG_FLAGS = -g -fsanitize=address
 OPTIMIZATION_FLAGS = -O3
 HEADER_FILES = Global.hpp ConfigParser.hpp Server.hpp File.hpp WebServer.hpp \
-				Route.hpp Functions.hpp RequestProcessor.hpp  \
+				Route.hpp Functions.hpp CGI.hpp RequestProcessor.hpp  \
 
 COLOR_HEADERS = IColor.hpp BlueColor.hpp GreenColor.hpp RedColor.hpp DefaultColor.hpp \
 				BoldFont.hpp
 FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp ServerFunctions.cpp
 CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp \
-				Route.cpp RequestProcessor.cpp \
+				Route.cpp RequestProcessor.cpp CGI.cpp \
 
 				
 MAIN_FILE = main.cpp
@@ -104,6 +104,7 @@ test:
 	exec cp staticWebsite/* /tmp/www/chatroom/test/
 	mkdir -p /tmp/www/chatroom/cgi/
 	exec cp cpp-cgi/contact.cgi /tmp/www/chatroom/cgi/
+	exec cp cpp-cgi/upload.js /tmp/www/chatroom/cgi/
 
 clean:
 	rm -f $(OBJ_FILES)

@@ -15,12 +15,14 @@
 
 # include "Global.hpp"
 # include "Server.hpp"
+# include "CGI.hpp"
 
 # define REQUEST_BUFFER_SIZE 1024 * 16
 
 class Server;
 class Route;
 class File;
+class CGI;
 
 class RequestProcessor {
     private:
@@ -66,6 +68,7 @@ class RequestProcessor {
 		Server				*_server;
 		Route 				*_route;
 		File				*_file;
+		CGI					*_cgi;
 		int					fd;
 		void    			init_dangerousePatterns();
 		bool				receiveRequest(int client_socket);
@@ -83,6 +86,8 @@ class RequestProcessor {
 		string 				DELETEResponse(string root, string requestedPath);
 		string 				RedirectionPage(string redirectionUrl, int status_code);
 		bool 				isUriBad(string uri);
+		bool    			cgiInUri();
+		string				handleCgi();
 		string 				checkRedirectionFile(string path);
 
 		/*getters*/
@@ -107,6 +112,7 @@ class RequestProcessor {
 		bool				responded() const;
 		bool				received() const;
 		string				getResponseToSend() const;
+		string				getAuthorization() const;
 
 		/*setters*/
 		void				setPort(string new_port);

@@ -40,15 +40,16 @@ class Route {
 		~Route();
 		
 		/* getters */
-		vector<string>	getRouteIndexFiles() const;
-		bool			getRouteDirectoryListing() const;
-		bool			getRouteGETMethod() const;
-		bool			getRoutePOSTMethod() const;
-		string			getUploadStore() const;
-		long			getClientMaxBodySize() const;
-		string			getRouteName() const;
-		void			CheckFiles() const;
-		pair<string, int>	getRedirectUrl() const;
+		vector<string>					getRouteIndexFiles() const;
+		bool							getRouteDirectoryListing() const;
+		bool							getRouteGETMethod() const;
+		bool							getRoutePOSTMethod() const;
+		string							getUploadStore() const;
+		long							getClientMaxBodySize() const;
+		string							getRouteName() const;
+		void							CheckFiles() const;
+		pair<string, int>				getRedirectUrl() const;
+		vector<pair<string, string> >	getCGIs() const;
 
 		// ma3rftch ila chi rouote ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
 

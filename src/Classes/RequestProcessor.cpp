@@ -26,10 +26,18 @@ RequestProcessor::RequestProcessor() {
     fd = -1;
     _file = NULL;
     _server = NULL;
+    _cgi = NULL;
     _fileStream = new ofstream();
 }
 
-RequestProcessor::~RequestProcessor() {}
+RequestProcessor::~RequestProcessor() {
+    // if (_fileStream) {
+    //     if (_fileStream->is_open()) {
+    //         _fileStream->close();
+    //     }
+    //     delete _fileStream;
+    // }
+}
 
 string RequestProcessor::getRequest() const
 {
@@ -114,6 +122,11 @@ string RequestProcessor::getResponseToSend() const
 string RequestProcessor::getContentType() const
 {
     return _content_type;
+}
+
+string RequestProcessor::getAuthorization() const
+{
+    return _authorization;
 }
 
 string RequestProcessor::generateHttpHeaders(Server *server, int status_code, long fileSize)
@@ -243,12 +256,10 @@ string RequestProcessor::checkRedirectionFile(string path) {
 File* RequestProcessor::GETResponse(string root, string requestedPath) {
     string reqUri = this->getUri();
     string basePath = "/tmp/www/" + root + reqUri.substr(1);
-    // cout << "Base path: " << basePath << endl;
     if (requestedPath == "/") {
         Route *route = _server->getRouteFromUri("/");
         _route = route;// hna khass nchecking wach get allowed methond l had route wlala
         if (_route->getRedirectUrl().second != -1) {
-            //if the path is file and exists return it
             string newPath = checkRedirectionFile(_route->getRedirectUrl().first);
             if (newPath.empty() == false) {
                 _status = _route->getRedirectUrl().second;
@@ -521,16 +532,16 @@ string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
 }
 
 int RequestProcessor::parseBody(string req) {
-    if (_method == "DELETE") {
-        // DELETE requests typically don't have a body, but we can still handle it wnsiftoh l cgi
-        // if we have a cgi, pass it, else try delete the file
+    // if (_method == "DELETE") {
+    //     // DELETE requests typically don't have a body, but we can still handle it wnsiftoh l cgi
+    //     // if we have a cgi, pass it, else try delete the file
 
-        cout << "DELETE request received" << endl;
-        cout << "URI: " << _uri << endl;
-        cout << "Query: " << _query << endl;
+    //     cout << "DELETE request received" << endl;
+    //     cout << "URI: " << _uri << endl;
+    //     cout << "Query: " << _query << endl;
 
-        return (0);
-    } else if (_method == "POST") {
+    //     return (0);
+    // } else if (_method == "POST") {
         size_t headerEnd = req.find("\r\n\r\n");
         if (headerEnd == string::npos) {
             headerEnd = req.find("\n\n"); // Fallback for non-standard requests
@@ -557,13 +568,9 @@ int RequestProcessor::parseBody(string req) {
             size_t boundaryPos = _content_type.find("boundary=");
             if (boundaryPos != string::npos) {
                 string boundary = _content_type.substr(boundaryPos + 9);
-                
-                // Remove quotes if present
                 if (boundary[0] == '"' && boundary[boundary.length()-1] == '"') {
                     boundary = boundary.substr(1, boundary.length() - 2);
                 }
-                
-                // Don't add extra dashes - the boundary in header already has them
                 processMultipartFormData(boundary);
             }
         }
@@ -581,7 +588,7 @@ int RequestProcessor::parseBody(string req) {
             cerr << "Unsupported Content-Type: " << _content_type << endl;
             return (1);
         }
-    }
+    // }
     return (0);
 }
 
@@ -961,8 +968,85 @@ string RequestProcessor::RedirectionPage(string redirectionUrl, int status_code)
     return response;
 }
 
+bool    RequestProcessor::cgiInUri() {
+    Route *route = _server->getRouteFromUri(getUri());
+    _route = route;
+    if (!route) {
+        cout << "Route not found for CGI-URI: " << getUri() << endl;
+        return false;
+    }
+    _route = route;
+    vector<pair<string, string> > cgiMethods = route->getCGIs();
+    for (size_t i = 0; i < cgiMethods.size(); i++) {
+        cout << "Comparing: " << cgiMethods[i].first << " with " << this->getUri() << endl;
+        if (this->getUri().find(cgiMethods[i].first) != std::string::npos) {
+            // cout << "CGI method found: " << cgiMethods[i].first << ", IN uri: " << this->getUri() << endl;
+            _cgi = new CGI();
+            string path = "/tmp/www/" + _server->getRoot() + cgiMethods[i].second;
+            _cgi->setCgiPath(path);
+            cout << "CGI path: " << path << endl;
+            return true;
+        }
+    }
+    cout << "No CGI method found in URI: " << this->getUri() << endl;
+    return false;
+}
+
+string RequestProcessor::handleCgi(void) {
+    string response;
+
+    std::cout << "CGI request received" << std::endl;
+    std::vector<std::string> envVars;
+    envVars.push_back("REQUEST_METHOD=" + this->getMethod());
+    envVars.push_back("REQUEST_URI=" + this->getUri());
+    envVars.push_back("CONTENT_TYPE=" + this->getContentType());
+    envVars.push_back("CONTENT_LENGTH=" + cpp11_toString(this->getContentLength()));
+    envVars.push_back("HTTP_HOST=" + this->getHost());
+    envVars.push_back("HTTP_CONNECTION=" + this->getConnection());
+    envVars.push_back("HTTP_COOKIE=" + this->getCookie());
+    envVars.push_back("HTTP_AUTHORIZATION=" + this->getAuthorization());
+    envVars.push_back("QUERY_STRING=" + this->getQuery());
+    // Set the body data before opening streams
+    _cgi->setBodyData(this->getBody());
+    
+    std::vector<char*> envp;
+    for (size_t i = 0; i < envVars.size(); ++i)
+        envp.push_back(const_cast<char*>(envVars[i].c_str()));
+    envp.push_back(NULL);
+    _cgi->setEnvVars(envp);
+    
+    if (!_cgi->openInputStream()) {
+        std::cerr << "Failed to open input stream for CGI" << std::endl;
+        return ReturnServerErrorPage(_server, 500);
+    }
+    
+    if (!_cgi->openOutputStream()) {
+        std::cerr << "Failed to open output stream for CGI" << std::endl;
+        _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
+        return ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
+    }
+    if (_cgi->execute()) {
+        std::cout << "CGI executed successfully" << std::endl;
+        string cgiResponse = _cgi->getCgiOutput();
+        response = cgiResponse;
+    } else {
+        std::cerr << "CGI execution failed" << std::endl;
+        _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
+        response = ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
+    }
+    
+    _cgi->clean();
+    delete _cgi;
+    _cgi = NULL;
+    _status = OK_STATUS_CODE;
+    
+    return response;
+}
+
 string RequestProcessor::createResponse(void) {
     string response;
+    if (cgiInUri())
+        return this->handleCgi();
     if (isUriBad(this->getUri())) { // && isUriDangerous(this->getUri())) {
         cout << red << "Dangerous URI detected: " << this->getUri() << def << endl;
         _status = FORBIDDEN_STATUS_CODE;
@@ -992,69 +1076,6 @@ string RequestProcessor::createResponse(void) {
 	} else if (this->getMethod() == "POST") {
 
         /*----------------------Hardcoded path so far khasn mn b3d nakhdoh mn conf_file*/
-        if (this->getUri().find("/cgi/") != std::string::npos) {
-            std::cout << "CGI request received" << std::endl;
-        
-            std::vector<std::string> envVars;
-            envVars.push_back("REQUEST_METHOD=" + this->getMethod());
-            envVars.push_back("REQUEST_URI=" + this->getUri());
-            envVars.push_back("CONTENT_TYPE=" + this->getContentType());
-            envVars.push_back("CONTENT_LENGTH=" + cpp11_toString(this->getContentLength()));
-        
-            std::vector<char*> envp;
-            for (size_t i = 0; i < envVars.size(); ++i)
-                envp.push_back(const_cast<char*>(envVars[i].c_str()));
-            envp.push_back(NULL);
-        
-            std::string cgiPath = "/tmp/www/chatroom/cgi/contact.cgi";
-        
-            int cgiOutput[2]; // child stdout → parent
-            int cgiInput[2];  // parent stdin  → child
-            pipe(cgiOutput);
-            pipe(cgiInput);
-        
-            pid_t pid = fork();
-            if (pid < 0) {
-                std::cerr << "Fork failed" << std::endl;
-                return generateHttpHeaders(_server, INTERNAL_SERVER_ERROR_STATUS_CODE, 0);
-            } else if (pid == 0) {
-                // Child process
-                dup2(cgiOutput[1], STDOUT_FILENO);
-                dup2(cgiInput[0], STDIN_FILENO);
-                close(cgiOutput[0]);
-                close(cgiOutput[1]);
-                close(cgiInput[0]);
-                close(cgiInput[1]);
-        
-                char* argv[] = { const_cast<char*>(cgiPath.c_str()), NULL };
-                execve(cgiPath.c_str(), argv, envp.data());
-                perror("execve failed");
-                exit(1);
-            } else {
-                // Parent process
-                close(cgiOutput[1]); // Parent reads from this
-                close(cgiInput[0]);  // Parent writes to this
-        
-                //  Send POST body to child if needed
-                if (this->getMethod() == "POST" && this->getContentLength() > 0) {
-                    std::string body = this->getBody(); // <-- Implement this
-                    write(cgiInput[1], body.c_str(), body.size());
-                }
-                close(cgiInput[1]);
-        
-                // Read child output
-                std::string cgiResponse;
-                char buffer[1024];
-                ssize_t bytes;
-                while ((bytes = read(cgiOutput[0], buffer, sizeof(buffer))) > 0) {
-                    cgiResponse.append(buffer, bytes);
-                }
-                close(cgiOutput[0]);
-                waitpid(pid, NULL, 0);
-                cout << "CGI response: " << cgiResponse << endl;
-                return cgiResponse;
-            }
-        }
         string store_path = "./body/";
         Route *route = _server->getRouteFromUri(getUri());
         if (route && !route->getUploadStore().empty())

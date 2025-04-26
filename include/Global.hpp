@@ -42,6 +42,8 @@
 #include <fstream>
 #include <stdlib.h>
 #include <sys/wait.h>
+# include <fcntl.h>
+
 
 using namespace std;
 
