@@ -89,6 +89,7 @@ class RequestProcessor {
 		bool    			cgiInUri();
 		string				handleCgi();
 		string 				checkRedirectionFile(string path);
+		string 				GenerateCostumeErrorPage(int status_code, string error_message);
 
 		/*getters*/
 		string				getRequest() const;

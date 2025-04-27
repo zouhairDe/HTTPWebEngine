@@ -9,7 +9,7 @@ string			cpp11_toString(int n);
 
 Route::Route()
 	: RouteDirectoryListing(false), RouteGETMethod(false),
-	  RoutePOSTMethod(false), ClientMaxBodySize(0)
+	  RoutePOSTMethod(false), ClientMaxBodySize(1024 * 1024)//mega default li kidir ngnix
 {
 	_redirectionUrl = make_pair("", -1);
 }
@@ -34,6 +34,11 @@ bool Route::getRouteGETMethod() const
 bool Route::getRoutePOSTMethod() const
 {
 	return RoutePOSTMethod;
+}
+
+bool Route::getDELETEMethod() const
+{
+	return RouteDELETEMethod;
 }
 
 string Route::getUploadStore() const
@@ -94,8 +99,18 @@ void Route::setProperty(const string &key, const string &value)
 		RouteDirectoryListing = (value == "on");
 	else if (key == "allowed_methods")
 	{
-		RouteGETMethod = (value.find("GET") != string::npos);
-		RoutePOSTMethod = (value.find("POST") != string::npos);
+		vector<string> methods = split(value, ',');
+		for (size_t i = 0; i < methods.size(); i++)
+		{
+			if (methods[i] == "GET")
+				RouteGETMethod = true;
+			else if (methods[i] == "POST")
+				RoutePOSTMethod = true;
+			else if (methods[i] == "DELETE")
+				RouteDELETEMethod = true;
+			else
+				throw runtime_error("\033[31m Invalid method: " + methods[i]);
+		}
 	}
 	else if (key == "upload_store")
 		UploadStore = value;
@@ -132,7 +147,6 @@ void Route::setProperty(const string &key, const string &value)
 			throw runtime_error("\033[31m Only 2 CGI access allowed");
 		for (size_t i = 0; i < parts.size(); i++)
 		{
-			//split extension and path usin :
 			vector<string> cgi_parts = split(parts[i], ':');
 			if (cgi_parts.size() != 2)
 				throw runtime_error("\033[31m Invalid CGI value: " + parts[i] + "\nExpected format: \"cgi_bin <extention>:<path>\"");
@@ -176,16 +190,6 @@ void Route::CheckFiles() const
 	if (stat(string("/tmp/www/" + UploadStore).c_str(), &buffer) != 0)
 		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Upload Store");
 }
-
-File* Route::handleFile(string path) const {
-	// cout << "In HandleFile" << endl;
-	// cout << "	Path is : " << path << endl;
-    if (access(path.c_str(), F_OK) == -1 || access(path.c_str(), R_OK) == -1)
-        return NULL;
-	else
-    	return new File(path);
-}
-
 
 ostream &operator<<(ostream &out, const Route &route)
 {

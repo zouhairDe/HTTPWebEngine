@@ -30,6 +30,7 @@ class Route {
 		bool							RouteDirectoryListing;
 		bool							RouteGETMethod;
 		bool							RoutePOSTMethod;
+		bool							RouteDELETEMethod;
 		long							ClientMaxBodySize;
 		vector<pair<string, string> >	CGIs;//pair<extention, path>
 
@@ -44,6 +45,7 @@ class Route {
 		bool							getRouteDirectoryListing() const;
 		bool							getRouteGETMethod() const;
 		bool							getRoutePOSTMethod() const;
+		bool                            getDELETEMethod() const;
 		string							getUploadStore() const;
 		long							getClientMaxBodySize() const;
 		string							getRouteName() const;
@@ -55,11 +57,6 @@ class Route {
 
 		/* setters */
 		void setProperty(const string& key, const string& value);
-		
-		/* Methods */
-		string	createDirectoryListing(const string& path) const;
-		File	*handleDirectory(const string& path) const;
-		File	*handleFile(string path) const;
 		
 
 };

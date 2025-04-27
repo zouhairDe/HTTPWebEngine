@@ -184,11 +184,11 @@ void	WebServer::run(){
 				continue ;
 			int client_socket = events[i].data.fd;
 			requests[client_socket].receiveRequest(client_socket);
-			cout << bold << green << "RECEIVED? " << requests[client_socket].received() << def << endl;
+			// cout << bold << green << "RECEIVED? " << requests[client_socket].received() << def << endl;
 			if (requests[client_socket].received()) {
-				cout << "ll: " << requests[client_socket].getConnection() << endl;
+				// cout << "ll: " << requests[client_socket].getConnection() << endl;
 				requests[client_socket].sendResponse();
-				cout << bold << green << "SENT? " << requests[client_socket].responded() << def << endl;
+				// cout << bold << green << "SENT? " << requests[client_socket].responded() << def << endl;
 				if (requests[client_socket].responded() == false) {
 					modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLOUT | EPOLLET);
 				} else {

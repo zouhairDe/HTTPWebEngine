@@ -242,6 +242,21 @@ ostream &operator<<(ostream &out, const Server &server) {
 		out << "    Upload store: " << route.getUploadStore() << endl;
 		out << "    Client max body size: " << route.getClientMaxBodySize() << endl;
 	}
+	out << "Redirection URL: " << server.getRedirectUrl().first << ", status code: " << server.getRedirectUrl().second << endl;
+	out << "Server names: ";
+	vector<string> serverNames = server.getServerNames();
+	for (size_t i = 0; i < serverNames.size(); i++) {
+		out << serverNames[i];
+		if (i < serverNames.size() - 1) out << ", ";
+	}
+	out << endl;
+	out << "Index files: ";
+	vector<string> indexFiles = server.getIndexFiles();
+	for (size_t i = 0; i < indexFiles.size(); i++) {
+		out << indexFiles[i];
+		if (i < indexFiles.size() - 1) out << ", ";
+	}
+	out << endl;
 	out << "Error pages:" << server.getErrorPage() << endl;
 	return out;
 }

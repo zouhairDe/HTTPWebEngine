@@ -256,9 +256,10 @@ string RequestProcessor::checkRedirectionFile(string path) {
 File* RequestProcessor::GETResponse(string root, string requestedPath) {
     string reqUri = this->getUri();
     string basePath = "/tmp/www/" + root + reqUri.substr(1);
+    cout << "Base path: " << basePath << endl;
+    cout << "Requested path: " << requestedPath << endl;
+    cout << "Route :\n" << *_route << endl;
     if (requestedPath == "/") {
-        Route *route = _server->getRouteFromUri("/");
-        _route = route;// hna khass nchecking wach get allowed methond l had route wlala
         if (_route->getRedirectUrl().second != -1) {
             string newPath = checkRedirectionFile(_route->getRedirectUrl().first);
             if (newPath.empty() == false) {
@@ -288,40 +289,42 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
             return GetFile(basePath);
         }
     }
-
-    Route *route = _server->getRouteFromUri(getUri());
-    cout << "Uri == " << getUri() << endl;
-    if (!route) {
-        cout << "Route not found for URI: " << getUri() << endl;
-        return NULL;//never gonna occur daba: good
-    } else// hna khass nchecking wach get allowed methond l had route wlala
-        _route = route;
     if (_route->getRedirectUrl().second != -1) {
         string newRouteName = _route->getRedirectUrl().first;
         int newStatusCode = _route->getRedirectUrl().second;
         //if the path is file and exists return it
-        string newPath = checkRedirectionFile(_route->getRedirectUrl().first);
+        string newPath = checkRedirectionFile(newRouteName);
         if (newPath.empty() == false) {
             _status = _route->getRedirectUrl().second;
+            cout << "Redirection file existsss: " << newPath << endl;
             return GetFile(newPath);
         }
         if (!_server->isRouteExist(newRouteName)) {
+            cout << "Route does not exist: " << newRouteName << endl;
             return NULL;
         }
         else {
+            cout << "Redirection route: " << newRouteName << " was found" << endl;
             _route = _server->getRouteFromUri(newRouteName);
+            // cout << "New route: " << *_route << endl;
+            cout << "Current Route: " << *_route << endl;
+            basePath = "/tmp/www/" + root + newRouteName.substr(1);
+            cout << "BAse path: " << basePath << endl;
             _status = newStatusCode;
         }
     }
+    cout << "Base path: " << basePath << endl;
     struct stat pathStat;
     if (stat(basePath.c_str(), &pathStat) == -1) {
         return NULL;
     }
     if (S_ISREG(pathStat.st_mode)) {
         _status = 200;
+        cout << "Base path is a file: " << basePath << endl;
         return GetFile(basePath);
     }
     if (S_ISDIR(pathStat.st_mode)) {
+        cout << "Base path is a folder: " << basePath << endl;
         vector<string> indexFiles = _route->getRouteIndexFiles();
         basePath = processIndexFiles(indexFiles);
         if (!basePath.empty()) {
@@ -436,10 +439,10 @@ int    RequestProcessor::parseHeaders(string req) {
     }
     
     _method = requestLine[0];
-    if (_method != "GET" && _method != "POST" && _method != "DELETE") {
-        cerr << "Unsupported HTTP method: " << _method << endl;
-        return (1);
-    }
+    // if (_method != "GET" && _method != "POST" && _method != "DELETE") {
+    //     cerr << "Unsupported HTTP method: " << _method << endl;
+    //     return (1);//ERROR MANAGEMENT IS GOING CRAZY HNA
+    // }
     _uri = requestLine[1];
     
     // Extract query parameters if present
@@ -465,6 +468,7 @@ int    RequestProcessor::parseHeaders(string req) {
                     _host = value;
                 }
             } else if (key == "Content-Type") {
+                // cout << "In parseHeaders():\n\tContent-Type: " << value << endl;
                 _content_type = value;
             } else if (key == "Content-Length") {
                 _content_length = std::atoi(value.c_str());
@@ -532,16 +536,6 @@ string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
 }
 
 int RequestProcessor::parseBody(string req) {
-    // if (_method == "DELETE") {
-    //     // DELETE requests typically don't have a body, but we can still handle it wnsiftoh l cgi
-    //     // if we have a cgi, pass it, else try delete the file
-
-    //     cout << "DELETE request received" << endl;
-    //     cout << "URI: " << _uri << endl;
-    //     cout << "Query: " << _query << endl;
-
-    //     return (0);
-    // } else if (_method == "POST") {
         size_t headerEnd = req.find("\r\n\r\n");
         if (headerEnd == string::npos) {
             headerEnd = req.find("\n\n"); // Fallback for non-standard requests
@@ -588,7 +582,6 @@ int RequestProcessor::parseBody(string req) {
             cerr << "Unsupported Content-Type: " << _content_type << endl;
             return (1);
         }
-    // }
     return (0);
 }
 
@@ -603,7 +596,6 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
     std::string endBoundary = "--" + boundary + "--";  /* final boundary has additional "--" */
     
     size_t pos = 0;
-    cout << "hehe\n";
     while (pos < _body.size()) {
         /* find the next boundary */
         size_t boundaryPos = _body.find(completeBoundary, pos);
@@ -670,7 +662,15 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                 
                 /* open a new file for this part */
                 if (_fileStream) {
-                    _fileStream->open(("./body/"+filename).c_str(), std::ios::binary);
+                    Route *route = _server->getRouteFromUri(getUri());
+                    if (filename.empty()) {
+                        filename = "upload_" + cpp11_toString(time(NULL)) + ".bin";
+                    }
+                    string store_path = "./body/" + filename;
+                    if (!route->getUploadStore().empty())
+                        store_path = "/tmp/www/" + route->getUploadStore() + filename;
+                    // cout << "Opening store_path file: " << store_path << endl;
+                    _fileStream->open(store_path.c_str(), std::ios::binary);
                 }
             }
         }
@@ -978,17 +978,16 @@ bool    RequestProcessor::cgiInUri() {
     _route = route;
     vector<pair<string, string> > cgiMethods = route->getCGIs();
     for (size_t i = 0; i < cgiMethods.size(); i++) {
-        cout << "Comparing: " << cgiMethods[i].first << " with " << this->getUri() << endl;
         if (this->getUri().find(cgiMethods[i].first) != std::string::npos) {
             // cout << "CGI method found: " << cgiMethods[i].first << ", IN uri: " << this->getUri() << endl;
             _cgi = new CGI();
             string path = "/tmp/www/" + _server->getRoot() + cgiMethods[i].second;
             _cgi->setCgiPath(path);
-            cout << "CGI path: " << path << endl;
+            // cout << "CGI path: " << path << endl;
             return true;
         }
     }
-    cout << "No CGI method found in URI: " << this->getUri() << endl;
+    // cout << "No CGI method found in URI: " << this->getUri() << endl;
     return false;
 }
 
@@ -1006,6 +1005,9 @@ string RequestProcessor::handleCgi(void) {
     envVars.push_back("HTTP_COOKIE=" + this->getCookie());
     envVars.push_back("HTTP_AUTHORIZATION=" + this->getAuthorization());
     envVars.push_back("QUERY_STRING=" + this->getQuery());
+    envVars.push_back("SERVER_PROTOCOL=HTTP/1.1");
+    envVars.push_back("SERVER_SOFTWARE=webserv/1.0.0");
+    envVars.push_back("PATH_INFO=" + this->getUri());
     // Set the body data before opening streams
     _cgi->setBodyData(this->getBody());
     
@@ -1027,6 +1029,7 @@ string RequestProcessor::handleCgi(void) {
     }
     if (_cgi->execute()) {
         std::cout << "CGI executed successfully" << std::endl;
+        cout << "CGI output:\n" << _cgi->getCgiOutput() << endl;
         string cgiResponse = _cgi->getCgiOutput();
         response = cgiResponse;
     } else {
@@ -1043,22 +1046,49 @@ string RequestProcessor::handleCgi(void) {
     return response;
 }
 
+string RequestProcessor::GenerateCostumeErrorPage(int status_code, string error_message) {
+    string body = "<html><body><h1>" + cpp11_toString(status_code) + " " + error_message + "</h1></body></html>";
+    string response = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
+    response += "Server: webserv/1.0.0 (Ubuntu)\r\n";
+    response += "Content-Type: text/html\r\n";
+    response += "Content-Length: " + cpp11_toString(body.length()) + "\r\n";
+    response += "Connection: close\r\n";
+    response += "\r\n";
+    response += body;
+    return response;
+}
+
 string RequestProcessor::createResponse(void) {
     string response;
     if (cgiInUri())
         return this->handleCgi();
-    if (isUriBad(this->getUri())) { // && isUriDangerous(this->getUri())) {
+    if (isUriBad(this->getUri())) {
         cout << red << "Dangerous URI detected: " << this->getUri() << def << endl;
         _status = FORBIDDEN_STATUS_CODE;
         response = this->ReturnServerErrorPage(_server, FORBIDDEN_STATUS_CODE);//need to change this to server certain error page not dima 404
         return response;
     }
+    Route *route = _server->getRouteFromUri(getUri());
+    // cout << "Uri == " << getUri() << endl;
+    if (!route) {
+        cout << "Route not found for URI: " << getUri() << endl;
+        return this->ReturnServerErrorPage(_server, NOT_FOUND_STATUS_CODE);
+    } else
+        _route = route;
     if (this->getMethod() == "GET") {
+
 		Server *Server = this->_server;
 		if (Server == nullptr) {
 			cerr << "Error: Server not found" << endl;
 			return "";
 		}
+        if (_route->getRouteGETMethod() == false)
+        {
+            // cout << "GET method not allowed for this route" << endl;
+            _status = NOT_ALLOWED_STATUS_CODE;
+            response = this->GenerateCostumeErrorPage(NOT_ALLOWED_STATUS_CODE, "GET method not allowed for this route");
+            return response;
+        }
         if (Server->getRedirectUrl().second != -1) {
             cout << "Redirection URL: " << Server->getRedirectUrl().first << endl;
             response = this->RedirectionPage(Server->getRedirectUrl().first, Server->getRedirectUrl().second);
@@ -1074,33 +1104,46 @@ string RequestProcessor::createResponse(void) {
             response = this->generateHttpHeaders(Server, _status, file->getSize());
         }
 	} else if (this->getMethod() == "POST") {
+        cout << "POST request max body size: " << _route->getClientMaxBodySize() << endl;
+        cout << "POST request body size: " << this->getContentLength() << endl;
+        if ((long)this->getContentLength() > _route->getClientMaxBodySize()) {
+            _status = REQUEST_ENTITY_TOO_LARGE_STATUS_CODE;
+            response = this->GenerateCostumeErrorPage(REQUEST_ENTITY_TOO_LARGE_STATUS_CODE, "POST request has exceeded max body size");
+            return response;
+        }
+        if (_route->getRoutePOSTMethod() == false)
+        {
+            // cout << "POST method not allowed for this route" << endl;
+            _status = NOT_ALLOWED_STATUS_CODE;
+            response = this->GenerateCostumeErrorPage(NOT_ALLOWED_STATUS_CODE, "POST method not allowed for this route");
+            return response;
+        }
 
-        /*----------------------Hardcoded path so far khasn mn b3d nakhdoh mn conf_file*/
-        string store_path = "./body/";
-        Route *route = _server->getRouteFromUri(getUri());
-        if (route && !route->getUploadStore().empty())
-            store_path = "/tmp/www/" + route->getUploadStore(), cout << "Upload store pathhhhhh: " << store_path << endl;
-        string filename = getStoreFileName();
-        string file_path = store_path;
-
-        response = generateHttpHeaders(_server, 200, 0);
-		// send(this->getSocket(), response.c_str(), response.length(), 0);
-		
-		if (!this->getFileContent().empty()) {
-			string uploadPath = store_path + filename;
-            cout << "Saving uploaded file to: " << uploadPath << endl;
-			ofstream outFile(uploadPath.c_str(), ios::binary | ios::trunc);
-			if (outFile.is_open()) {
-				outFile.write(this->getFileContent().c_str(), this->getFileContent().length());
-				outFile.close();
-			} else {
-				cerr << "Failed to save uploaded file" << endl;
-			}
-		} else {
-			cout << bold << red << "No file uploaded" << def << endl;
-		}
+        //checking if the _fileStream is ok
+        if (_fileStream && _fileStream->is_open()) {
+            cout << "File stream is open" << endl;
+            response = generateHttpHeaders(_server, 200, 0);
+        } else {
+            cout << "File stream is not open" << endl;
+            _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
+            response = this->ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
+            //delete the file stream ???
+            // if (_fileStream) {
+            //     _fileStream->close();
+            //     delete _fileStream;
+            //     _fileStream = NULL;
+            // }
+            return response;
+        }
 	}
     else if (this->getMethod() == "DELETE") {
+        if (_route->getDELETEMethod() == false)
+        {
+            cout << "DELETE method not allowed for this route" << endl;
+            _status = NOT_ALLOWED_STATUS_CODE;
+            response = this->ReturnServerErrorPage(_server, NOT_ALLOWED_STATUS_CODE);
+            return response;
+        }
         // cout << "DELETE request received" << endl;
         Server *Server = this->_server;
         if (Server == nullptr) {
@@ -1114,8 +1157,9 @@ string RequestProcessor::createResponse(void) {
         }
     }
     else {
-        // cerr << "Unsupported method: " << _method << endl;
-        return "";
+        response = this->GenerateCostumeErrorPage(NOT_ALLOWED_STATUS_CODE, "Method not allowed");
+        cout << "Method not allowed" << endl;
+        _status = NOT_ALLOWED_STATUS_CODE;
     }
     return response;
 }
@@ -1175,7 +1219,7 @@ int    RequestProcessor::sendResponse(void)
         };
         // cout << "Sending file: " << buffer << endl;
     } else {
-        cout << "No file to send" << endl;
+        // cout << "No file to send" << endl;
         _responded = true;
     }
     return (1);
