@@ -46,7 +46,7 @@ string Route::getUploadStore() const
 	return UploadStore;
 }
 
-long Route::getClientMaxBodySize() const
+size_t Route::getClientMaxBodySize() const
 {
 	return ClientMaxBodySize;
 }

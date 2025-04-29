@@ -31,7 +31,7 @@ class Route {
 		bool							RouteGETMethod;
 		bool							RoutePOSTMethod;
 		bool							RouteDELETEMethod;
-		long							ClientMaxBodySize;
+		size_t							ClientMaxBodySize;
 		vector<pair<string, string> >	CGIs;//pair<extention, path>
 
 	public:
@@ -47,7 +47,7 @@ class Route {
 		bool							getRoutePOSTMethod() const;
 		bool                            getDELETEMethod() const;
 		string							getUploadStore() const;
-		long							getClientMaxBodySize() const;
+		size_t							getClientMaxBodySize() const;
 		string							getRouteName() const;
 		void							CheckFiles() const;
 		pair<string, int>				getRedirectUrl() const;

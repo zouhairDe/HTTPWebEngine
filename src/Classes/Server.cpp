@@ -2,7 +2,7 @@
 #include "Server.hpp"
 
 Server::Server(string hostname, string port, string root)
-	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(-1), Socket(-1) {
+	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(1024*1024), Socket(-1) {
 		_redirectionUrl = make_pair("", -1);
 }
 
@@ -140,6 +140,8 @@ Route *Server::getRouteFromUri(string uri) {
 	// cout << "	URI: " << uri << endl;
 	//hadi 9bl man9ad query string d cgi
 	//if uri ends with /, we need to remove it
+	if (uri.empty())
+		return NULL;
 	if (uri[uri.length() - 1] == '/' && uri != "/") 
 		uri = uri.substr(0, uri.length() - 1);/* cout << "	NEW URI: " << uri << endl;*/
 

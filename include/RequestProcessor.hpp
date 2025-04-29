@@ -98,7 +98,7 @@ class RequestProcessor {
 		string				getHost() const;
 		string				getPort() const;
 		string				getConnection() const;
-		int					getContentLength() const;
+		size_t				getContentLength() const;
 		string				getContentType() const;	
 		string				getBody() const;
 		string				getQuery() const;

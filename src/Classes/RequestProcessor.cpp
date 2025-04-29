@@ -69,7 +69,7 @@ string RequestProcessor::getConnection() const
 	return _connection;
 }
 
-int RequestProcessor::getContentLength() const
+size_t RequestProcessor::getContentLength() const
 {
 	return _content_length;
 }
@@ -1106,7 +1106,7 @@ string RequestProcessor::createResponse(void) {
 	} else if (this->getMethod() == "POST") {
         cout << "POST request max body size: " << _route->getClientMaxBodySize() << endl;
         cout << "POST request body size: " << this->getContentLength() << endl;
-        if ((long)this->getContentLength() > _route->getClientMaxBodySize()) {
+        if (this->getContentLength() > _route->getClientMaxBodySize()) {
             _status = REQUEST_ENTITY_TOO_LARGE_STATUS_CODE;
             response = this->GenerateCostumeErrorPage(REQUEST_ENTITY_TOO_LARGE_STATUS_CODE, "POST request has exceeded max body size");
             return response;
@@ -1228,7 +1228,7 @@ int    RequestProcessor::sendResponse(void)
 bool	RequestProcessor::receiveRequest(int client_socket) {
     char buffer[REQUEST_BUFFER_SIZE] = {0};
     this->_client_socket = client_socket;
-    while (true) {
+    // while (true) {
         int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
         if (bytesReceived > 0) {
             buffer[bytesReceived] = '\0';
@@ -1245,12 +1245,12 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
             _received = true;
             return true;
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            break ;
+            // break ;
         } else {
             perror("recv() failed");
             return false;
         }
-    }
+    // }
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
         if (this->parseHeaders(_request) == 0) {
             _headers_parsed = true;
