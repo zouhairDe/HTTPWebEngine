@@ -130,7 +130,7 @@ string RequestProcessor::getAuthorization() const
 }
 
 string RequestProcessor::generateHttpHeaders(Server *server, int status_code, long fileSize)
-{
+{//server might be nullptr
     string _Http_headers;
     (void)server;
     _status = status_code;
@@ -164,6 +164,8 @@ string RequestProcessor::getStatusMessage(int status_code) const
         case 303: return " See Other\r\n";
         case 307: return " Temporary Redirect\r\n";
         case 308: return " Permanent Redirect\r\n";
+        case 413: return " Request Entity Too Large\r\n";
+        case 408: return " Request Timeout\r\n";
         default: return " Unknown Status\r\n";
     }
 }
@@ -408,7 +410,7 @@ int    RequestProcessor::parseHeaders(string req) {
         headerEnd = req.find("\n\n"); // Fallback for non-standard requests
         if (headerEnd == string::npos) {
             cerr << "Invalid request format: couldn't find header/body separator" << endl;
-            return (1);
+            return (BAD_REQUEST_STATUS_CODE);
         }
     }
     
@@ -428,14 +430,14 @@ int    RequestProcessor::parseHeaders(string req) {
     vector<string> headers = split(normalizedHeaders, '\n');
     if (headers.empty()) {
         cerr << "Invalid request: no headers found" << endl;
-        return (1);
+        return (BAD_REQUEST_STATUS_CODE);
     }
     
     // Process the first line (request line)
     vector<string> requestLine = splitByString(headers[0], " ");
     if (requestLine.size() < 2) {
         cerr << "Invalid request line format" << endl;
-        return (1);
+        return (BAD_REQUEST_STATUS_CODE);
     }
     
     _method = requestLine[0];
@@ -472,6 +474,11 @@ int    RequestProcessor::parseHeaders(string req) {
                 _content_type = value;
             } else if (key == "Content-Length") {
                 _content_length = std::atoi(value.c_str());
+                Route *route = _server->getRouteFromUri(_uri);
+                if (route->getClientMaxBodySize() != (size_t)-1 && _content_length > route->getClientMaxBodySize()) {
+                    cerr << "Content-Length exceeds max body size" << endl;
+                    return (REQUEST_ENTITY_TOO_LARGE_STATUS_CODE);
+                }
             } else if (key == "Connection") {
                 _connection = value;
             } else if (key == "Cookie") {
@@ -501,9 +508,7 @@ int    RequestProcessor::parseHeaders(string req) {
         }
     }
 
-
-    
-    return (0);
+    return (OK_STATUS_CODE);
 }
 
 
@@ -1225,10 +1230,10 @@ int    RequestProcessor::sendResponse(void)
     return (1);
 }
 
-bool	RequestProcessor::receiveRequest(int client_socket) {
+int	RequestProcessor::receiveRequest(int client_socket) {
+    int status;
     char buffer[REQUEST_BUFFER_SIZE] = {0};
     this->_client_socket = client_socket;
-    // while (true) {
         int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
         if (bytesReceived > 0) {
             buffer[bytesReceived] = '\0';
@@ -1252,22 +1257,26 @@ bool	RequestProcessor::receiveRequest(int client_socket) {
         }
     // }
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
-        if (this->parseHeaders(_request) == 0) {
+        status = this->parseHeaders(_request);
+        cout << "Parsing status: " << status << endl;
+        if (status == OK_STATUS_CODE) {
             _headers_parsed = true;
         } else {
+            _status = status;
+            _received = true;
             cerr << "Error parsing request" << endl;
-            return false;
+            return status;
         }
     }
     if (_headers_parsed) {
         if (this->getMethod() == "POST" && _body_size < _content_length) {
-            return false;
+            return -1;//zid 9ra req
         }
         this->parseBody(_request);
         _received = true;
-        return true;
+        return 0;
     }
-    return false;
+    return status;
 }
 
 int RequestProcessor::getSocket() const

@@ -58,6 +58,15 @@ using namespace std;
 #define NOT_ALLOWED_STATUS_CODE 405
 #define REQUEST_ENTITY_TOO_LARGE_STATUS_CODE 413
 
+enum SERVER_ERRORS {
+    SERVER_ERROR = 500,
+    BAD_REQUEST = 400,
+    NOT_FOUND = 404,
+    FORBIDDEN = 403,
+    NOT_ALLOWED = 405,
+    REQUEST_ENTITY_TOO_LARGE = 413
+};
+
 // #include "functions.hpp"
 // #include "Route.hpp"
 // #include "Server.hpp"

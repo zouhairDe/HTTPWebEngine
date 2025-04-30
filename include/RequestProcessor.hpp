@@ -71,7 +71,7 @@ class RequestProcessor {
 		CGI					*_cgi;
 		int					fd;
 		void    			init_dangerousePatterns();
-		bool				receiveRequest(int client_socket);
+		int					receiveRequest(int client_socket);
 		string				createResponse(void);
 		string				generateHttpHeaders(Server *server, int status_code, long fileSize);
 		string 				generateContentType();
