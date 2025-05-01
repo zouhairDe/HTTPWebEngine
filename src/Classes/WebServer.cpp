@@ -184,21 +184,21 @@ void	WebServer::run(){
 				continue ;
 			int client_socket = events[i].data.fd;
 			int status = requests[client_socket].receiveRequest(client_socket);
-			if (status > 0) //means error in request
-			{
-				cout << bold << red << "ERROR IN REQUEST | status == " << status << def << endl;
-				string res = requests[client_socket].generateHttpHeaders(nullptr, status, 0);
-				cout << bold << red << "SENDING ERROR RESPONSE" << def << endl;
-				cout << res << endl;
-				send(client_socket, res.c_str(), res.length(), 0);
-				requests[client_socket].clear();
-				deleteSocket(epoll_fd, client_socket);
-				close(client_socket);
-				requests.erase(client_socket);
-				continue ;
-			}
+			// if (status > 0) //means error in request
+			// {
+			// 	cout << bold << red << "ERROR IN REQUEST | status == " << status << def << endl;
+			// 	string res = requests[client_socket].generateHttpHeaders(nullptr, status, 0);
+			// 	cout << bold << red << "SENDING ERROR RESPONSE" << def << endl;
+			// 	cout << res << endl;
+			// 	send(client_socket, res.c_str(), res.length(), 0);
+			// 	requests[client_socket].clear();
+			// 	deleteSocket(epoll_fd, client_socket);
+			// 	close(client_socket);
+			// 	requests.erase(client_socket);
+			// 	continue ;
+			// }
 			// cout << bold << green << "RECEIVED? " << requests[client_socket].received() << def << endl;
-			if (requests[client_socket].received()) {
+			if (requests[client_socket].received() || status > 0) {
 				requests[client_socket].sendResponse();
 				cout << "REQUEST ARRIVED" << endl;
 				cout << bold << green << "SENT? " << requests[client_socket].responded() << def << endl;

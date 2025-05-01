@@ -166,6 +166,7 @@ string RequestProcessor::getStatusMessage(int status_code) const
         case 308: return " Permanent Redirect\r\n";
         case 413: return " Request Entity Too Large\r\n";
         case 408: return " Request Timeout\r\n";
+		case 411: return " Length Required\r\n";
         default: return " Unknown Status\r\n";
     }
 }
@@ -405,6 +406,7 @@ RequestProcessor::RequestProcessor(string req, string __port, Server *server)
 }
 
 int    RequestProcessor::parseHeaders(string req) {
+	bool content_length_set = false;
     size_t headerEnd = req.find("\r\n\r\n");
     if (headerEnd == string::npos) {
         headerEnd = req.find("\n\n"); // Fallback for non-standard requests
@@ -473,9 +475,10 @@ int    RequestProcessor::parseHeaders(string req) {
                 // cout << "In parseHeaders():\n\tContent-Type: " << value << endl;
                 _content_type = value;
             } else if (key == "Content-Length") {
+				content_length_set = true;
                 _content_length = std::atoi(value.c_str());
                 Route *route = _server->getRouteFromUri(_uri);
-                if (route->getClientMaxBodySize() != (size_t)-1 && _content_length > route->getClientMaxBodySize()) {
+                if (_content_length > route->getClientMaxBodySize()) {
                     cerr << "Content-Length exceeds max body size" << endl;
                     return (REQUEST_ENTITY_TOO_LARGE_STATUS_CODE);
                 }
@@ -507,6 +510,9 @@ int    RequestProcessor::parseHeaders(string req) {
             }
         }
     }
+
+	if (!content_length_set)
+		return (REQUEST_LENGTH_REQUIRED_STATUS_CODE);
 
     return (OK_STATUS_CODE);
 }
@@ -1065,6 +1071,12 @@ string RequestProcessor::GenerateCostumeErrorPage(int status_code, string error_
 
 string RequestProcessor::createResponse(void) {
     string response;
+	if (_status > 0) {
+		cout << bold << red << "ERROR IN REQUEST | status == " << _status << def << endl;
+		// string res = this->generateHttpHeaders(nullptr, _status, 0);
+		response = this->GenerateCostumeErrorPage(_status, this->getStatusMessage(_status));
+		return response;
+	}
     if (cgiInUri())
         return this->handleCgi();
     if (isUriBad(this->getUri())) {
@@ -1078,8 +1090,9 @@ string RequestProcessor::createResponse(void) {
     if (!route) {
         cout << "Route not found for URI: " << getUri() << endl;
         return this->ReturnServerErrorPage(_server, NOT_FOUND_STATUS_CODE);
-    } else
+    } else {
         _route = route;
+	}
     if (this->getMethod() == "GET") {
 
 		Server *Server = this->_server;
@@ -1269,6 +1282,7 @@ int	RequestProcessor::receiveRequest(int client_socket) {
         }
     }
     if (_headers_parsed) {
+		cout << _content_length << " " << _body_size << endl;
         if (this->getMethod() == "POST" && _body_size < _content_length) {
             return -1;//zid 9ra req
         }
