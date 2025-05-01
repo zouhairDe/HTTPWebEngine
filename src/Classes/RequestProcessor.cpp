@@ -512,7 +512,7 @@ int    RequestProcessor::parseHeaders(string req) {
         }
     }
 
-	if (!content_length_set)
+	if (!content_length_set && _method == "POST")
 		return (REQUEST_LENGTH_REQUIRED_STATUS_CODE);
 
     return (OK_STATUS_CODE);
@@ -1072,7 +1072,7 @@ string RequestProcessor::GenerateCostumeErrorPage(int status_code, string error_
 
 string RequestProcessor::createResponse(void) {
     string response;
-	if (_status > 0) {
+	if (_status != 200) {
 		cout << bold << red << "ERROR IN REQUEST | status == " << _status << def << endl;
 		// string res = this->generateHttpHeaders(nullptr, _status, 0);
 		response = this->GenerateCostumeErrorPage(_status, this->getStatusMessage(_status));
