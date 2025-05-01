@@ -15,6 +15,7 @@ class CGI {
         string          _cgiInputPath;
         string          _cgiOutput;
         string          _bodyData;
+        string          _uri;
     public:
         CGI();
         ~CGI();
@@ -30,6 +31,7 @@ class CGI {
         void            setEnvVars(vector<char *> &envVars);
         void            addEnvVar(char* envVar);
         void            setBodyData(const string &bodyData);
+        void            setUri(string uri);
         string          getBodyData() const;
 
         void            clean();

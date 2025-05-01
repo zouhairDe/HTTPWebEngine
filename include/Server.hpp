@@ -84,6 +84,7 @@ class Server {
 		void				setRoutes(vector<Route> routes);
 		void				setProperty(const string& key, string value);
 		void				addFriend(Server& server);
+		bool 				serverHasRootRoute() const;
 		
 		void				CheckFiles();
 

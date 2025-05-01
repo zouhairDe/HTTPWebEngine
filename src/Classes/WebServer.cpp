@@ -97,23 +97,11 @@ void WebServer::CheckFiles()
 			{
 				cout << bold << green << " -------- Checking files for friend " << j + 1 << def << endl;
 				friends[j].CheckFiles();
+
 			}
 		}
 	}
 }
-
-/*
-	The function responsable for ranning all the I/O functions
-	doe the servers `Creating a socket for all of them
-	and adding them to the WebServer::RunningSockets vector`
-*/
-
-// void	handleNewConnection(int server_fd, int epoll_fd)
-// {
-// }
-
-// void handleClientData
-// }
 
 int modifySocket(int epoll_fd, int socket, int events)
 {
@@ -184,20 +172,6 @@ void	WebServer::run(){
 				continue ;
 			int client_socket = events[i].data.fd;
 			int status = requests[client_socket].receiveRequest(client_socket);
-			// if (status > 0) //means error in request
-			// {
-			// 	cout << bold << red << "ERROR IN REQUEST | status == " << status << def << endl;
-			// 	string res = requests[client_socket].generateHttpHeaders(nullptr, status, 0);
-			// 	cout << bold << red << "SENDING ERROR RESPONSE" << def << endl;
-			// 	cout << res << endl;
-			// 	send(client_socket, res.c_str(), res.length(), 0);
-			// 	requests[client_socket].clear();
-			// 	deleteSocket(epoll_fd, client_socket);
-			// 	close(client_socket);
-			// 	requests.erase(client_socket);
-			// 	continue ;
-			// }
-			// cout << bold << green << "RECEIVED? " << requests[client_socket].received() << def << endl;
 			if (requests[client_socket].received() || status > 0) {
 				requests[client_socket].sendResponse();
 				cout << "REQUEST ARRIVED" << endl;

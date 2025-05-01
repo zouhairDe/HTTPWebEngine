@@ -39,6 +39,7 @@ class RequestProcessor {
         string				_cookie;        //for bonus
         string				_filename;      //for upload file
         string				_fileContent;   //actual content of uploaded file
+		string				_transfere_encoding;
 		bool				_headers_parsed;   //true if headers are parsed
 		bool				_received;      //true if the request is fully received
 		bool				_responded;      //true if the request is fully sent
@@ -90,6 +91,7 @@ class RequestProcessor {
 		string				handleCgi();
 		string 				checkRedirectionFile(string path);
 		string 				GenerateCostumeErrorPage(int status_code, string error_message);
+		int 				handleTransferEncodingChunked(string &body);
 
 		/*getters*/
 		string				getRequest() const;

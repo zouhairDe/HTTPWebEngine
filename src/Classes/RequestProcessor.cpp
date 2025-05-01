@@ -173,8 +173,6 @@ string RequestProcessor::getStatusMessage(int status_code) const
 }
 
 File *RequestProcessor::GetFile(string path) const {
-	// cout << "In HandleFile" << endl;
-	// cout << "	Path is : " << path << endl;
     if (access(path.c_str(), F_OK) == -1 || access(path.c_str(), R_OK) == -1)
         return NULL;
 	else
@@ -225,8 +223,15 @@ File* RequestProcessor::handleDirectory(const string& path) const {
 
 string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_code)//should be a global function
 {
-    /* File    error_page(server->getErrorPage());// till we have the server */(void)server;
-    File    error_page("./error/404.html");
+    string error_page_path;
+    if (server == NULL)
+        error_page_path = "./error/404.html";
+    else
+        error_page_path = server->getErrorPage();
+    if (error_page_path.empty()) {
+        error_page_path = "./error/404.html";
+    }
+    File error_page(error_page_path);
     std::string response = generateHttpHeaders(server, status_code, error_page.getSize());
     response += error_page.getData();
     return response;
@@ -235,7 +240,6 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
 string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
     for (size_t i = 0; i < indexFiles.size(); i++) {
         string indexPath = "/tmp/www/" + indexFiles[i];
-        // cout << "Checking index path: " << indexPath << endl;
         if (access(indexPath.c_str(), F_OK) == 0) {
             return indexPath;
         }
@@ -332,13 +336,11 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         vector<string> indexFiles = _route->getRouteIndexFiles();
         basePath = processIndexFiles(indexFiles);
         if (!basePath.empty()) {
-            // cout << "Iam here" << endl;
-            _status = (_status >=300 && _status < 400) ? _status : 200;
+            _status = (_status >= 300 && _status < 400) ? _status : 200;
             return GetFile(basePath);
         }
         if (_route->getRouteDirectoryListing()) {
-            // cout << "Iam here too" << endl;
-            _status = (_status >=300 && _status < 400) ? _status : 200;
+            _status = (_status >= 300 && _status < 400) ? _status : 200;
             return handleDirectory(basePath);
         }
     }
@@ -439,6 +441,8 @@ int    RequestProcessor::parseHeaders(string req) {
     // Process the first line (request line)
     vector<string> requestLine = splitByString(headers[0], " ");
     if (requestLine.size() < 2) {
+        for (size_t i = 0; i < headers.size(); i++)
+            cerr << "part[ " << i <<"] == " << headers[i] << endl;
         cerr << "Invalid request line format" << endl;
         return (BAD_REQUEST_STATUS_CODE);
     }
@@ -490,6 +494,9 @@ int    RequestProcessor::parseHeaders(string req) {
             } else if (key == "Authorization") {
                 _authorization = value;
             }
+            else if (key == "Transfer-Encoding") {
+                _transfere_encoding = value;
+            }
         }
     }
 
@@ -512,7 +519,7 @@ int    RequestProcessor::parseHeaders(string req) {
         }
     }
 
-	if (!content_length_set && _method == "POST")
+	if (!content_length_set && _method == "POST" && _transfere_encoding != "chunked")
 		return (REQUEST_LENGTH_REQUIRED_STATUS_CODE);
 
     return (OK_STATUS_CODE);
@@ -547,6 +554,28 @@ string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
     return this->generateHttpHeaders(_server, OK_STATUS_CODE, 0);
 }
 
+int RequestProcessor::handleTransferEncodingChunked(string &body) {
+    // Handle chunked transfer encoding
+    stringstream ss(body);
+    body.clear();
+    string chunk;
+    while (getline(ss, chunk)) {
+        // Check for the end of the chunk
+        if (chunk == "0") {
+            break; // End of chunks
+        }
+        size_t chunkSize = strtol(chunk.c_str(), NULL, 16);
+        if (chunkSize == 0) {
+            break; // No more data
+        }
+        // Read the actual chunk data
+        string chunkData;
+        getline(ss, chunkData);
+        _body += chunkData.substr(0, chunkSize);
+    }
+    return 0;
+}
+
 int RequestProcessor::parseBody(string req) {
         size_t headerEnd = req.find("\r\n\r\n");
         if (headerEnd == string::npos) {
@@ -567,6 +596,9 @@ int RequestProcessor::parseBody(string req) {
         } else if (headerEnd + 2 < req.length()) {
             _body = req.substr(headerEnd + 2);
         }
+
+        if (_transfere_encoding == "chunked")
+            return handleTransferEncodingChunked(_body);
 
         if (_content_type.find("application/x-www-form-urlencoded") != string::npos) {
             parseFormUrlEncoded(_body);
@@ -993,6 +1025,7 @@ bool    RequestProcessor::cgiInUri() {
         if (this->getUri().find(cgiMethods[i].first) != std::string::npos) {
             // cout << "CGI method found: " << cgiMethods[i].first << ", IN uri: " << this->getUri() << endl;
             _cgi = new CGI();
+            _cgi->setUri(this->getUri());
             string path = "/tmp/www/" + _server->getRoot() + cgiMethods[i].second;
             _cgi->setCgiPath(path);
             // cout << "CGI path: " << path << endl;
@@ -1031,7 +1064,8 @@ string RequestProcessor::handleCgi(void) {
     
     if (!_cgi->openInputStream()) {
         std::cerr << "Failed to open input stream for CGI" << std::endl;
-        return ReturnServerErrorPage(_server, 500);
+        _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
+        return ReturnServerErrorPage(_server, _status);
     }
     
     if (!_cgi->openOutputStream()) {
@@ -1040,9 +1074,8 @@ string RequestProcessor::handleCgi(void) {
         return ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
     }
     if (_cgi->execute()) {
-        std::cout << "CGI executed successfully" << std::endl;
-        cout << "CGI output:\n" << _cgi->getCgiOutput() << endl;
         string cgiResponse = _cgi->getCgiOutput();
+        _status = OK_STATUS_CODE;
         response = cgiResponse;
     } else {
         std::cerr << "CGI execution failed" << std::endl;
@@ -1053,8 +1086,6 @@ string RequestProcessor::handleCgi(void) {
     _cgi->clean();
     delete _cgi;
     _cgi = NULL;
-    _status = OK_STATUS_CODE;
-    
     return response;
 }
 
@@ -1273,7 +1304,6 @@ int	RequestProcessor::receiveRequest(int client_socket) {
     // }
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
         status = this->parseHeaders(_request);
-        cout << "Parsing status: " << status << endl;
         if (status == OK_STATUS_CODE) {
             _headers_parsed = true;
         } else {

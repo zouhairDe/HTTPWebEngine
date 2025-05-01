@@ -49,7 +49,7 @@ class Route {
 		string							getUploadStore() const;
 		size_t							getClientMaxBodySize() const;
 		string							getRouteName() const;
-		void							CheckFiles() const;
+		void							CheckFiles(string serverRoot);
 		pair<string, int>				getRedirectUrl() const;
 		vector<pair<string, string> >	getCGIs() const;
 

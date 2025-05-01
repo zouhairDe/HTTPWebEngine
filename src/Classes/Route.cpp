@@ -181,14 +181,56 @@ void Route::setProperty(const string &key, const string &value)
 	}
 }
 
-void Route::CheckFiles() const
+void Route::CheckFiles(string serverRoot)
 {
 	struct stat buffer;
-	cerr << blue << " ---------------- Checking Route: " << RouteName << def << endl;
-	if (UploadStore.empty() && RouteName == "\"/uploads\"")
-		throw runtime_error("\033[31m Route: " + RouteName + " must have an Upload Store");
+	string rName = cpp11_replace(RouteName, "\"", "");
+	cerr << blue << " ---------------- Checking Route: " << rName << def << endl;
+	string path = "/tmp/www/" + serverRoot.substr(0, serverRoot.length() - 1) + rName;
+	cout << "Checking path: " << path << endl;
+	if (stat(path.c_str(), &buffer) != 0)
+	{
+		cerr << "\033[31m Route: " + rName + " must have a valid path??" << endl;
+		throw runtime_error("\033[31m Route: " + rName + " must have a valid path");
+	}
+	if (rName.empty())
+		throw runtime_error("\033[31m Route: " + rName + " must have a name");
+	if (rName[0] != '/')
+		throw runtime_error("\033[31m Route: " + rName + " must start with a /");
+	if (UploadStore.empty() && rName == "\"/uploads\"")
+		throw runtime_error("\033[31m Route: " + rName + " must have an Upload Store");
 	if (stat(string("/tmp/www/" + UploadStore).c_str(), &buffer) != 0)
-		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Upload Store");
+		throw runtime_error("\033[31m Route: " + rName + " must have a valid Upload Store");
+	//checking cgi files
+	for (size_t i = 0; i < CGIs.size(); i++)
+	{
+		cerr << "checking cgi: " << path + CGIs[i].second << endl;
+		if (CGIs[i].second.empty() && !CGIs[i].first.empty())
+			throw runtime_error("\033[31m Route: " + rName + " must have a valid cgi file: " + CGIs[i].second);
+		if (CGIs[i].first.empty() && !CGIs[i].second.empty())
+			throw runtime_error("\033[31m Route: " + rName + " must have a valid cgi extention <.cgi | .js>: " + CGIs[i].second);
+		if (stat(string("/tmp/www/" + serverRoot + CGIs[i].second).c_str(), &buffer) != 0)
+			throw runtime_error("\033[31m Route: " + rName + " must have a valid cgi file: " + CGIs[i].second);
+		if (CGIs[i].first != ".cgi" && CGIs[i].first != ".js")
+			throw runtime_error("\033[31m Route: " + rName + " have an unsupported cgi extention: " + CGIs[i].first);
+	}
+
+
+
+	// if (UploadStore.empty() && RouteName == "\"/uploads\"")
+	// 	throw runtime_error("\033[31m Route: " + RouteName + " must have an Upload Store");
+	// if (stat(string("/tmp/www/" + UploadStore).c_str(), &buffer) != 0)
+	// 	throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Upload Store");
+	// if (stat(string("/tmp/www/" + RouteName).c_str(), &buffer) != 0)
+	// 	throw runtime_error("\033[31m Route: " + RouteName + " must have a valid path");
+	// //check cgi files
+	// for (size_t i = 0; i < CGIs.size(); i++)
+	// {
+	// 	cerr << "checking cgi: " << string("/tmp/www/" + CGIs[i].second) << endl;
+	// 	if (stat(string("/tmp/www/" + CGIs[i].second).c_str(), &buffer) != 0)
+	// 		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid cgi file: " + CGIs[i].second);
+	// }
+
 }
 
 ostream &operator<<(ostream &out, const Route &route)

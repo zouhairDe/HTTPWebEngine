@@ -271,18 +271,32 @@ vector<Server> Server::getFriends() const {
 	return _ServerFriends;
 }
 
+bool Server::serverHasRootRoute() const {
+	for (size_t i = 0; i < _Routes.size(); i++) {
+		if (_Routes[i].getRouteName() == "\"/\"") {
+			return true;
+		}
+	}
+	return false;
+}
+
 void Server::CheckFiles()
 {
-	//check if the folder exists and we have access to it
 	//then check the existence of the files bhal err_pages
 	/*
 		Define a directory or a file from where the file should be searched (for example,
 		if url /kapouet is rooted to /tmp/www, url /kapouet/pouic/toto/pouet is
 		/tmp/www/pouic/toto/pouet).
 	*///so i dont think this is the thing
-	//TODO: check hta error pages path w routesRoot path ikono bhal def w fix python script dzb
     string rootPath = "/tmp/www/" + this->getRoot();
-    
+    if (serverHasRootRoute() == false) {
+		throw runtime_error("\033[31m Server must have a default route \"/\"");
+	}
+	vector<Route> routes = this->getRoutes();
+	for (size_t k = 0; k < routes.size(); k++)
+	{
+		routes[k].CheckFiles(this->getRoot());
+	}
     struct stat s;
     if (stat(rootPath.c_str(), &s) == 0) {
         if (!(s.st_mode & S_IFDIR)) {

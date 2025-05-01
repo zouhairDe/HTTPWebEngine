@@ -3,10 +3,8 @@
 
 CGI::CGI() {
     srand(time(0));
-    _cgiInputPath = "/tmp/cgi_input_" + cpp11_toString(rand()) + ".tmp";
-    _cgiOutputPath = "/tmp/cgi_output_" + cpp11_toString(rand()) + ".tmp";
-    cout << "CGI input path: " << _cgiInputPath << std::endl;
-    cout << "CGI output path: " << _cgiOutputPath << std::endl;
+    _cgiInputPath = "/tmp/.cgi_input_" + cpp11_toString(rand()) + ".tmp";
+    _cgiOutputPath = "/tmp/.cgi_output_" + cpp11_toString(rand()) + ".tmp";
 }
 
 CGI::~CGI() {
@@ -14,6 +12,10 @@ CGI::~CGI() {
     _outputStream.close();
     unlink(_cgiInputPath.c_str());
     unlink(_cgiOutputPath.c_str());
+}
+
+void CGI::setUri(string uri) {
+    _uri = uri;
 }
 
 void CGI::setCgiPath(const string &cgiPath) {
@@ -138,14 +140,11 @@ bool CGI::execute() {
 
         // Execute the CGI script
         char* const* envp = _envVars.data();
-        
-        if (_cgiPath.find(".js") != std::string::npos) {
-            // For JavaScript files, use Node.js as the interpreter
+        if (_uri.find(".js") != std::string::npos) {
             const char* nodePath = "/usr/bin/node";
             char* const argv[] = {(char*)"node", const_cast<char*>(_cgiPath.c_str()), NULL};
             execve(nodePath, argv, envp);
-        } else {
-            // For other executable files, execute them directly
+        } else if (_uri.find(".cgi") != std::string::npos) {
             char* const argv[] = {const_cast<char*>(_cgiPath.c_str()), NULL};
             execve(_cgiPath.c_str(), argv, envp);
         }
@@ -182,8 +181,6 @@ bool CGI::execute() {
         
         _inputStream.close();
         _cgiOutput = res;
-        
-        std::cout << "CGI output: " << _cgiOutput << std::endl;
         return true;
     }
 }
