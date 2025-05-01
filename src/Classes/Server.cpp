@@ -307,8 +307,8 @@ void Server::CheckFiles()
             throw runtime_error("\033[31m No read access to directory");
         }
 		
-		if (this->getErrorPage().empty())
-			throw runtime_error("\033[31m Server must have an 404 error page");//TA NRUNNI NGNIX W NCHOFO HADI WACH S7I7A
+		// if (this->getErrorPage().empty()) //if makayninch error pages andiro dialna , fixed
+		// 	throw runtime_error("\033[31m Server must have an 404 error page");//TA NRUNNI NGNIX W NCHOFO HADI WACH S7I7A
 			
 		if (access(string(this->getErrorPage()).c_str(), R_OK) != 0)
 			throw runtime_error("\033[31m No read access to 404 error page");
