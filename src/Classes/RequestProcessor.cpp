@@ -28,6 +28,7 @@ RequestProcessor::RequestProcessor() {
     _server = NULL;
     _cgi = NULL;
     _fileStream = new ofstream();
+	_status = 200;
 }
 
 RequestProcessor::~RequestProcessor() {
@@ -915,7 +916,7 @@ void RequestProcessor::clear() {
     _method.clear();
     _body_size = 0;
     _file = NULL;
-    _status = 0;
+    _status = 200;
 }
 
 void    RequestProcessor::init_dangerousePatterns() {
@@ -1138,7 +1139,8 @@ string RequestProcessor::createResponse(void) {
         }
 
         //checking if the _fileStream is ok
-        if (_fileStream && _fileStream->is_open()) {
+        // if (_fileStream && _fileStream->is_open()) {
+        if (_body_size >= _content_length) {
             cout << "File stream is open" << endl;
             response = generateHttpHeaders(_server, 200, 0);
         } else {
