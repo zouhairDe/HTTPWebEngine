@@ -144,7 +144,7 @@ bool CGI::execute() {
             const char* nodePath = "/usr/bin/node";
             char* const argv[] = {(char*)"node", const_cast<char*>(_cgiPath.c_str()), NULL};
             execve(nodePath, argv, envp);
-        } else if (_uri.find(".cgi") != std::string::npos) {
+        } else{
             char* const argv[] = {const_cast<char*>(_cgiPath.c_str()), NULL};
             execve(_cgiPath.c_str(), argv, envp);
         }

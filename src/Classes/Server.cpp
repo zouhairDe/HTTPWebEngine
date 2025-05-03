@@ -21,6 +21,7 @@ Server &Server::operator=(const Server &server) {
 		this->_Routes = server._Routes;
 		this->_ServerFriends = server._ServerFriends;
 		this->_redirectionUrl = server._redirectionUrl;
+		this->_sessions = server._sessions;
 	}
 	return (*this);
 }
@@ -133,6 +134,26 @@ bool	Server::isRouteExist(string route) {
 			return true;
 	}
 	return false;
+}
+
+std::string Server::getSessionByID(std::string id) {
+    std::map<std::string, t_session>::iterator it = _sessions.find(id);
+    return (it != _sessions.end()) ? it->second.data : "";
+}
+
+void Server::removeSession(std::string sessionId) {
+    _sessions.erase(sessionId);
+}
+
+void Server::addSession(std::string data) {
+    std::string id = generateSessionID();
+    std::string createdAt = getCurrentTime();
+    std::string validFor = "120";//2 d9ay9
+    _sessions[id] = t_session(id, data, validFor, createdAt);
+}
+
+bool Server::isSessionValid(std::string id) {
+    return _sessions.find(id) != _sessions.end();
 }
 
 Route *Server::getRouteFromUri(string uri) {
@@ -273,7 +294,8 @@ vector<Server> Server::getFriends() const {
 
 bool Server::serverHasRootRoute() const {
 	for (size_t i = 0; i < _Routes.size(); i++) {
-		if (_Routes[i].getRouteName() == "\"/\"") {
+		string RouteName = _Routes[i].getRouteName();
+		if (RouteName == "\"/\"") {
 			return true;
 		}
 	}

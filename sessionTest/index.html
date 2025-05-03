@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 2rem 3rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      width: 300px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin: 0.5rem 0;
+      text-align: left;
+    }
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    #logout-form {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome</h1>
+
+    <div id="login-form">
+      <form method="POST" action="/login">
+        <label>Username:
+          <input type="text" name="username" />
+        </label>
+        <label>Password:
+          <input type="password" name="password" />
+        </label>
+        <button type="submit">Login</button>
+      </form>
+    </div>
+
+    <div id="logout-form" style="display:none;">
+      <p>You are logged in.</p>
+      <form method="POST" action="/logout">
+        <button type="submit">Logout</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    if (document.cookie.includes("session_id=")) {
+      document.getElementById("login-form").style.display = "none";
+      document.getElementById("logout-form").style.display = "block";
+    }
+  </script>
+</body>
+</html>

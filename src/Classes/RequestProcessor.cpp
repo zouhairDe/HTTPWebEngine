@@ -263,10 +263,29 @@ string RequestProcessor::checkRedirectionFile(string path) {
 
 File* RequestProcessor::GETResponse(string root, string requestedPath) {
     string reqUri = this->getUri();
-    string basePath = "/tmp/www/" + root + reqUri.substr(1);
+    bool hasRoot = false;
+    string basePath;
+    if (_route->getRouteRoot().empty()) {
+        // cout << "This Route has no root: " << _route->getRouteRoot() << endl;
+        basePath = "/tmp/www/" + root + reqUri.substr(1);//Old + Working
+    }
+    else {
+        // cerr << "This Route has a root: " << _route->getRouteRoot() << endl;
+        // cerr << "Requested path: " << requestedPath << endl;
+        string routeName = _route->getRouteName();
+        string uriWithoutRouteName;
+        // cerr << "Route name: " << routeName << endl;
+        if (routeName != "/")
+            uriWithoutRouteName = cpp11_replace(reqUri, cpp11_replace(routeName, "\"", ""), "");
+        else
+            uriWithoutRouteName = reqUri.substr(1);
+        // cout << "URI without route name: " << uriWithoutRouteName << endl;
+        basePath = "/tmp/www/" + root + _route->getRouteRoot() + uriWithoutRouteName;
+        hasRoot = true;
+        (void)hasRoot;
+    }
     cout << "Base path: " << basePath << endl;
-    cout << "Requested path: " << requestedPath << endl;
-    cout << "Route :\n" << *_route << endl;
+    cerr << "Requested path: " << requestedPath << endl;
     if (requestedPath == "/") {
         if (_route->getRedirectUrl().second != -1) {
             string newPath = checkRedirectionFile(_route->getRedirectUrl().first);
@@ -622,10 +641,11 @@ int RequestProcessor::parseBody(string req) {
             _fileContent = _body;
             _filename = "upload_" + cpp11_toString(time(NULL)) + ".json";
             _fileContentType = "application/json";
-        } else {
-            cerr << "Unsupported Content-Type: " << _content_type << endl;
-            return (1);
         }
+        // else {
+        //     cerr << "Unsupported Content-Type: " << _content_type << endl;
+        //     return (1);
+        // }
     return (0);
 }
 
@@ -1103,6 +1123,7 @@ string RequestProcessor::GenerateCostumeErrorPage(int status_code, string error_
 
 string RequestProcessor::createResponse(void) {
     string response;
+    cerr << "Request is: " << this->getRequest() << endl;
 	if (_status != 200) {
 		cout << bold << red << "ERROR IN REQUEST | status == " << _status << def << endl;
 		// string res = this->generateHttpHeaders(nullptr, _status, 0);
@@ -1154,8 +1175,6 @@ string RequestProcessor::createResponse(void) {
             response = this->generateHttpHeaders(Server, _status, file->getSize());
         }
 	} else if (this->getMethod() == "POST") {
-        cout << "POST request max body size: " << _route->getClientMaxBodySize() << endl;
-        cout << "POST request body size: " << this->getContentLength() << endl;
         if (this->getContentLength() > _route->getClientMaxBodySize()) {
             _status = REQUEST_ENTITY_TOO_LARGE_STATUS_CODE;
             response = this->GenerateCostumeErrorPage(REQUEST_ENTITY_TOO_LARGE_STATUS_CODE, "POST request has exceeded max body size");

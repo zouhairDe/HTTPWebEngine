@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "File.hpp"
+# include "Global.hpp"
 #include "Functions.hpp"
 #include <string>
 #include <cstring>
@@ -68,4 +69,25 @@ string  getStatusMessage(int code)
         default:
             return " Unknown Status\r\n";
     }
+}
+
+string generateSessionID() {
+    size_t length = 32;
+    static const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    static const size_t charsetSize = sizeof(charset) - 1;
+
+    string result;
+    for (size_t i = 0; i < length; ++i) {
+        result += charset[rand() % charsetSize];
+    }
+    return result;
+}
+
+string getCurrentTime() {
+    std::ostringstream oss;
+    oss << time(NULL); // seconds since epoch
+    return oss.str();
 }

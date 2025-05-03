@@ -71,6 +71,11 @@ vector<pair<string, string> > Route::getCGIs() const
 	return CGIs;
 }
 
+string Route::getRouteRoot() const
+{
+	return RouteRoot;
+}
+
 Route &Route::operator=(const Route &route)
 {
 	RouteName = route.RouteName;
@@ -82,6 +87,7 @@ Route &Route::operator=(const Route &route)
 	ClientMaxBodySize = route.ClientMaxBodySize;
 	_redirectionUrl = route._redirectionUrl;
 	CGIs = route.CGIs;
+	RouteRoot = route.RouteRoot;
 	return *this;
 }
 
@@ -143,7 +149,7 @@ void Route::setProperty(const string &key, const string &value)
 	else if (key == "cgi_bin")
 	{
 		vector<string> parts = split(value, ',');
-		if (parts.size() != 2)
+		if (parts.size() > 2)
 			throw runtime_error("\033[31m Only 2 CGI access allowed");
 		for (size_t i = 0; i < parts.size(); i++)
 		{
@@ -173,6 +179,13 @@ void Route::setProperty(const string &key, const string &value)
 			throw runtime_error("\033[31m Invalid URL: " + url + "\nRedirection URL should be a route e.g: /...");
 		else
 			_redirectionUrl = make_pair(url, status_code);
+	}
+	else if (key == "RouteRoot")
+	{
+		RouteRoot = value;
+		if (RouteRoot[RouteRoot.length() - 1] != '/')
+			RouteRoot += '/';
+		cerr << "Route root has been set to: " << RouteRoot << endl;
 	}
 	else
 	{
@@ -211,26 +224,9 @@ void Route::CheckFiles(string serverRoot)
 			throw runtime_error("\033[31m Route: " + rName + " must have a valid cgi extention <.cgi | .js>: " + CGIs[i].second);
 		if (stat(string("/tmp/www/" + serverRoot + CGIs[i].second).c_str(), &buffer) != 0)
 			throw runtime_error("\033[31m Route: " + rName + " must have a valid cgi file: " + CGIs[i].second);
-		if (CGIs[i].first != ".cgi" && CGIs[i].first != ".js")
-			throw runtime_error("\033[31m Route: " + rName + " have an unsupported cgi extention: " + CGIs[i].first);
+		// if (CGIs[i].first != ".cgi" && CGIs[i].first != ".js")
+		// 	throw runtime_error("\033[31m Route: " + rName + " have an unsupported cgi extention: " + CGIs[i].first);
 	}
-
-
-
-	// if (UploadStore.empty() && RouteName == "\"/uploads\"")
-	// 	throw runtime_error("\033[31m Route: " + RouteName + " must have an Upload Store");
-	// if (stat(string("/tmp/www/" + UploadStore).c_str(), &buffer) != 0)
-	// 	throw runtime_error("\033[31m Route: " + RouteName + " must have a valid Upload Store");
-	// if (stat(string("/tmp/www/" + RouteName).c_str(), &buffer) != 0)
-	// 	throw runtime_error("\033[31m Route: " + RouteName + " must have a valid path");
-	// //check cgi files
-	// for (size_t i = 0; i < CGIs.size(); i++)
-	// {
-	// 	cerr << "checking cgi: " << string("/tmp/www/" + CGIs[i].second) << endl;
-	// 	if (stat(string("/tmp/www/" + CGIs[i].second).c_str(), &buffer) != 0)
-	// 		throw runtime_error("\033[31m Route: " + RouteName + " must have a valid cgi file: " + CGIs[i].second);
-	// }
-
 }
 
 ostream &operator<<(ostream &out, const Route &route)

@@ -13,6 +13,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+# include "Global.hpp"
 # include "Route.hpp"
 # include "Functions.hpp"
 # include "File.hpp"
@@ -29,23 +30,20 @@
 # include <cstddef>
 
 class Route;
-// class Client;
-
-// TODO: add a vector<Server> _Friends; to the Server class, khas ykono 3ndo ga3 friends li homa servers li mcharkin m3ah fl ip && port
 
 class Server {
 	private:
-		string				HostName;
-		vector<string>		IndexFiles;
-		string				Port;
-		string				Root;
-		vector<string>		ServerNames;
-		long				ClientMaxBodySize; /* in bytes */
-		string				ErrorPage;
-		pair<string, int>	_redirectionUrl;
-		vector<Route>		_Routes;
-		vector<Server>		_ServerFriends;
-		// string				cgi_bin;
+		string								HostName;
+		vector<string>						IndexFiles;
+		string								Port;
+		string								Root;
+		vector<string>						ServerNames;
+		long								ClientMaxBodySize; /* in bytes */
+		string								ErrorPage;
+		pair<string, int>					_redirectionUrl;
+		vector<Route>						_Routes;
+		vector<Server>						_ServerFriends;
+		map<string, t_session>	_sessions;//string : session ID, t_session : session
 
 	public:
 		struct sockaddr_in	Address;
@@ -85,6 +83,10 @@ class Server {
 		void				setProperty(const string& key, string value);
 		void				addFriend(Server& server);
 		bool 				serverHasRootRoute() const;
+		string    			getSessionByID(string id);
+		void				addSession(string session);
+		void				removeSession(string session);
+		bool 				isSessionValid(string id);
 		
 		void				CheckFiles();
 

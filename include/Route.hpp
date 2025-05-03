@@ -24,6 +24,7 @@ class RequestProcessor;
 class Route {
 	private:
 		string							RouteName;
+		string							RouteRoot;
 		vector<string>					RouteIndexFiles;
 		string							UploadStore;
 		pair<string, int>				_redirectionUrl;
@@ -49,6 +50,7 @@ class Route {
 		string							getUploadStore() const;
 		size_t							getClientMaxBodySize() const;
 		string							getRouteName() const;
+		string							getRouteRoot() const;
 		void							CheckFiles(string serverRoot);
 		pair<string, int>				getRedirectUrl() const;
 		vector<pair<string, string> >	getCGIs() const;

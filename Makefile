@@ -80,7 +80,7 @@ $(DEBUG_OBJ_DIR)%_debug.opp: $(SRC_DIR)%.cpp $(INCLUDES)
 # ==== Docker ==== #
 
 docker-build:
-	docker build -t my-nginx-webserv docker/
+	docker build -t my-nginx-webserv .
 
 docker-run:
 	docker run -d -p 8080:80 --name webserv-container my-nginx-webserv
