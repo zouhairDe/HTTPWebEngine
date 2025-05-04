@@ -59,33 +59,8 @@ using namespace std;
 #define REQUEST_ENTITY_TOO_LARGE_STATUS_CODE 413
 #define REQUEST_LENGTH_REQUIRED_STATUS_CODE 411
 
-typedef struct s_session {
-    string id;
-    string data;
-    string validFor;
-    string createdAt;
-
-    s_session(string _id, string _data, string _validFor, string _createdAt)
-        : id(_id), data(_data), validFor(_validFor), createdAt(_createdAt) {}
-
-    s_session() : id(""), data(""), validFor(""), createdAt("") {}
-
-    s_session(const s_session& other)
-        : id(other.id), data(other.data), validFor(other.validFor), createdAt(other.createdAt) {}
-
-    s_session& operator=(const s_session& other) {
-        if (this != &other) {
-            id = other.id;
-            data = other.data;
-            validFor = other.validFor;
-            createdAt = other.createdAt;
-        }
-        return *this;
-    }
-
-    ~s_session() {}
-} t_session;
-
+const int MAX_CLIENS = 1000;
+const int CGI_TIMEOUT = 5;//to implement later
 
 string generateSessionID();
 string getCurrentTime();

@@ -43,7 +43,6 @@ class Server {
 		pair<string, int>					_redirectionUrl;
 		vector<Route>						_Routes;
 		vector<Server>						_ServerFriends;
-		map<string, t_session>	_sessions;//string : session ID, t_session : session
 
 	public:
 		struct sockaddr_in	Address;
@@ -83,10 +82,6 @@ class Server {
 		void				setProperty(const string& key, string value);
 		void				addFriend(Server& server);
 		bool 				serverHasRootRoute() const;
-		string    			getSessionByID(string id);
-		void				addSession(string session);
-		void				removeSession(string session);
-		bool 				isSessionValid(string id);
 		
 		void				CheckFiles();
 

@@ -72,22 +72,28 @@ string  getStatusMessage(int code)
 }
 
 string generateSessionID() {
-    size_t length = 32;
-    static const char charset[] =
+    stringstream ss;
+    static const char alphanum[] =
         "0123456789"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz";
-    static const size_t charsetSize = sizeof(charset) - 1;
-
-    string result;
-    for (size_t i = 0; i < length; ++i) {
-        result += charset[rand() % charsetSize];
-    }
-    return result;
+    const int len = 32;
+    for (int i = 0; i < len; ++i)
+        ss << alphanum[rand() % (sizeof(alphanum) - 1)];
+    return ss.str();
 }
 
-string getCurrentTime() {
-    std::ostringstream oss;
-    oss << time(NULL); // seconds since epoch
-    return oss.str();
+string getTimestampPlusOffset(int offsetSeconds) {
+    stringstream ss;
+    time_t now = time(NULL);
+    ss << (now + offsetSeconds);
+    return ss.str();  // e.g: "1714614100"
+}
+
+void saveSession(const string& sessionId, const string& userData, int validSeconds) {
+    ofstream out("/tmp/sessions.db", ios::app);
+    if (!out.is_open()) return;
+    string expires = getTimestampPlusOffset(validSeconds);
+    out << sessionId << "|" << userData << "|" << expires << "\n";
+    out.close();
 }

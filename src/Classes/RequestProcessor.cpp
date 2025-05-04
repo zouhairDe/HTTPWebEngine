@@ -496,7 +496,6 @@ int    RequestProcessor::parseHeaders(string req) {
                     _host = value;
                 }
             } else if (key == "Content-Type") {
-                // cout << "In parseHeaders():\n\tContent-Type: " << value << endl;
                 _content_type = value;
             } else if (key == "Content-Length") {
 				content_length_set = true;

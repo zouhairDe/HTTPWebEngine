@@ -105,6 +105,10 @@ test:
 	mkdir -p /tmp/www/chatroom/cgi/
 	exec cp cpp-cgi/contact.cgi /tmp/www/chatroom/cgi/
 	exec cp cpp-cgi/upload.js /tmp/www/chatroom/cgi/
+	exec cp sessionTest/sessionCGI.js /tmp/www/chatroom/session/
+	exec cp sessions.db /tmp/sessions.db
+	exec cp sessionTest/index.html /tmp/www/chatroom/login/
+	exec cp sessionTest/addUser.js /tmp/www/chatroom/login/
 
 clean:
 	rm -f $(OBJ_FILES)
