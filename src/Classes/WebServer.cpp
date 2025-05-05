@@ -166,6 +166,7 @@ void	WebServer::run(){
 						continue ;
 					}
 					requests[client_socket] = RequestProcessor();
+					// myMap.insert(std::pair<std::string, int>(RequestProcessor(), 5));
 					requests[client_socket].setPort(server->getPort());
 
 					requests[client_socket]._server = server;

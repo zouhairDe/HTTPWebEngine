@@ -29,14 +29,44 @@ RequestProcessor::RequestProcessor() {
     _file = NULL;
     _server = NULL;
     _cgi = NULL;
-    _fileStream = new ofstream();
+    // _fileStream = new ofstream();
 	_status = 200;
+}
+
+RequestProcessor::RequestProcessor(const RequestProcessor &req) {
+    init_dangerousePatterns();
+    _headers_parsed = false;
+    _content_length = 0;
+    _body_size = 0;
+    _responded = false;
+    _received = false;
+    fd = -1;
+    _file = NULL;
+    _server = NULL;
+    _cgi = NULL;
+	_status = req._status;
+	_request = req.getRequest();
+	_method = req.getMethod();
+	_uri = req.getUri();
+	_host = req.getHost();
+	_port = req.getPort();
+	_connection = req.getConnection();
+	_content_length = req.getContentLength();
+	_body = req.getBody();
+	_query = req.getQuery();
+	_cookie = req.getCookie();
+	_formFields = req.getFormFields();
+	_fileContentType = req.getFileContentType();
+	_fileContent = req.getFileContent();
+	// _fileStream = new ofstream(req._fileStream.rdbuf());
+	// *_fileStream << *req._fileStream;
+	// *_fileStream
 }
 
 RequestProcessor::~RequestProcessor() {
     // if (_fileStream) {
-    //     if (_fileStream->is_open()) {
-    //         _fileStream->close();
+    //     if (_fileStream.is_open()) {
+    //         _fileStream.close();
     //     }
     //     delete _fileStream;
     // }
@@ -149,6 +179,7 @@ RequestProcessor&    RequestProcessor::operator=(const RequestProcessor &req)
         _formFields = req.getFormFields();
         _fileContentType = req.getFileContentType();
         _fileContent = req.getFileContent();
+		// _fileStream = req._fileStream;
         _cgi = req._cgi;
         _file = req._file;
         _server = req._server;
@@ -702,8 +733,8 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
             /* this handles the case where a boundary might be split across chunks */
             size_t safeReadLimit = _body.size() - completeBoundary.length();
             if (pos < safeReadLimit) {
-                if (_fileStream && _fileStream->is_open()) {
-                    _fileStream->write(&_body[pos], safeReadLimit - pos);
+                if (_fileStream && _fileStream.is_open()) {
+                    _fileStream.write(&_body[pos], safeReadLimit - pos);
                 }
                 pos = safeReadLimit;
             }
@@ -711,8 +742,8 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
         }
         
         /* if we're not at the beginning, write data to the current file */
-        if (pos > 0 && _fileStream && _fileStream->is_open()) {
-            _fileStream->write(&_body[pos], boundaryPos - pos);
+        if (pos > 0 && _fileStream.is_open()) {
+            _fileStream.write(&_body[pos], boundaryPos - pos);
         }
         
         /* move position to after the boundary */
@@ -753,8 +784,8 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                 filename = headers.substr(filenamePos, filenameEnd - filenamePos);
                 
                 /* close any previously opened file */
-                if (_fileStream && _fileStream->is_open()) {
-                    _fileStream->close();
+                if (_fileStream && _fileStream.is_open()) {
+                    _fileStream.close();
                 }
                 
                 /* open a new file for this part */
@@ -767,7 +798,7 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                     if (!route->getUploadStore().empty())
                         store_path = "/tmp/www/" + route->getUploadStore() + filename;
                     // cout << "Opening store_path file: " << store_path << endl;
-                    _fileStream->open(store_path.c_str(), std::ios::binary);
+                    _fileStream.open(store_path.c_str(), std::ios::binary);
                 }
             }
         }
@@ -777,14 +808,14 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
         if (nextBoundaryPos == std::string::npos) {
             /* no complete boundary found, read until the safe limit */
             size_t safeReadLimit = _body.size() - completeBoundary.length();
-            if (pos < safeReadLimit && _fileStream && _fileStream->is_open()) {
-                _fileStream->write(&_body[pos], safeReadLimit - pos);
+            if (pos < safeReadLimit && _fileStream.is_open()) {
+                _fileStream.write(&_body[pos], safeReadLimit - pos);
             }
             pos = safeReadLimit;
             break;
         } else {
             /* found next boundary, write content to file */
-            if (_fileStream && _fileStream->is_open()) {
+            if (_fileStream && _fileStream.is_open()) {
                 /* adjust for CRLF before the boundary */
                 size_t contentEnd = nextBoundaryPos;
                 if (contentEnd >= 2 && _body[contentEnd-2] == '\r' && _body[contentEnd-1] == '\n') {
@@ -792,7 +823,7 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                 }
                 
                 if (contentEnd > pos) {
-                    _fileStream->write(&_body[pos], contentEnd - pos);
+                    _fileStream.write(&_body[pos], contentEnd - pos);
                 }
             }
             /* move to the next boundary position (will be processed in next iteration) */
@@ -902,7 +933,7 @@ string RequestProcessor::generateContentType()
     if (_uri.find(".flac") != string::npos) {
         return "audio/flac";
     }
-    return "text/html";
+    return "application/octet-stream"; // Default binary content type
 }
 
 
@@ -1228,7 +1259,7 @@ string RequestProcessor::createResponse(void) {
         }
 
         //checking if the _fileStream is ok
-        // if (_fileStream && _fileStream->is_open()) {
+        // if (_fileStream && _fileStream.is_open()) {
         if (_body_size >= _content_length) {
             cout << "File stream is open" << endl;
             response = generateHttpHeaders(_server, 200, 0);
@@ -1238,7 +1269,7 @@ string RequestProcessor::createResponse(void) {
             response = this->ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
             //delete the file stream ???
             // if (_fileStream) {
-            //     _fileStream->close();
+            //     _fileStream.close();
             //     delete _fileStream;
             //     _fileStream = NULL;
             // }

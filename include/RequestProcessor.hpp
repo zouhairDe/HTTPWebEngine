@@ -51,13 +51,13 @@ class RequestProcessor {
 		int					_status;
 		string				_authorization;
 		vector<string>		dangerousPatterns;
-		ofstream			*_fileStream;
+		ofstream			_fileStream;
 		
 		
 		public:
 		RequestProcessor();
 		RequestProcessor(string request, string __port, Server *server);
-		// RequestProcessor(const RequestProcessor &req);
+		RequestProcessor(const RequestProcessor &req);
 		RequestProcessor &operator=(const RequestProcessor &req);
 		~RequestProcessor();
 		
