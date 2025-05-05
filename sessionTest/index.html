@@ -77,7 +77,7 @@
 
       if (response.ok) {
         document.cookie = await response.text(); // sets session_id
-        // Redirect to /session
+        // Redirect to /sessionhttp://127.0.0.1:8081/login
         window.location.href = "/session";
       } else {
         alert("Login failed.");

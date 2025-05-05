@@ -19,6 +19,8 @@ class CGI {
     public:
         CGI();
         ~CGI();
+        CGI(const CGI &cgi);
+        CGI& operator=(const CGI &cgi);
         vector<char*>   getEnvVars() const;
         string          getCgiPath() const;
         string          getCgiOutput() const;

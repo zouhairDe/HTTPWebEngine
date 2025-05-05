@@ -14,6 +14,24 @@ CGI::~CGI() {
     unlink(_cgiOutputPath.c_str());
 }
 
+CGI& CGI::operator=(const CGI &cgi) {
+    if (this != &cgi) {
+        _cgiPath = cgi._cgiPath;
+        // _inputStream = cgi._inputStream;
+        // _outputStream = cgi._outputStream;
+        _envVars = cgi._envVars;
+        _cgiOutputPath = cgi._cgiOutputPath;
+        _cgiInputPath = cgi._cgiInputPath;
+        _cgiOutput = cgi._cgiOutput;
+        _bodyData = cgi._bodyData;
+    }
+    return *this;
+}
+
+CGI::CGI(const CGI &cgi) {
+    *this = cgi;
+}
+
 void CGI::setUri(string uri) {
     _uri = uri;
 }
@@ -27,18 +45,15 @@ string CGI::getCgiPath() const {
 }
 
 bool CGI::openInputStream() {
-    // Open for writing first to create the file
     std::ofstream tempStream(_cgiInputPath.c_str(), std::ios::out | std::ios::trunc);
     if (!tempStream.is_open()) {
         std::cerr << "Failed to create CGI input file" << std::endl;
         return false;
     }
-    // Write the body data to the file
     if (!_bodyData.empty()) {
         tempStream << _bodyData;
     }
     tempStream.close();
-    // Now open for reading (the file exists now)
     _inputStream.open(_cgiInputPath.c_str(), std::ios::in);
     if (!_inputStream.is_open()) {
         std::cerr << "Failed to open CGI input file for reading" << std::endl;
@@ -152,7 +167,24 @@ bool CGI::execute() {
         std::cerr << "Execve failed: " << std::endl;
         exit(1);
     } else { // Parent process
-        int status;
+        time_t start = time(NULL);
+        int status = 0;
+        while (true) {
+            status = waitpid(pid, &status, WNOHANG);
+            if (status == -1) {
+                std::cerr << "Waitpid failed: " << std::endl;
+                return false;
+            }
+            if (status == 0) {
+                if (difftime(time(NULL), start) >= CGI_TIMEOUT) {
+                    kill(pid, SIGKILL);
+                    std::cerr << "CGI script timed out" << std::endl;
+                    return false;
+                }
+            } else {
+                break;
+            }
+        }
         waitpid(pid, &status, 0);
         
         if (WIFEXITED(status)) {

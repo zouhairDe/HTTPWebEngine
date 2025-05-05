@@ -160,6 +160,11 @@ void	WebServer::run(){
 				Server *server = &Servers[s];//new Server(Servers[s]);
 				if (events[i].data.fd == server->Socket) {
 					int client_socket = handleNewConnection(server->Socket, epoll_fd);
+					if (requests.size() >= MAX_CLIENTS) {
+						cerr << "Max clients reached" << endl;//return service unavailable later
+						close(client_socket);
+						continue ;
+					}
 					requests[client_socket] = RequestProcessor();
 					requests[client_socket].setPort(server->getPort());
 
@@ -200,27 +205,6 @@ void	WebServer::run(){
 }
 
 
-/*
-	Communicate with the clients which means this function will be responsable for
-	reading and writing to the clients sockets after processing the request
-*/
-int		WebServer::communicate(){
-	
-	return 0;
-}
-
-/*
-	Find the server that the client is trying to connect to
-*/
-Server* WebServer::getServerBySocket(int socket_fd){
-	(void)socket_fd;
-	return nullptr;
-}
-
-/*
-	Handle the new connection from the client, meanning when a 
-	new client connects to the server
-*/
 int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 	
 	struct epoll_event new_event;
@@ -241,22 +225,4 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 	// cout << bold << green << "NEW CONNECTION" << def << endl;
 
 	return (client_socket);
-}
-
-/*
-	Handle the client data, meaning when the I/O events are ready to read from the client
-*/
-// int		WebServer::handleClientData(RequestProcessor &request) {
-	
-// 	return 1;
-// }
-
-/*
-	Find the server that the client is trying to connect to
-	`Simply a getter for one server in the Servers vector`
-*/
-Server* WebServer::findServerByHost(const RequestProcessor& req){
-	(void)req;
-	
-	return nullptr;
 }

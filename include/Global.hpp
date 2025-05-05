@@ -59,8 +59,9 @@ using namespace std;
 #define REQUEST_ENTITY_TOO_LARGE_STATUS_CODE 413
 #define REQUEST_LENGTH_REQUIRED_STATUS_CODE 411
 
-const int MAX_CLIENS = 1000;
+const int MAX_CLIENTS = 1000;
 const int CGI_TIMEOUT = 5;//to implement later
+const int MAX_CGI_CALLS = 50;
 
 string generateSessionID();
 string getCurrentTime();

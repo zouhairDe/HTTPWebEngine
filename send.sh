@@ -18,7 +18,7 @@ case $REQUEST_TYPE in
         ;;
     "post")
         while true; do
-            curl -X POST -F "filename=@/home/mzeggaf/vscode.tar.gz" http://localhost:8081/
+            curl -X POST -F "filename=@/home/zouddach/Downloads/postman-linux-x64/Postman/app/Postman" http://localhost:8081/ #"filename=@/home/mzeggaf/vscode.tar.gz"
             # sleep 1  # Optional: add a delay to avoid flooding the server
         done
         ;;

@@ -12,6 +12,8 @@
 
 #include "RequestProcessor.hpp"
 
+int CURRENT_RUNNING_CGI = 0;
+
 vector<string> split(string str, char delimiter);
 string trim(const string &str);
 vector<string> splitByString(string str, string delimiter);
@@ -130,6 +132,79 @@ string RequestProcessor::getAuthorization() const
     return _authorization;
 }
 
+RequestProcessor::RequestProcessor(const RequestProcessor &req)
+{
+    if (this != &req)
+    {
+        _request = req.getRequest();
+        _method = req.getMethod();
+        _uri = req.getUri();
+        _host = req.getHost();
+        _port = req.getPort();
+        _connection = req.getConnection();
+        _content_length = req.getContentLength();
+        _body = req.getBody();
+        _query = req.getQuery();
+        _cookie = req.getCookie();
+        _formFields = req.getFormFields();
+        _fileContentType = req.getFileContentType();
+        _fileContent = req.getFileContent();
+        if (req._file)
+            _file = new File(*(req._file));
+        else
+            _file = NULL;
+        if (req._cgi)
+            _cgi = new CGI(*(req._cgi));
+        else
+            _cgi = NULL;
+        if (req._server)
+            _server = new Server(*(req._server));
+        else
+            _server = NULL;
+        if (req._route)
+            _route = new Route(*(req._route));
+        else
+            _route = NULL;
+        // _fileStream = new ofstream();
+    }
+}
+
+RequestProcessor&    RequestProcessor::operator=(const RequestProcessor &req)
+{
+    if (this != &req)
+    {
+        _request = req.getRequest();
+        _method = req.getMethod();
+        _uri = req.getUri();
+        _host = req.getHost();
+        _port = req.getPort();
+        _connection = req.getConnection();
+        _content_length = req.getContentLength();
+        _body = req.getBody();
+        _query = req.getQuery();
+        _cookie = req.getCookie();
+        _formFields = req.getFormFields();
+        _fileContentType = req.getFileContentType();
+        _fileContent = req.getFileContent();
+        if (req._file)
+            _file = new File(*(req._file));
+        else
+            _file = NULL;
+        if (req._cgi)
+            _cgi = new CGI(*(req._cgi));
+        else
+            _cgi = NULL;
+        if (req._server)
+            _server = new Server(*(req._server));
+        else
+            _server = NULL;
+        if (req._route)
+            _route = new Route(*(req._route));
+        else
+            _route = NULL;
+    }
+    return *this;
+}
 string RequestProcessor::generateHttpHeaders(Server *server, int status_code, long fileSize)
 {//server might be nullptr
     string _Http_headers;
@@ -501,7 +576,7 @@ int    RequestProcessor::parseHeaders(string req) {
 				content_length_set = true;
                 _content_length = std::atoi(value.c_str());
                 Route *route = _server->getRouteFromUri(_uri);
-                if (_content_length > route->getClientMaxBodySize()) {
+                if (_content_length > route->getClientMaxBodySize() && route->getClientMaxBodySize() != (size_t)-1) {
                     cerr << "Content-Length exceeds max body size" << endl;
                     return (REQUEST_ENTITY_TOO_LARGE_STATUS_CODE);
                 }
@@ -1056,6 +1131,11 @@ bool    RequestProcessor::cgiInUri() {
 }
 
 string RequestProcessor::handleCgi(void) {
+    if (CURRENT_RUNNING_CGI == CGI_TIMEOUT) {
+        std::cerr << "CGI timeout" << std::endl;
+        _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
+        return ReturnServerErrorPage(_server, _status);//service nuavailable, later to do 
+    }
     string response;
 
     std::cout << "CGI request received" << std::endl;
@@ -1092,6 +1172,7 @@ string RequestProcessor::handleCgi(void) {
         _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
         return ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
     }
+    CURRENT_RUNNING_CGI++;
     if (_cgi->execute()) {
         string cgiResponse = _cgi->getCgiOutput();
         _status = OK_STATUS_CODE;
@@ -1101,7 +1182,7 @@ string RequestProcessor::handleCgi(void) {
         _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
         response = ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
     }
-    
+    CURRENT_RUNNING_CGI--;
     _cgi->clean();
     delete _cgi;
     _cgi = NULL;
@@ -1122,7 +1203,7 @@ string RequestProcessor::GenerateCostumeErrorPage(int status_code, string error_
 
 string RequestProcessor::createResponse(void) {
     string response;
-    cerr << "Request is: " << this->getRequest() << endl;
+    // cerr << "Request is: " << this->getRequest() << endl;
 	if (_status != 200) {
 		cout << bold << red << "ERROR IN REQUEST | status == " << _status << def << endl;
 		// string res = this->generateHttpHeaders(nullptr, _status, 0);
