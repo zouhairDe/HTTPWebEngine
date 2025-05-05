@@ -58,7 +58,7 @@ class RequestProcessor {
 		RequestProcessor();
 		RequestProcessor(string request, string __port, Server *server);
 		// RequestProcessor(const RequestProcessor &req);
-		// RequestProcessor &operator=(const RequestProcessor &req);
+		RequestProcessor &operator=(const RequestProcessor &req);
 		~RequestProcessor();
 		
 		int					parseHeaders(string req);

@@ -60,20 +60,13 @@ using namespace std;
 #define REQUEST_LENGTH_REQUIRED_STATUS_CODE 411
 
 const int MAX_CLIENTS = 1000;
-const int CGI_TIMEOUT = 5;//to implement later
+const int CGI_TIMEOUT = 10;//to implement later
 const int MAX_CGI_CALLS = 50;
 
 string generateSessionID();
 string getCurrentTime();
 
-// #include "functions.hpp"
-// #include "Route.hpp"
-// #include "Server.hpp"
-// #include "File.hpp"
-// #include "ConfigParser.hpp"
-// #include "WebServer.hpp"
 
-/* Color interface (IColor.hpp) and concrete classes (*Color.hpp) */
 #include "Interfaces/Colors/IColor.hpp"
 #include "Interfaces/Colors/RedColor.hpp"
 #include "Interfaces/Colors/GreenColor.hpp"

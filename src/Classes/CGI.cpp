@@ -167,24 +167,7 @@ bool CGI::execute() {
         std::cerr << "Execve failed: " << std::endl;
         exit(1);
     } else { // Parent process
-        time_t start = time(NULL);
-        int status = 0;
-        while (true) {
-            status = waitpid(pid, &status, WNOHANG);
-            if (status == -1) {
-                std::cerr << "Waitpid failed: " << std::endl;
-                return false;
-            }
-            if (status == 0) {
-                if (difftime(time(NULL), start) >= CGI_TIMEOUT) {
-                    kill(pid, SIGKILL);
-                    std::cerr << "CGI script timed out" << std::endl;
-                    return false;
-                }
-            } else {
-                break;
-            }
-        }
+        int status;
         waitpid(pid, &status, 0);
         
         if (WIFEXITED(status)) {

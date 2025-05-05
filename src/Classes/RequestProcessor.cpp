@@ -132,89 +132,34 @@ string RequestProcessor::getAuthorization() const
     return _authorization;
 }
 
-// RequestProcessor::RequestProcessor(const RequestProcessor &req)
-// {
-//     if (this != &req)
-//     {
-//         _request = req.getRequest();
-//         _method = req.getMethod();
-//         _uri = req.getUri();
-//         _host = req.getHost();
-//         _port = req.getPort();
-//         _connection = req.getConnection();
-//         _content_length = req.getContentLength();
-//         _body = req.getBody();
-//         _query = req.getQuery();
-//         _cookie = req.getCookie();
-//         _formFields = req.getFormFields();
-//         _fileContentType = req.getFileContentType();
-//         _fileContent = req.getFileContent();
-//         if (req._file)
-//             _file = new File(*(req._file));
-//         else
-//             _file = NULL;
-//         if (req._cgi)
-//             _cgi = new CGI(*(req._cgi));
-//         else
-//             _cgi = NULL;
-//         if (req._server)
-//             _server = new Server(*(req._server));
-//         else
-//             _server = NULL;
-//         if (req._route)
-//             _route = new Route(*(req._route));
-//         else
-//             _route = NULL;
-// 		if (req._fileStream)
-// 		{
-// 			_fileStream = new ofstream(*(req._fileStream));
-// 			if (_fileStream->is_open())
-// 				_fileStream->close();
-// 			delete _fileStream;
-// 		}
-// 		else
-//         _fileStream = new ofstream();
-//     }
-// }
+RequestProcessor&    RequestProcessor::operator=(const RequestProcessor &req)
+{
+    if (this != &req)
+    {
+        _request = req.getRequest();
+        _method = req.getMethod();
+        _uri = req.getUri();
+        _host = req.getHost();
+        _port = req.getPort();
+        _connection = req.getConnection();
+        _content_length = req.getContentLength();
+        _body = req.getBody();
+        _query = req.getQuery();
+        _cookie = req.getCookie();
+        _formFields = req.getFormFields();
+        _fileContentType = req.getFileContentType();
+        _fileContent = req.getFileContent();
+        _cgi = req._cgi;
+        _file = req._file;
+        _server = req._server;
+        _route = req._route;//deep copy
+    }
+    return *this;
+}
 
-// RequestProcessor&    RequestProcessor::operator=(const RequestProcessor &req)
-// {
-//     if (this != &req)
-//     {
-//         _request = req.getRequest();
-//         _method = req.getMethod();
-//         _uri = req.getUri();
-//         _host = req.getHost();
-//         _port = req.getPort();
-//         _connection = req.getConnection();
-//         _content_length = req.getContentLength();
-//         _body = req.getBody();
-//         _query = req.getQuery();
-//         _cookie = req.getCookie();
-//         _formFields = req.getFormFields();
-//         _fileContentType = req.getFileContentType();
-//         _fileContent = req.getFileContent();
-//         if (req._file)
-//             _file = new File(*(req._file));
-//         else
-//             _file = NULL;
-//         if (req._cgi)
-//             _cgi = new CGI(*(req._cgi));
-//         else
-//             _cgi = NULL;
-//         if (req._server)
-//             _server = new Server(*(req._server));
-//         else
-//             _server = NULL;
-//         if (req._route)
-//             _route = new Route(*(req._route));
-//         else
-//             _route = NULL;
-//     }
-//     return *this;
-// }
+
 string RequestProcessor::generateHttpHeaders(Server *server, int status_code, long fileSize)
-{//server might be nullptr
+{
     string _Http_headers;
     (void)server;
     _status = status_code;
@@ -309,10 +254,16 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
     string error_page_path;
     if (server == NULL)
         error_page_path = "./error/404.html";
-    else
+    else if (status_code == 403)
         error_page_path = server->getErrorPage();
     if (error_page_path.empty()) {
-        error_page_path = "./error/404.html";
+        if (status_code == 403)
+            error_page_path = "./error/403.html";
+        else if (status_code == 404)
+            error_page_path = "./error/404.html";
+        else if (status_code == 500)
+            error_page_path = "./error/500.html";
+
     }
     File error_page(error_page_path);
     std::string response = generateHttpHeaders(server, status_code, error_page.getSize());
@@ -1139,7 +1090,7 @@ bool    RequestProcessor::cgiInUri() {
 }
 
 string RequestProcessor::handleCgi(void) {
-    if (CURRENT_RUNNING_CGI == CGI_TIMEOUT) {
+    if (CURRENT_RUNNING_CGI == MAX_CGI_CALLS) {
         std::cerr << "CGI timeout" << std::endl;
         _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
         return ReturnServerErrorPage(_server, _status);//service nuavailable, later to do 
