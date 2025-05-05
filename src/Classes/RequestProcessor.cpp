@@ -132,79 +132,87 @@ string RequestProcessor::getAuthorization() const
     return _authorization;
 }
 
-RequestProcessor::RequestProcessor(const RequestProcessor &req)
-{
-    if (this != &req)
-    {
-        _request = req.getRequest();
-        _method = req.getMethod();
-        _uri = req.getUri();
-        _host = req.getHost();
-        _port = req.getPort();
-        _connection = req.getConnection();
-        _content_length = req.getContentLength();
-        _body = req.getBody();
-        _query = req.getQuery();
-        _cookie = req.getCookie();
-        _formFields = req.getFormFields();
-        _fileContentType = req.getFileContentType();
-        _fileContent = req.getFileContent();
-        if (req._file)
-            _file = new File(*(req._file));
-        else
-            _file = NULL;
-        if (req._cgi)
-            _cgi = new CGI(*(req._cgi));
-        else
-            _cgi = NULL;
-        if (req._server)
-            _server = new Server(*(req._server));
-        else
-            _server = NULL;
-        if (req._route)
-            _route = new Route(*(req._route));
-        else
-            _route = NULL;
-        // _fileStream = new ofstream();
-    }
-}
+// RequestProcessor::RequestProcessor(const RequestProcessor &req)
+// {
+//     if (this != &req)
+//     {
+//         _request = req.getRequest();
+//         _method = req.getMethod();
+//         _uri = req.getUri();
+//         _host = req.getHost();
+//         _port = req.getPort();
+//         _connection = req.getConnection();
+//         _content_length = req.getContentLength();
+//         _body = req.getBody();
+//         _query = req.getQuery();
+//         _cookie = req.getCookie();
+//         _formFields = req.getFormFields();
+//         _fileContentType = req.getFileContentType();
+//         _fileContent = req.getFileContent();
+//         if (req._file)
+//             _file = new File(*(req._file));
+//         else
+//             _file = NULL;
+//         if (req._cgi)
+//             _cgi = new CGI(*(req._cgi));
+//         else
+//             _cgi = NULL;
+//         if (req._server)
+//             _server = new Server(*(req._server));
+//         else
+//             _server = NULL;
+//         if (req._route)
+//             _route = new Route(*(req._route));
+//         else
+//             _route = NULL;
+// 		if (req._fileStream)
+// 		{
+// 			_fileStream = new ofstream(*(req._fileStream));
+// 			if (_fileStream->is_open())
+// 				_fileStream->close();
+// 			delete _fileStream;
+// 		}
+// 		else
+//         _fileStream = new ofstream();
+//     }
+// }
 
-RequestProcessor&    RequestProcessor::operator=(const RequestProcessor &req)
-{
-    if (this != &req)
-    {
-        _request = req.getRequest();
-        _method = req.getMethod();
-        _uri = req.getUri();
-        _host = req.getHost();
-        _port = req.getPort();
-        _connection = req.getConnection();
-        _content_length = req.getContentLength();
-        _body = req.getBody();
-        _query = req.getQuery();
-        _cookie = req.getCookie();
-        _formFields = req.getFormFields();
-        _fileContentType = req.getFileContentType();
-        _fileContent = req.getFileContent();
-        if (req._file)
-            _file = new File(*(req._file));
-        else
-            _file = NULL;
-        if (req._cgi)
-            _cgi = new CGI(*(req._cgi));
-        else
-            _cgi = NULL;
-        if (req._server)
-            _server = new Server(*(req._server));
-        else
-            _server = NULL;
-        if (req._route)
-            _route = new Route(*(req._route));
-        else
-            _route = NULL;
-    }
-    return *this;
-}
+// RequestProcessor&    RequestProcessor::operator=(const RequestProcessor &req)
+// {
+//     if (this != &req)
+//     {
+//         _request = req.getRequest();
+//         _method = req.getMethod();
+//         _uri = req.getUri();
+//         _host = req.getHost();
+//         _port = req.getPort();
+//         _connection = req.getConnection();
+//         _content_length = req.getContentLength();
+//         _body = req.getBody();
+//         _query = req.getQuery();
+//         _cookie = req.getCookie();
+//         _formFields = req.getFormFields();
+//         _fileContentType = req.getFileContentType();
+//         _fileContent = req.getFileContent();
+//         if (req._file)
+//             _file = new File(*(req._file));
+//         else
+//             _file = NULL;
+//         if (req._cgi)
+//             _cgi = new CGI(*(req._cgi));
+//         else
+//             _cgi = NULL;
+//         if (req._server)
+//             _server = new Server(*(req._server));
+//         else
+//             _server = NULL;
+//         if (req._route)
+//             _route = new Route(*(req._route));
+//         else
+//             _route = NULL;
+//     }
+//     return *this;
+// }
 string RequestProcessor::generateHttpHeaders(Server *server, int status_code, long fileSize)
 {//server might be nullptr
     string _Http_headers;
@@ -1327,10 +1335,23 @@ int    RequestProcessor::sendResponse(void)
         _responseToSend = this->createResponse();
 
         int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), 0);
-        if (bytesSent == -1) {
-            perror("send() failed");
-            return (-1);
-        }
+		if (bytesSent == 0) {
+			std::cout << "connection closed" << std::endl;
+			close(_client_socket);
+			_client_socket = -1;
+			_responded = true;
+			return (-1);
+		} else if (bytesSent == -1) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				cout << "Socket is not ready for sending" << endl;
+				return (0);
+			}
+			perror("send");
+			close(_client_socket);
+			_client_socket = -1;
+			_responded = true;
+			return (-1);
+		}
     }
 
     if (_file)
@@ -1339,14 +1360,14 @@ int    RequestProcessor::sendResponse(void)
         if (this->fd == -1)
             this->fd = open(_file->getPath().c_str(), O_RDONLY);//wtf is going on here
         if (this->fd == -1) {
-            perror("open() failed");
+            perror("open");
             return (-1);
         }
         char buffer[REQUEST_BUFFER_SIZE];
         ssize_t bytesRead = read(this->fd, buffer, REQUEST_BUFFER_SIZE - 1);
         // cout << "Sent " << bytesRead << " bytes to client" << endl;
         if (bytesRead == -1) {
-            perror("read() failed");
+            perror("read");
             close(this->fd);
             this->fd = -1;
             _responded = true;
@@ -1360,8 +1381,20 @@ int    RequestProcessor::sendResponse(void)
             return (0);
         }
         buffer[bytesRead] = '\0';
-        if (send(_client_socket, buffer, bytesRead, 0) == -1) {
-            perror("send() failed");
+		int bytesSent = send(_client_socket, buffer, bytesRead, 0);
+		if (bytesSent == 0) {
+			std::cout << "connection closed" << std::endl;
+			close(_client_socket);
+			_client_socket = -1;
+			_responded = true;
+			return (-1);
+		} else if (bytesSent == -1) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				cout << "Socket is not ready for sending" << endl;
+				_responseToSend.append(buffer, bytesRead);
+				return (0);
+			}
+            perror("send");
             close(this->fd);
             this->fd = -1;
             _responded = true;
@@ -1397,7 +1430,7 @@ int	RequestProcessor::receiveRequest(int client_socket) {
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // break ;
         } else {
-            perror("recv() failed");
+            perror("recv");
             return false;
         }
     // }
