@@ -858,82 +858,64 @@ void RequestProcessor::parseTextPlainUpload(const string &body)
 
 string RequestProcessor::generateContentType()
 {
-    if (_uri == "/") {
-        return "text/html";
-    }
-    if (_uri.find(".html") != string::npos || _uri.find(".htm") != string::npos) {
-        return "text/html";
-    }
-    if (_uri.find(".css") != string::npos) {
-        return "text/css";
-    }
-    if (_uri.find(".js") != string::npos) {
-        return "application/javascript";
-    }
-    if (_uri.find(".json") != string::npos) {
-        return "application/json";
-    }
-    if (_uri.find(".xml") != string::npos) {
-        return "application/xml";
-    }
-    if (_uri.find(".txt") != string::npos) {
-        return "text/plain";
-    }
-    if (_uri.find(".jpg") != string::npos || _uri.find(".jpeg") != string::npos) {
-        return "image/jpeg";
-    }
-    if (_uri.find(".png") != string::npos) {
-        return "image/png";
-    }
-    if (_uri.find(".gif") != string::npos) {
-        return "image/gif";
-    }
-    if (_uri.find(".bmp") != string::npos) {
-        return "image/bmp";
-    }
-    if (_uri.find(".webp") != string::npos) {
-        return "image/webp";
-    }
-    if (_uri.find(".svg") != string::npos) {
-        return "image/svg+xml";
-    }
-    if (_uri.find(".mp4") != string::npos) {
-        return "video/mp4";
-    }
-    if (_uri.find(".mpeg") != string::npos) {
-        return "video/mpeg";
-    }
-    if (_uri.find(".webm") != string::npos) {
-        return "video/webm";
-    }
-    if (_uri.find(".mov") != string::npos) {
-        return "video/quicktime";
-    }
-    if (_uri.find(".pdf") != string::npos) {
-        return "application/pdf";
-    }
-    if (_uri.find(".zip") != string::npos) {
-        return "application/zip";
-    }
-    if (_uri.find(".tar") != string::npos) {
-        return "application/x-tar";
-    }
-    if (_uri.find(".gz") != string::npos) {
-        return "application/x-gzip";
-    }
-    if (_uri.find(".mp3") != string::npos) {
-        return "audio/mpeg";
-    }
-    if (_uri.find(".wav") != string::npos) {
-        return "audio/wav";
-    }
-    if (_uri.find(".ogg") != string::npos) {
-        return "audio/ogg";
-    }
-    if (_uri.find(".flac") != string::npos) {
-        return "audio/flac";
-    }
-    return "application/octet-stream"; // Default binary content type
+	string toSearch;
+
+	if (_file == nullptr)
+		toSearch = "text/html";
+	// else
+	// {
+	// 	size_t pos = _file->getPath().find_last_of('.');
+	// 	if (pos == string::npos)
+	// 		return "application/octet-stream";
+	// 	else
+	// 		toSearch = _file->getPath().substr(pos);
+	// }
+	cout << "To search: " << toSearch << endl;
+
+	map<string, string> mimeTypes;
+
+	mimeTypes[".html"] = "text/html";
+	mimeTypes[".htm"] = "text/html";
+	mimeTypes[".css"] = "text/css";
+	mimeTypes[".js"] = "application/javascript";
+	mimeTypes[".json"] = "application/json";
+	mimeTypes[".xml"] = "application/xml";
+	mimeTypes[".txt"] = "text/plain";
+	mimeTypes[".jpg"] = "image/jpeg";
+	mimeTypes[".jpeg"] = "image/jpeg";
+	mimeTypes[".png"] = "image/png";
+	mimeTypes[".gif"] = "image/gif";
+	mimeTypes[".bmp"] = "image/bmp";
+	mimeTypes[".webp"] = "image/webp";
+	mimeTypes[".svg"] = "image/svg+xml";
+	mimeTypes[".mp4"] = "video/mp4";
+	mimeTypes[".mpeg"] = "video/mpeg";
+	mimeTypes[".webm"] = "video/webm";
+	mimeTypes[".mov"] = "video/quicktime";
+	mimeTypes[".pdf"] = "application/pdf";
+	mimeTypes[".zip"] = "application/zip";
+	mimeTypes[".tar"] = "application/x-tar";
+	mimeTypes[".gz"] = "application/x-gzip";
+	mimeTypes[".mp3"] = "audio/mpeg";
+	mimeTypes[".wav"] = "audio/wav";
+	mimeTypes[".ogg"] = "audio/ogg";
+	mimeTypes[".flac"] = "audio/flac";
+
+	size_t pos = _file->getPath().find_last_of('.');
+	if (pos != string::npos) {
+		string ext = _file->getPath().substr(pos);
+		map<string, string>::const_iterator it = mimeTypes.find(ext);
+		if (it != mimeTypes.end()) {
+			return it->second;
+		}
+	}
+
+	return "application/octet-stream"; // Default binary content type
+
+
+
+
+    
 }
 
 

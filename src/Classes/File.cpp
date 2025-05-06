@@ -79,3 +79,10 @@ void	File::setData(string Data, size_t size) {
 	this->_data[size] = '\0';
 	this->_size = size;
 }
+
+ostream &operator<<(ostream &os, const File &file) {
+	os << "File path: " << file.getPath() << endl;
+	os << "File size: " << file.getSize() << endl;
+	os << "File data: " << file.getData() << endl;
+	return (os);
+}

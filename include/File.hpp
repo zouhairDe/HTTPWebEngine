@@ -39,4 +39,6 @@ class File {
 
 };
 
+ostream &operator<<(ostream &os, const File &file);
+
 #endif
