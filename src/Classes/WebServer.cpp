@@ -149,7 +149,7 @@ void	WebServer::run(){
 	cout << bold << endl << "============== SERVER ON ==============" << def << endl << endl;
 
 	while (true) {
-		int event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+		int event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, 1000);
 		if (event_count == -1) {
 			perror("Epoll wait failed");
 		}
@@ -157,9 +157,14 @@ void	WebServer::run(){
 			bool new_connection = false;
 			for (size_t s = 0; s < Servers.size(); s++) {
 				/* hna ancheckiw if dak server 3ndo return (redirectionUrl 9adlo response dialo nichan w sindiga w nafs l haja hta l routes) */
-				Server *server = &Servers[s];//new Server(Servers[s]);
+				Server *server = &Servers[s];
 				if (events[i].data.fd == server->Socket) {
 					int client_socket = handleNewConnection(server->Socket, epoll_fd);
+					if (client_socket == -1) {
+						cerr << "Error accepting connection" << endl;
+						continue ;
+					}
+					cout << bold << green << "NEW CONNECTION" << def << endl;
 					if (requests.size() >= MAX_CLIENTS) {
 						cerr << "Max clients reached" << endl;//return service unavailable later
 						close(client_socket);
@@ -177,11 +182,12 @@ void	WebServer::run(){
 			if (new_connection)
 				continue ;
 			int client_socket = events[i].data.fd;
+			cout << bold << green << "EVENT ON SOCKET: " << client_socket << def << endl;
 			int status = requests[client_socket].receiveRequest(client_socket);
 			if (requests[client_socket].received() || status > 0) {
 				requests[client_socket].sendResponse();
-				cout << "REQUEST ARRIVED" << endl;
-				cout << bold << green << "SENT? " << requests[client_socket].responded() << def << endl;
+				// cout << "REQUEST ARRIVED" << endl;
+				// cout << bold << green << "SENT? " << requests[client_socket].responded() << def << endl;
 				if (requests[client_socket].responded() == false) {
 					modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLOUT | EPOLLET);
 				} else {
@@ -193,7 +199,7 @@ void	WebServer::run(){
 						close(client_socket);
 						requests.erase(client_socket);
 					} else {
-						cout << bold << green << "KEEP-ALIVE" << def << endl;
+						// cout << bold << green << "KEEP-ALIVE" << def << endl;
 						modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLET);
 						requests[client_socket].clear();
 					}

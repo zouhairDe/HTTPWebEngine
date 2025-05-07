@@ -29,8 +29,8 @@ RequestProcessor::RequestProcessor() {
     _file = NULL;
     _server = NULL;
     _cgi = NULL;
-    // _fileStream = new ofstream();
 	_status = 200;
+	_friend_server = false;
 }
 
 RequestProcessor::RequestProcessor(const RequestProcessor &req) {
@@ -44,6 +44,7 @@ RequestProcessor::RequestProcessor(const RequestProcessor &req) {
     _file = NULL;
     _server = NULL;
     _cgi = NULL;
+	_friend_server = false;
 	_status = req._status;
 	_request = req.getRequest();
 	_method = req.getMethod();
@@ -58,18 +59,24 @@ RequestProcessor::RequestProcessor(const RequestProcessor &req) {
 	_formFields = req.getFormFields();
 	_fileContentType = req.getFileContentType();
 	_fileContent = req.getFileContent();
-	// _fileStream = new ofstream(req._fileStream.rdbuf());
-	// *_fileStream << *req._fileStream;
-	// *_fileStream
 }
 
 RequestProcessor::~RequestProcessor() {
-    // if (_fileStream) {
-    //     if (_fileStream.is_open()) {
-    //         _fileStream.close();
-    //     }
-    //     delete _fileStream;
-    // }
+	if (_file)
+		delete _file;
+	if (_cgi)
+		delete _cgi;
+	if (fd != -1)
+		close(fd);
+	if (_fileStream.is_open())
+	    _fileStream.close();
+
+	if (_friend_server)
+	{
+		// cout << bold << red << "Deleting friend server" << def << endl;
+		delete _server;
+	}
+
 }
 
 string RequestProcessor::getRequest() const
@@ -204,6 +211,7 @@ string RequestProcessor::generateHttpHeaders(Server *server, int status_code, lo
     else
         _Http_headers += "Connection: keep-alive\r\n";
     _Http_headers += "\r\n";
+
     return _Http_headers;
 }
 string RequestProcessor::getStatusMessage(int status_code) const
@@ -298,6 +306,7 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
     }
     File error_page(error_page_path);
     std::string response = generateHttpHeaders(server, status_code, error_page.getSize());
+	cout << "hhhhh" << endl;
     response += error_page.getData();
     return response;
 }
@@ -595,10 +604,11 @@ int    RequestProcessor::parseHeaders(string req) {
                 if (ss_names[j] == this->getHost())
                 {
                     this->_server = ss;
+					_friend_server = true;
                     break ;
                 }
-                delete ss;
             }
+            delete ss;
         }
     }
 
@@ -607,7 +617,6 @@ int    RequestProcessor::parseHeaders(string req) {
 
     return (OK_STATUS_CODE);
 }
-
 
 string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
     string routeName = _route->getRouteName();
@@ -861,7 +870,7 @@ string RequestProcessor::generateContentType()
 	string toSearch;
 
 	if (_file == nullptr)
-		toSearch = "text/html";
+		return "text/html";
 	// else
 	// {
 	// 	size_t pos = _file->getPath().find_last_of('.');
@@ -911,10 +920,6 @@ string RequestProcessor::generateContentType()
 	}
 
 	return "application/octet-stream"; // Default binary content type
-
-
-
-
     
 }
 
@@ -1015,6 +1020,7 @@ void RequestProcessor::clear() {
     _body_size = 0;
     _file = NULL;
     _status = 200;
+	_client_socket = -1;
 }
 
 void    RequestProcessor::init_dangerousePatterns() {
@@ -1225,6 +1231,7 @@ string RequestProcessor::createResponse(void) {
         } else {
             this->_file = file;
             response = this->generateHttpHeaders(Server, _status, file->getSize());
+
         }
 	} else if (this->getMethod() == "POST") {
         if (this->getContentLength() > _route->getClientMaxBodySize()) {
@@ -1243,10 +1250,10 @@ string RequestProcessor::createResponse(void) {
         //checking if the _fileStream is ok
         // if (_fileStream && _fileStream.is_open()) {
         if (_body_size >= _content_length) {
-            cout << "File stream is open" << endl;
+            // cout << "File stream is open" << endl;
             response = generateHttpHeaders(_server, 200, 0);
         } else {
-            cout << "File stream is not open" << endl;
+            // cout << "File stream is not open" << endl;
             _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
             response = this->ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
             //delete the file stream ???
@@ -1289,7 +1296,7 @@ string RequestProcessor::createResponse(void) {
 int    RequestProcessor::sendResponse(void)
 {
     if (_client_socket == -1) {
-        cout << "Client socket is closed" << endl;
+        // cout << "Client socket is closed" << endl;
         _responded = true;
         return (-1);
     }
@@ -1300,14 +1307,15 @@ int    RequestProcessor::sendResponse(void)
 
         int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), 0);
 		if (bytesSent == 0) {
-			std::cout << "connection closed" << std::endl;
+			// std::cout << "connection closed" << std::endl;
 			close(_client_socket);
 			_client_socket = -1;
 			_responded = true;
+
 			return (-1);
 		} else if (bytesSent == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				cout << "Socket is not ready for sending" << endl;
+				// cout << "Socket is not ready for sending" << endl;
 				return (0);
 			}
 			perror("send");
@@ -1345,16 +1353,19 @@ int    RequestProcessor::sendResponse(void)
             return (0);
         }
         buffer[bytesRead] = '\0';
-		int bytesSent = send(_client_socket, buffer, bytesRead, 0);
+		cout << "brrrrrr ";
+		cout << _client_socket << endl;
+		int bytesSent = send(_client_socket, buffer, bytesRead, MSG_NOSIGNAL);
+		cout << "Sent " << bytesSent << " bytes to client" << endl;
 		if (bytesSent == 0) {
-			std::cout << "connection closed" << std::endl;
+			// std::cout << "connection closed" << std::endl;
 			close(_client_socket);
 			_client_socket = -1;
 			_responded = true;
 			return (-1);
 		} else if (bytesSent == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				cout << "Socket is not ready for sending" << endl;
+				// cout << "Socket is not ready for sending" << endl;
 				_responseToSend.append(buffer, bytesRead);
 				return (0);
 			}
@@ -1410,7 +1421,7 @@ int	RequestProcessor::receiveRequest(int client_socket) {
         }
     }
     if (_headers_parsed) {
-		cout << _content_length << " " << _body_size << endl;
+		// cout << _content_length << " " << _body_size << endl;
         if (this->getMethod() == "POST" && _body_size < _content_length) {
             return -1;//zid 9ra req
         }
@@ -1443,7 +1454,7 @@ void RequestProcessor::log() const {
     cout << def << "[";
     print_time();
     cout << "] ";
-    if (_uri.empty()) {
+    if (_client_socket == -1) {
         cout << bold << "CONNECTION CLOSED" << def << endl;
         return;
     }

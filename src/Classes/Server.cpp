@@ -46,6 +46,14 @@ int Server::init(int epoll_fd) {
 		return (1);
 	}
 
+	struct timeval timeout;
+	timeout.tv_sec = 5;
+	timeout.tv_usec = 0;
+	if (setsockopt(this->Socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) < 0) {
+		cerr << "Error setting socket options" << endl;
+		return (1);
+	}
+
 	cout << "port: " << this->getPort() << endl;
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
@@ -289,6 +297,8 @@ void Server::CheckFiles()
 		if url /kapouet is rooted to /tmp/www, url /kapouet/pouic/toto/pouet is
 		/tmp/www/pouic/toto/pouet).
 	*///so i dont think this is the thing
+
+				cout << bold << green << " -------- Files checked for friend " << def << endl;
     string rootPath = "/tmp/www/" + this->getRoot();
     if (serverHasRootRoute() == false) {
 		throw runtime_error("\033[31m Server must have a default route \"/\"");

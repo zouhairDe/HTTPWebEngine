@@ -52,6 +52,7 @@ class RequestProcessor {
 		string				_authorization;
 		vector<string>		dangerousPatterns;
 		ofstream			_fileStream;
+		bool				_friend_server;
 		
 		
 		public:
