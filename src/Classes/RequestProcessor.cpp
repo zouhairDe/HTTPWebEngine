@@ -252,17 +252,10 @@ string  RequestProcessor::createDirectoryListing(const string& path) const {
     cout << "	Path is : " << path << endl;
     string htmlContent = "<html><head><title>Directory Listing</title></head><body><h1>Directory Listing</h1><ul>";
     DIR* dir = opendir(path.c_str());
-    string routeName = _route->getRouteName();
-    routeName = cpp11_replace(routeName, "\"", "");
-    cout << "   Route name: " << routeName << endl;
     if (dir != NULL) {
         struct dirent* entry;
         while ((entry = readdir(dir)) != NULL) {
             string name = entry->d_name;
-                if (routeName != "/")
-                {
-                    name = routeName + "/" + name;
-                }
                 htmlContent += "<li><a href=\"";
                 htmlContent += name;
                 htmlContent += "\">";
@@ -293,8 +286,8 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
     string error_page_path;
     if (server == NULL)
         error_page_path = "./error/404.html";
-    else if (status_code == 403)
-        error_page_path = server->getErrorPage();
+    else
+        error_page_path = server->getErrorPage(status_code);
     if (error_page_path.empty()) {
         if (status_code == 403)
             error_page_path = "./error/403.html";
@@ -427,10 +420,10 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     if (S_ISDIR(pathStat.st_mode)) {
         cout << "Base path is a folder: " << basePath << endl;
         vector<string> indexFiles = _route->getRouteIndexFiles();
-        basePath = processIndexFiles(indexFiles);
-        if (!basePath.empty()) {
+        string indexPath = processIndexFiles(indexFiles);
+        if (!indexPath.empty()) {
             _status = (_status >= 300 && _status < 400) ? _status : 200;
-            return GetFile(basePath);
+            return GetFile(indexPath);
         }
         if (_route->getRouteDirectoryListing()) {
             _status = (_status >= 300 && _status < 400) ? _status : 200;
@@ -1301,11 +1294,13 @@ int    RequestProcessor::sendResponse(void)
         return (-1);
     }
 
+    
+
     if (_responseToSend.empty())
     {
         _responseToSend = this->createResponse();
 
-        int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), 0);
+        int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), MSG_NOSIGNAL);
 		if (bytesSent == 0) {
 			// std::cout << "connection closed" << std::endl;
 			close(_client_socket);
@@ -1373,8 +1368,8 @@ int    RequestProcessor::sendResponse(void)
             perror("send");
             close(this->fd);
             this->fd = -1;
-			_client_socket = -1;
 			close(_client_socket);
+			_client_socket = -1;
             _responded = true;
 			_status = INTERNAL_SERVER_ERROR_STATUS_CODE;
             return (-1);
@@ -1407,7 +1402,7 @@ int	RequestProcessor::receiveRequest(int client_socket) {
             _received = true;
             return true;
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // break ;
+            // break;
         } else {
             perror("recv");
             return false;
@@ -1415,7 +1410,7 @@ int	RequestProcessor::receiveRequest(int client_socket) {
     // }
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
         status = this->parseHeaders(_request);
-		cout << "_request: " << _request << endl;
+		// cout << "_request: " << _request << endl;
         if (status == OK_STATUS_CODE) {
             _headers_parsed = true;
         } else {

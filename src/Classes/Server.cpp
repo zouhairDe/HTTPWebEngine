@@ -17,7 +17,9 @@ Server &Server::operator=(const Server &server) {
 		this->Socket = server.Socket;
 		this->IndexFiles = server.IndexFiles;
 		this->ServerNames = server.ServerNames;
-		this->ErrorPage = server.ErrorPage;
+		this->ErrorPage404 = server.ErrorPage404;
+		this->ErrorPage403 = server.ErrorPage403;
+		this->ErrorPage500 = server.ErrorPage500;
 		this->_Routes = server._Routes;
 		this->_ServerFriends = server._ServerFriends;
 		this->_redirectionUrl = server._redirectionUrl;
@@ -47,7 +49,7 @@ int Server::init(int epoll_fd) {
 	}
 
 	struct timeval timeout;
-	timeout.tv_sec = 5;
+	timeout.tv_sec = 10;
 	timeout.tv_usec = 0;
 	if (setsockopt(this->Socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) < 0) {
 		cerr << "Error setting socket options" << endl;
@@ -101,8 +103,14 @@ vector<Route> Server::getRoutes() const {
 	return _Routes;
 }
 
-string Server::getErrorPage() const {
-	return ErrorPage;
+string Server::getErrorPage(int status) const {
+	if (status == 404)
+		return ErrorPage404;
+	else if (status == 403)
+		return ErrorPage403;
+	else if (status == 500)
+		return ErrorPage500;
+	return "";
 }
 
 string	Server::getRoot() const {
@@ -111,10 +119,6 @@ string	Server::getRoot() const {
 
 void	Server::setRoot(string root) {
 	Root = root;
-}
-
-void	Server::setErrorPage(string pages) {
-	ErrorPage = pages;
 }
 
 void	Server::setClientMaxBodySize(long size) {
@@ -194,7 +198,9 @@ void Server::setProperty(const string &key, string value) {
 		if (unit == 'M') ClientMaxBodySize *= 1024 * 1024;
 		else if (unit == 'K') ClientMaxBodySize *= 1024;
 	}
-	else if (key == "error_page_404") ErrorPage = "/tmp/www/" + value;
+	else if (key == "error_page_404") ErrorPage404 = "/tmp/www/" + value;
+	else if (key == "error_page_403") ErrorPage403 = "/tmp/www/" + value;
+	else if (key == "error_page_500") ErrorPage500 = "/tmp/www/" + value;	
 	else if (key == "return") {
 		//we split the value by , then we check if its string and number or not
 		vector<string> parts = split(value, ',');
@@ -267,7 +273,9 @@ ostream &operator<<(ostream &out, const Server &server) {
 		if (i < indexFiles.size() - 1) out << ", ";
 	}
 	out << endl;
-	out << "Error pages:" << server.getErrorPage() << endl;
+	out << "Error page 404:" << server.getErrorPage(404) << endl;
+	out << "Error page 403:" << server.getErrorPage(403) << endl;
+	out << "Error page 500:" << server.getErrorPage(500) << endl;
 	return out;
 }
 
@@ -298,7 +306,7 @@ void Server::CheckFiles()
 		/tmp/www/pouic/toto/pouet).
 	*///so i dont think this is the thing
 
-				cout << bold << green << " -------- Files checked for friend " << def << endl;
+	cout << bold << green << " -------- Files checked for friend " << def << endl;
     string rootPath = "/tmp/www/" + this->getRoot();
     if (serverHasRootRoute() == false) {
 		throw runtime_error("\033[31m Server must have a default route \"/\"");
@@ -317,12 +325,18 @@ void Server::CheckFiles()
         if (access(rootPath.c_str(), R_OK) != 0) {
             throw runtime_error("\033[31m No read access to directory");
         }
-		
-		// if (this->getErrorPage().empty()) //if makayninch error pages andiro dialna , fixed
-		// 	throw runtime_error("\033[31m Server must have an 404 error page");//TA NRUNNI NGNIX W NCHOFO HADI WACH S7I7A
-			
-		if (access(string(this->getErrorPage()).c_str(), R_OK) != 0)
-			throw runtime_error("\033[31m No read access to 404 error page");
+		// if (access(string(this->getErrorPage(404)).c_str(), F_OK) != 0)
+		// throw runtime_error("\033[31m 404 error page does not exist");
+		// if (access(string(this->getErrorPage(403)).c_str(), F_OK) != 0)
+		// throw runtime_error("\033[31m 403 error page does not exist");
+		// if (access(string(this->getErrorPage(500)).c_str(), F_OK) != 0)
+		// throw runtime_error("\033[31m 500 error page does not exist");
+		// if (access(string(this->getErrorPage(404)).c_str(), R_OK) != 0)
+		// 	throw runtime_error("\033[31m No read access to 404 error page");
+		// if (access(string(this->getErrorPage(403)).c_str(), R_OK) != 0)
+		// 	throw runtime_error("\033[31m No read access to 403 error page");
+		// if (access(string(this->getErrorPage(500)).c_str(), R_OK) != 0)
+		// 	throw runtime_error("\033[31m No read access to 500 error page");
         
     } else {
         throw runtime_error("\033[31m Folder does not exist: " + rootPath);

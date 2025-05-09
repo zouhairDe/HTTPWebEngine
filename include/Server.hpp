@@ -39,7 +39,9 @@ class Server {
 		string								Root;
 		vector<string>						ServerNames;
 		long								ClientMaxBodySize; /* in bytes */
-		string								ErrorPage;
+		string								ErrorPage404;
+		string								ErrorPage403;
+		string								ErrorPage500;
 		pair<string, int>					_redirectionUrl;
 		vector<Route>						_Routes;
 		vector<Server>						_ServerFriends;
@@ -66,7 +68,7 @@ class Server {
 		vector<string>		getServerNames() const;
 		long				getClientMaxBodySize() const ;
 		vector<Route>		getRoutes() const;
-		string				getErrorPage() const;
+		string				getErrorPage(int status) const;
 		string				getRoot() const;
 		vector<string>		getIndexFiles() const;
 		vector<Server>		getFriends() const;
@@ -75,7 +77,6 @@ class Server {
 
 		/* setters */
 		void				setRoot(string root);
-		void				setErrorPage(string pages);
 		void				setClientMaxBodySize(long size);
 		void				setServerNames(vector<string> names);
 		void				setRoutes(vector<Route> routes);

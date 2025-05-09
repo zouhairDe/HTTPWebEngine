@@ -37,6 +37,11 @@ WebServer::WebServer(char *filename)
 	config.setServerCount(serverCount);
 
 	Servers = config.parseConfig(string(filename));
+	if (Servers.empty())
+	{
+		cerr << "Error: No servers found in the configuration file." << endl;
+		exit(1);
+	}
 	cout << def << endl
 		 << endl; // Move to the next line after the progress bar is complete
 	changeEmptyValues();
@@ -57,8 +62,6 @@ void WebServer::changeEmptyValues()
 			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1) + " must have a Port to listen to");
 		if (server.getClientMaxBodySize() == -1)
 			server.setClientMaxBodySize(10 * 1024 * 1024); // 10MB default li ndiro
-		if (server.getErrorPage().empty())
-			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1) + " must have an 404 error page");
 	}
 }
 

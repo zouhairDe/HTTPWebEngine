@@ -13,8 +13,10 @@
 #include "WebServer.hpp"
 #include "Server.hpp"
 
+
 int main(int ac, char **av)
 {
+    signal(SIGPIPE, SIG_IGN);
     try {
         if (ac != 2) {
             throw runtime_error("\033[31m usage: ./webserv <config_file>");

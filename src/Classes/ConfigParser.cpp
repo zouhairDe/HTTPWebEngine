@@ -41,7 +41,6 @@ bool ConfigParser::isRouteEndBlock(string line, const string& routeName) {
 	line = cpp11_replace(line, " ", "");
 	line = cpp11_replace(line, "[", "");
 	line = cpp11_replace(line, "]", "");
-	// cerr << "New line : " << line << endl;
 	if (line == routeName)
 		return true;
 	return false;
@@ -88,8 +87,24 @@ ConfigParser::ConfigParser(const char* filename) {
 	this->ConfigFilePath = string(filename);
 	this->lineCount = 0;
 	this->serverCount = 0;
-	if (!fileExists(ConfigFilePath))
-		throw runtime_error("\033[31m Configuration file does not exist");
+	struct stat s;
+	cout << bold ;
+	if (stat(filename, &s) == -1)
+		throw runtime_error("\033[31m Cannot open configuration file: " + ConfigFileName);
+	if (!fileExists(filename))
+		throw runtime_error("\033[31m Configuration file does not exist: " + ConfigFileName);
+	if (s.st_size == 0)
+		throw runtime_error("\033[31m Configuration file is empty: " + ConfigFileName);
+	if (s.st_mode & S_IFDIR)
+		throw runtime_error("\033[31m Configuration file is a directory: " + ConfigFileName);
+	if (s.st_mode & S_IFREG)
+	{
+		if (s.st_size == 0)
+			throw runtime_error("\033[31m Configuration file is empty: " + ConfigFileName);
+	}
+	else
+		throw runtime_error("\033[31m Configuration file is not a regular file: " + ConfigFileName);
+	cout << def;
 }
 
 ConfigParser::~ConfigParser() { };
