@@ -1362,6 +1362,7 @@ int    RequestProcessor::sendResponse(void)
 			close(_client_socket);
 			_client_socket = -1;
 			_responded = true;
+			_status = INTERNAL_SERVER_ERROR_STATUS_CODE;
 			return (-1);
 		} else if (bytesSent == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -1372,7 +1373,10 @@ int    RequestProcessor::sendResponse(void)
             perror("send");
             close(this->fd);
             this->fd = -1;
+			_client_socket = -1;
+			close(_client_socket);
             _responded = true;
+			_status = INTERNAL_SERVER_ERROR_STATUS_CODE;
             return (-1);
         };
         // cout << "Sending file: " << buffer << endl;
@@ -1411,6 +1415,7 @@ int	RequestProcessor::receiveRequest(int client_socket) {
     // }
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
         status = this->parseHeaders(_request);
+		cout << "_request: " << _request << endl;
         if (status == OK_STATUS_CODE) {
             _headers_parsed = true;
         } else {

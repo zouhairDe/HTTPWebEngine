@@ -199,7 +199,7 @@ void	WebServer::run(){
 						close(client_socket);
 						requests.erase(client_socket);
 					} else {
-						// cout << bold << green << "KEEP-ALIVE" << def << endl;
+						cout << bold << green << "KEEP-ALIVE" << def << endl;
 						modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLET);
 						requests[client_socket].clear();
 					}

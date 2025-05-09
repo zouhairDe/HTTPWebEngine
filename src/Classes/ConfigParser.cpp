@@ -11,7 +11,7 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 	string line; 
 	while (getline(file, line)) {
 		line = trim(line);
-		if (line.empty() || line[0] == '#') continue;
+		if (line.empty() || line[0] == '#') continue ;
 		
 		if (isServerEndBlock(line)) {
 			server.updateAddress();
@@ -24,7 +24,7 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 				route.setProperty("name", routeName);
 			parseRouteBlock(file, route);
 			server.addRoute(route);
-			continue;
+			continue ;
 		}
 
 		if (!line.empty()) {
