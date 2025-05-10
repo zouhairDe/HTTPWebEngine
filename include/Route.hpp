@@ -33,7 +33,7 @@ class Route {
 		bool							RoutePOSTMethod;
 		bool							RouteDELETEMethod;
 		size_t							ClientMaxBodySize;
-		vector<pair<string, string> >	CGIs;//pair<extention, path>
+		vector<pair<string, string> >	CGIs;
 
 	public:
 		Route();
@@ -54,8 +54,6 @@ class Route {
 		void							CheckFiles(string serverRoot);
 		pair<string, int>				getRedirectUrl() const;
 		vector<pair<string, string> >	getCGIs() const;
-
-		// ma3rftch ila chi rouote ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
 
 		/* setters */
 		void setProperty(const string& key, const string& value);

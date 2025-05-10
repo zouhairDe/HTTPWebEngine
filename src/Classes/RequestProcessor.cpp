@@ -73,7 +73,6 @@ RequestProcessor::~RequestProcessor() {
 
 	if (_friend_server)
 	{
-		// cout << bold << red << "Deleting friend server" << def << endl;
 		delete _server;
 	}
 
@@ -248,8 +247,6 @@ File *RequestProcessor::GetFile(string path) const {
 
 
 string  RequestProcessor::createDirectoryListing(const string& path) const {
-	cout << "In Directory Listing" << endl;
-    cout << "	Path is : " << path << endl;
     string htmlContent = "<html><head><title>Directory Listing</title></head><body><h1>Directory Listing</h1><ul>";
     DIR* dir = opendir(path.c_str());
     if (dir != NULL) {
@@ -265,7 +262,6 @@ string  RequestProcessor::createDirectoryListing(const string& path) const {
         closedir(dir);
     }
     htmlContent += "</ul></body></html>";
-    cout << "HTML Content: " << htmlContent << endl;
     return htmlContent;
 }
 
@@ -299,7 +295,6 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
     }
     File error_page(error_page_path);
     std::string response = generateHttpHeaders(server, status_code, error_page.getSize());
-	cout << "hhhhh" << endl;
     response += error_page.getData();
     return response;
 }
@@ -317,12 +312,10 @@ string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
 string RequestProcessor::checkRedirectionFile(string path) {
     struct stat pathStat;
     string pathToCheck = "/tmp/www/" + this->_server->getRoot() + path.substr(1);
-    cout << "Checking redirection file: " << pathToCheck << endl;
     if (stat(pathToCheck.c_str(), &pathStat) == -1) {
         return "";
     }
     if (S_ISREG(pathStat.st_mode)) {
-        cout << "Redirection file exists: " << pathToCheck << endl;
         return pathToCheck;
     }
     return "";
@@ -333,7 +326,6 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     bool hasRoot = false;
     string basePath;
     if (_route->getRouteRoot().empty()) {
-        // cout << "This Route has no root: " << _route->getRouteRoot() << endl;
         basePath = "/tmp/www/" + root + reqUri.substr(1);//Old + Working
     }
     else {
@@ -346,13 +338,10 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
             uriWithoutRouteName = cpp11_replace(reqUri, cpp11_replace(routeName, "\"", ""), "");
         else
             uriWithoutRouteName = reqUri.substr(1);
-        // cout << "URI without route name: " << uriWithoutRouteName << endl;
         basePath = "/tmp/www/" + root + _route->getRouteRoot() + uriWithoutRouteName;
         hasRoot = true;
         (void)hasRoot;
     }
-    cout << "Base path: " << basePath << endl;
-    cerr << "Requested path: " << requestedPath << endl;
     if (requestedPath == "/") {
         if (_route->getRedirectUrl().second != -1) {
             string newPath = checkRedirectionFile(_route->getRedirectUrl().first);
@@ -390,35 +379,25 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         string newPath = checkRedirectionFile(newRouteName);
         if (newPath.empty() == false) {
             _status = _route->getRedirectUrl().second;
-            cout << "Redirection file existsss: " << newPath << endl;
             return GetFile(newPath);
         }
         if (!_server->isRouteExist(newRouteName)) {
-            cout << "Route does not exist: " << newRouteName << endl;
             return NULL;
         }
         else {
-            cout << "Redirection route: " << newRouteName << " was found" << endl;
             _route = _server->getRouteFromUri(newRouteName);
-            // cout << "New route: " << *_route << endl;
-            cout << "Current Route: " << *_route << endl;
-            basePath = "/tmp/www/" + root + newRouteName.substr(1);
-            cout << "BAse path: " << basePath << endl;
             _status = newStatusCode;
         }
     }
-    cout << "Base path: " << basePath << endl;
     struct stat pathStat;
     if (stat(basePath.c_str(), &pathStat) == -1) {
         return NULL;
     }
     if (S_ISREG(pathStat.st_mode)) {
         _status = 200;
-        cout << "Base path is a file: " << basePath << endl;
         return GetFile(basePath);
     }
     if (S_ISDIR(pathStat.st_mode)) {
-        cout << "Base path is a folder: " << basePath << endl;
         vector<string> indexFiles = _route->getRouteIndexFiles();
         string indexPath = processIndexFiles(indexFiles);
         if (!indexPath.empty()) {
@@ -475,7 +454,6 @@ void RequestProcessor::parseFormUrlEncoded(const string &body)
 			string key = pair.substr(0, equalsPos);
 			string value = pair.substr(equalsPos + 1);
 			
-			// URL decode the key and value if needed
 			_formFields[key] = value;
 		}
 	}
@@ -498,18 +476,15 @@ int    RequestProcessor::parseHeaders(string req) {
 	bool content_length_set = false;
     size_t headerEnd = req.find("\r\n\r\n");
     if (headerEnd == string::npos) {
-        headerEnd = req.find("\n\n"); // Fallback for non-standard requests
+        headerEnd = req.find("\n\n");
         if (headerEnd == string::npos) {
             cerr << "Invalid request format: couldn't find header/body separator" << endl;
             return (BAD_REQUEST_STATUS_CODE);
         }
     }
     
-    // Extract headers section and body
     string headersSection = req.substr(0, headerEnd);
     
-    // Normalize line endings in headers section and split into lines
-    // Replace all \r\n with \n for consistent processing
     string normalizedHeaders = headersSection;
     size_t pos = 0;
     while ((pos = normalizedHeaders.find("\r\n", pos)) != string::npos) {
@@ -517,14 +492,12 @@ int    RequestProcessor::parseHeaders(string req) {
         pos++;
     }
     
-    // Split headers by \n
     vector<string> headers = split(normalizedHeaders, '\n');
     if (headers.empty()) {
         cerr << "Invalid request: no headers found" << endl;
         return (BAD_REQUEST_STATUS_CODE);
     }
     
-    // Process the first line (request line)
     vector<string> requestLine = splitByString(headers[0], " ");
     if (requestLine.size() < 2) {
         for (size_t i = 0; i < headers.size(); i++)
@@ -534,20 +507,14 @@ int    RequestProcessor::parseHeaders(string req) {
     }
     
     _method = requestLine[0];
-    // if (_method != "GET" && _method != "POST" && _method != "DELETE") {
-    //     cerr << "Unsupported HTTP method: " << _method << endl;
-    //     return (1);//ERROR MANAGEMENT IS GOING CRAZY HNA
-    // }
     _uri = requestLine[1];
     
-    // Extract query parameters if present
     size_t queryPos = _uri.find('?');
     if (queryPos != string::npos) {
         _query = _uri.substr(queryPos + 1);
         _uri = _uri.substr(0, queryPos);
     }
     
-    // Process the rest of the headers
     for (size_t i = 1; i < headers.size(); i++) {
         string header = headers[i];
         size_t colonPos = header.find(':');
@@ -615,8 +582,6 @@ string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
     string routeName = _route->getRouteName();
     string reqUri = this->getUri();
     string basePath = "/tmp/www/" + root + reqUri.substr(1);
-    cout << "Base path: " << basePath << endl;
-    // Handle root path - search for index files
     if (requestedPath == "/") {
         return this->generateHttpHeaders(_server, FORBIDDEN_STATUS_CODE, 0);
     }
@@ -626,7 +591,6 @@ string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
 
     if (S_ISREG(pathStat.st_mode)) {
         if (remove(basePath.c_str()) == 0) {
-            cout << bold << green << "File at " << basePath << " deleted successfully." << def << endl;
             return this->generateHttpHeaders(_server, OK_STATUS_CODE, 0);
         } else {
             return this->generateHttpHeaders(_server, FORBIDDEN_STATUS_CODE, 0);
@@ -640,20 +604,17 @@ string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
 }
 
 int RequestProcessor::handleTransferEncodingChunked(string &body) {
-    // Handle chunked transfer encoding
     stringstream ss(body);
     body.clear();
     string chunk;
     while (getline(ss, chunk)) {
-        // Check for the end of the chunk
         if (chunk == "0") {
-            break; // End of chunks
+            break;
         }
         size_t chunkSize = strtol(chunk.c_str(), NULL, 16);
         if (chunkSize == 0) {
-            break; // No more data
+            break;
         }
-        // Read the actual chunk data
         string chunkData;
         getline(ss, chunkData);
         _body += chunkData.substr(0, chunkSize);
@@ -664,20 +625,18 @@ int RequestProcessor::handleTransferEncodingChunked(string &body) {
 int RequestProcessor::parseBody(string req) {
         size_t headerEnd = req.find("\r\n\r\n");
         if (headerEnd == string::npos) {
-            headerEnd = req.find("\n\n"); // Fallback for non-standard requests
+            headerEnd = req.find("\n\n");
             if (headerEnd == string::npos) {
                 cerr << "Invalid request format: couldn't find header/body separator" << endl;
                 return (1);
             }
         }
         
-        // Extract headers section and body
         string headersSection = req.substr(0, headerEnd);
         
-        // Get the body (everything after the empty line)
         _body = "";
         if (headerEnd + 4 < req.length()) {
-            _body = req.substr(headerEnd + 4); // Skip "\r\n\r\n"
+            _body = req.substr(headerEnd + 4);
         } else if (headerEnd + 2 < req.length()) {
             _body = req.substr(headerEnd + 2);
         }
@@ -698,20 +657,13 @@ int RequestProcessor::parseBody(string req) {
             }
         }
         else if (_content_type.find("text/plain") != string::npos) {
-            // Handle plain text uploads
             parseTextPlainUpload(_body);
         }
         else if (_content_type.find("application/json") != string::npos) {
-            // Handle JSON uploads (if needed)
-            // For now, just store the body as file content
             _fileContent = _body;
             _filename = "upload_" + cpp11_toString(time(NULL)) + ".json";
             _fileContentType = "application/json";
         }
-        // else {
-        //     cerr << "Unsupported Content-Type: " << _content_type << endl;
-        //     return (1);
-        // }
     return (0);
 }
 
@@ -721,18 +673,14 @@ string RequestProcessor::getFileContentType() const
 }
 
 bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
-    /* the complete boundary in the multipart content is preceded by "--" */
     std::string completeBoundary = "--" + boundary;
-    std::string endBoundary = "--" + boundary + "--";  /* final boundary has additional "--" */
+    std::string endBoundary = "--" + boundary + "--";
     
     size_t pos = 0;
     while (pos < _body.size()) {
-        /* find the next boundary */
         size_t boundaryPos = _body.find(completeBoundary, pos);
         
         if (boundaryPos == std::string::npos) {
-            /* if no boundary is found, read until _body.size() - boundary.size() */
-            /* this handles the case where a boundary might be split across chunks */
             size_t safeReadLimit = _body.size() - completeBoundary.length();
             if (pos < safeReadLimit) {
                 if (_fileStream && _fileStream.is_open()) {
@@ -743,54 +691,43 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
             break;
         }
         
-        /* if we're not at the beginning, write data to the current file */
         if (pos > 0 && _fileStream.is_open()) {
             _fileStream.write(&_body[pos], boundaryPos - pos);
         }
         
-        /* move position to after the boundary */
         pos = boundaryPos + completeBoundary.length();
         
-        /* check if this is the end boundary */
         if (_body.substr(boundaryPos, endBoundary.length()) == endBoundary) {
-            /* end of multipart data */
             pos = boundaryPos + endBoundary.length();
             break;
         }
         
-        /* skip over the CRLF after the boundary */
         if (pos + 2 <= _body.size() && _body[pos] == '\r' && _body[pos+1] == '\n') {
             pos += 2;
         }
         
-        /* parse headers to get filename and content type */
         std::string filename;
         std::string contentType;
-        
-        /* read headers until an empty line (CRLFCRLF) */
+    
         size_t headerEnd = _body.find("\r\n\r\n", pos);
         if (headerEnd == std::string::npos) {
-            /* incomplete headers, wait for more data */
             break;
         }
         
         std::string headers = _body.substr(pos, headerEnd - pos);
-        pos = headerEnd + 4;  /* skip CRLFCRLF */
+        pos = headerEnd + 4;
         
-        /* extract filename from Content-Disposition header */
         size_t filenamePos = headers.find("filename=\"");
         if (filenamePos != std::string::npos) {
-            filenamePos += 10;  /* skip 'filename="' */
+            filenamePos += 10;
             size_t filenameEnd = headers.find("\"", filenamePos);
             if (filenameEnd != std::string::npos) {
                 filename = headers.substr(filenamePos, filenameEnd - filenamePos);
                 
-                /* close any previously opened file */
                 if (_fileStream && _fileStream.is_open()) {
                     _fileStream.close();
                 }
                 
-                /* open a new file for this part */
                 if (_fileStream) {
                     Route *route = _server->getRouteFromUri(getUri());
                     if (filename.empty()) {
@@ -799,16 +736,13 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                     string store_path = "./body/" + filename;
                     if (!route->getUploadStore().empty())
                         store_path = "/tmp/www/" + route->getUploadStore() + filename;
-                    // cout << "Opening store_path file: " << store_path << endl;
                     _fileStream.open(store_path.c_str(), std::ios::binary);
                 }
             }
         }
         
-        /* find the next boundary to determine content length */
         size_t nextBoundaryPos = _body.find(completeBoundary, pos);
         if (nextBoundaryPos == std::string::npos) {
-            /* no complete boundary found, read until the safe limit */
             size_t safeReadLimit = _body.size() - completeBoundary.length();
             if (pos < safeReadLimit && _fileStream.is_open()) {
                 _fileStream.write(&_body[pos], safeReadLimit - pos);
@@ -816,9 +750,7 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
             pos = safeReadLimit;
             break;
         } else {
-            /* found next boundary, write content to file */
             if (_fileStream && _fileStream.is_open()) {
-                /* adjust for CRLF before the boundary */
                 size_t contentEnd = nextBoundaryPos;
                 if (contentEnd >= 2 && _body[contentEnd-2] == '\r' && _body[contentEnd-1] == '\n') {
                     contentEnd -= 2;
@@ -828,33 +760,27 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                     _fileStream.write(&_body[pos], contentEnd - pos);
                 }
             }
-            /* move to the next boundary position (will be processed in next iteration) */
             pos = nextBoundaryPos;
         }
     }
     
-    /* redefine _body to remaining unprocessed part */
     if (pos < _body.size()) {
         _body = _body.substr(pos);
-        return false;  /* more data to process */
+        return false;
     } else {
         _body.clear();
-        return true;  /* all data processed */
+        return true;
     }
 }
 
 void RequestProcessor::parseTextPlainUpload(const string &body)
 {
-    // For text/plain uploads, store the entire body as file content
     _fileContent = body;
     
-    // Set a default filename with timestamp
     _filename = "upload_" + cpp11_toString(time(NULL)) + ".txt";
     
-    // Set content type
     _fileContentType = "text/plain";
     
-    // Also add to form fields for consistency
     _formFields["file"] = body;
 }
 
@@ -864,15 +790,7 @@ string RequestProcessor::generateContentType()
 
 	if (_file == nullptr)
 		return "text/html";
-	// else
-	// {
-	// 	size_t pos = _file->getPath().find_last_of('.');
-	// 	if (pos == string::npos)
-	// 		return "application/octet-stream";
-	// 	else
-	// 		toSearch = _file->getPath().substr(pos);
-	// }
-	cout << "To search: " << toSearch << endl;
+	
 
 	map<string, string> mimeTypes;
 
@@ -912,18 +830,16 @@ string RequestProcessor::generateContentType()
 		}
 	}
 
-	return "application/octet-stream"; // Default binary content type
+	return "application/octet-stream";
     
 }
 
 
 string RequestProcessor::getExtensionFromContentType(const string& contentType) const
 {
-    // Default extension is bin for unknown types
     if (contentType.empty())
         return "bin";
     
-    // Map MIME types to common extensions
     if (contentType == "image/jpeg" || contentType == "image/jpg")
         return "jpg";
     if (contentType == "image/png")
@@ -975,7 +891,6 @@ std::ostream &operator<<(std::ostream &os, const RequestProcessor &req)
 string RequestProcessor::getStoreFileName() const
 {
     if (_filename.empty()) {
-        // Generate a default name with appropriate extension
         return "upload_" + cpp11_toString(time(NULL)) + "." + 
                getExtensionFromContentType(_fileContentType);
     }
@@ -1073,7 +988,6 @@ string RequestProcessor::RedirectionPage(string redirectionUrl, int status_code)
     response += "Connection: " + this->getConnection() + "\r\n";
     response += "Location: " + redirectionUrl + "\r\n";
     response += "\r\n";
-    cout << "Redirection response: " << response << endl;
     return response;
 }
 
@@ -1081,23 +995,19 @@ bool    RequestProcessor::cgiInUri() {
     Route *route = _server->getRouteFromUri(getUri());
     _route = route;
     if (!route) {
-        cout << "Route not found for CGI-URI: " << getUri() << endl;
         return false;
     }
     _route = route;
     vector<pair<string, string> > cgiMethods = route->getCGIs();
     for (size_t i = 0; i < cgiMethods.size(); i++) {
         if (this->getUri().find(cgiMethods[i].first) != std::string::npos) {
-            // cout << "CGI method found: " << cgiMethods[i].first << ", IN uri: " << this->getUri() << endl;
             _cgi = new CGI();
             _cgi->setUri(this->getUri());
             string path = "/tmp/www/" + _server->getRoot() + cgiMethods[i].second;
             _cgi->setCgiPath(path);
-            // cout << "CGI path: " << path << endl;
             return true;
         }
     }
-    // cout << "No CGI method found in URI: " << this->getUri() << endl;
     return false;
 }
 
@@ -1105,11 +1015,10 @@ string RequestProcessor::handleCgi(void) {
     if (CURRENT_RUNNING_CGI == MAX_CGI_CALLS) {
         std::cerr << "CGI timeout" << std::endl;
         _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
-        return ReturnServerErrorPage(_server, _status);//service nuavailable, later to do 
+        return ReturnServerErrorPage(_server, _status);
     }
     string response;
 
-    std::cout << "CGI request received" << std::endl;
     std::vector<std::string> envVars;
     envVars.push_back("REQUEST_METHOD=" + this->getMethod());
     envVars.push_back("REQUEST_URI=" + this->getUri());
@@ -1123,7 +1032,7 @@ string RequestProcessor::handleCgi(void) {
     envVars.push_back("SERVER_PROTOCOL=HTTP/1.1");
     envVars.push_back("SERVER_SOFTWARE=webserv/1.0.0");
     envVars.push_back("PATH_INFO=" + this->getUri());
-    // Set the body data before opening streams
+	
     _cgi->setBodyData(this->getBody());
     
     std::vector<char*> envp;
@@ -1174,25 +1083,19 @@ string RequestProcessor::GenerateCostumeErrorPage(int status_code, string error_
 
 string RequestProcessor::createResponse(void) {
     string response;
-    // cerr << "Request is: " << this->getRequest() << endl;
 	if (_status != 200) {
-		cout << bold << red << "ERROR IN REQUEST | status == " << _status << def << endl;
-		// string res = this->generateHttpHeaders(nullptr, _status, 0);
 		response = this->GenerateCostumeErrorPage(_status, this->getStatusMessage(_status));
 		return response;
 	}
     if (cgiInUri())
         return this->handleCgi();
     if (isUriBad(this->getUri())) {
-        cout << red << "Dangerous URI detected: " << this->getUri() << def << endl;
         _status = FORBIDDEN_STATUS_CODE;
-        response = this->ReturnServerErrorPage(_server, FORBIDDEN_STATUS_CODE);//need to change this to server certain error page not dima 404
+        response = this->ReturnServerErrorPage(_server, FORBIDDEN_STATUS_CODE);
         return response;
     }
     Route *route = _server->getRouteFromUri(getUri());
-    // cout << "Uri == " << getUri() << endl;
     if (!route) {
-        cout << "Route not found for URI: " << getUri() << endl;
         return this->ReturnServerErrorPage(_server, NOT_FOUND_STATUS_CODE);
     } else {
         _route = route;
@@ -1206,13 +1109,11 @@ string RequestProcessor::createResponse(void) {
 		}
         if (_route->getRouteGETMethod() == false)
         {
-            // cout << "GET method not allowed for this route" << endl;
             _status = NOT_ALLOWED_STATUS_CODE;
             response = this->GenerateCostumeErrorPage(NOT_ALLOWED_STATUS_CODE, "GET method not allowed for this route");
             return response;
         }
         if (Server->getRedirectUrl().second != -1) {
-            cout << "Redirection URL: " << Server->getRedirectUrl().first << endl;
             response = this->RedirectionPage(Server->getRedirectUrl().first, Server->getRedirectUrl().second);
             return response;
         }
@@ -1234,39 +1135,26 @@ string RequestProcessor::createResponse(void) {
         }
         if (_route->getRoutePOSTMethod() == false)
         {
-            // cout << "POST method not allowed for this route" << endl;
             _status = NOT_ALLOWED_STATUS_CODE;
             response = this->GenerateCostumeErrorPage(NOT_ALLOWED_STATUS_CODE, "POST method not allowed for this route");
             return response;
         }
 
-        //checking if the _fileStream is ok
-        // if (_fileStream && _fileStream.is_open()) {
         if (_body_size >= _content_length) {
-            // cout << "File stream is open" << endl;
             response = generateHttpHeaders(_server, 200, 0);
         } else {
-            // cout << "File stream is not open" << endl;
             _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
             response = this->ReturnServerErrorPage(_server, INTERNAL_SERVER_ERROR_STATUS_CODE);
-            //delete the file stream ???
-            // if (_fileStream) {
-            //     _fileStream.close();
-            //     delete _fileStream;
-            //     _fileStream = NULL;
-            // }
             return response;
         }
 	}
     else if (this->getMethod() == "DELETE") {
         if (_route->getDELETEMethod() == false)
         {
-            cout << "DELETE method not allowed for this route" << endl;
             _status = NOT_ALLOWED_STATUS_CODE;
             response = this->ReturnServerErrorPage(_server, NOT_ALLOWED_STATUS_CODE);
             return response;
         }
-        // cout << "DELETE request received" << endl;
         Server *Server = this->_server;
         if (Server == nullptr) {
             cerr << "Error: Server not found" << endl;
@@ -1275,12 +1163,10 @@ string RequestProcessor::createResponse(void) {
         response = this->DELETEResponse(Server->getRoot(), this->getUri());
         if (response.empty()) {
             response = this->ReturnServerErrorPage(Server, 404);
-            // cout << "File not found" << endl;
         }
     }
     else {
         response = this->GenerateCostumeErrorPage(NOT_ALLOWED_STATUS_CODE, "Method not allowed");
-        cout << "Method not allowed" << endl;
         _status = NOT_ALLOWED_STATUS_CODE;
     }
     return response;
@@ -1289,7 +1175,6 @@ string RequestProcessor::createResponse(void) {
 int    RequestProcessor::sendResponse(void)
 {
     if (_client_socket == -1) {
-        // cout << "Client socket is closed" << endl;
         _responded = true;
         return (-1);
     }
@@ -1302,7 +1187,6 @@ int    RequestProcessor::sendResponse(void)
 
         int bytesSent = send(_client_socket, _responseToSend.c_str(), _responseToSend.length(), MSG_NOSIGNAL);
 		if (bytesSent == 0) {
-			// std::cout << "connection closed" << std::endl;
 			close(_client_socket);
 			_client_socket = -1;
 			_responded = true;
@@ -1310,12 +1194,11 @@ int    RequestProcessor::sendResponse(void)
 			return (-1);
 		} else if (bytesSent == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				// cout << "Socket is not ready for sending" << endl;
 				return (0);
 			}
 			perror("send");
-			close(_client_socket);
-			_client_socket = -1;
+			_connection = "close";
+			_status = TOO_MANY_REQUESTS_STATUS_CODE;
 			_responded = true;
 			return (-1);
 		}
@@ -1323,7 +1206,6 @@ int    RequestProcessor::sendResponse(void)
 
     if (_file)
     {
-        cout << "Sending file: " << _file->getPath() << endl;
         if (this->fd == -1)
             this->fd = open(_file->getPath().c_str(), O_RDONLY);//wtf is going on here
         if (this->fd == -1) {
@@ -1332,7 +1214,6 @@ int    RequestProcessor::sendResponse(void)
         }
         char buffer[REQUEST_BUFFER_SIZE];
         ssize_t bytesRead = read(this->fd, buffer, REQUEST_BUFFER_SIZE - 1);
-        // cout << "Sent " << bytesRead << " bytes to client" << endl;
         if (bytesRead == -1) {
             perror("read");
             close(this->fd);
@@ -1341,42 +1222,32 @@ int    RequestProcessor::sendResponse(void)
             return (-1);
         }
         if ((size_t)bytesRead == 0) {
-            // cout << "File fully sent" << endl;
             close(this->fd);
             this->fd = -1;
             _responded = true;
             return (0);
         }
         buffer[bytesRead] = '\0';
-		cout << "brrrrrr ";
-		cout << _client_socket << endl;
 		int bytesSent = send(_client_socket, buffer, bytesRead, MSG_NOSIGNAL);
-		cout << "Sent " << bytesSent << " bytes to client" << endl;
 		if (bytesSent == 0) {
-			// std::cout << "connection closed" << std::endl;
 			close(_client_socket);
 			_client_socket = -1;
 			_responded = true;
-			_status = INTERNAL_SERVER_ERROR_STATUS_CODE;
 			return (-1);
 		} else if (bytesSent == -1) {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				// cout << "Socket is not ready for sending" << endl;
 				_responseToSend.append(buffer, bytesRead);
 				return (0);
 			}
             perror("send");
             close(this->fd);
             this->fd = -1;
-			close(_client_socket);
-			_client_socket = -1;
+			_connection = "close";
             _responded = true;
-			_status = INTERNAL_SERVER_ERROR_STATUS_CODE;
+			_status = TOO_MANY_REQUESTS_STATUS_CODE;
             return (-1);
         };
-        // cout << "Sending file: " << buffer << endl;
     } else {
-        // cout << "No file to send" << endl;
         _responded = true;
     }
     return (1);
@@ -1386,31 +1257,27 @@ int	RequestProcessor::receiveRequest(int client_socket) {
     int status;
     char buffer[REQUEST_BUFFER_SIZE] = {0};
     this->_client_socket = client_socket;
-        int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
-        if (bytesReceived > 0) {
-            buffer[bytesReceived] = '\0';
-            _request.append(buffer, bytesReceived);
-            _body_size += bytesReceived;
-            if (string(buffer, bytesReceived).find("\r\n\r\n") != \
-                string::npos && _headers_parsed == false) {
-                _body_size -= (_request.find("\r\n\r\n") + 4);
-            }
-        } else if (bytesReceived == 0) {
-            _client_socket = -1;
-            _connection = "close";
-            cout << "Client disconnected" << endl;
-            _received = true;
-            return true;
-        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            // break;
-        } else {
-            perror("recv");
-            return false;
-        }
-    // }
+	int bytesReceived = recv(client_socket, buffer, REQUEST_BUFFER_SIZE - 1, 0);
+	if (bytesReceived > 0) {
+		buffer[bytesReceived] = '\0';
+		_request.append(buffer, bytesReceived);
+		_body_size += bytesReceived;
+		if (string(buffer, bytesReceived).find("\r\n\r\n") != \
+			string::npos && _headers_parsed == false) {
+			_body_size -= (_request.find("\r\n\r\n") + 4);
+		}
+	} else if (bytesReceived == 0) {
+		_client_socket = -1;
+		_connection = "close";
+		_received = true;
+		return true;
+	} else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+	} else {
+		perror("recv");
+		return false;
+	}
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
         status = this->parseHeaders(_request);
-		// cout << "_request: " << _request << endl;
         if (status == OK_STATUS_CODE) {
             _headers_parsed = true;
         } else {
@@ -1421,9 +1288,8 @@ int	RequestProcessor::receiveRequest(int client_socket) {
         }
     }
     if (_headers_parsed) {
-		// cout << _content_length << " " << _body_size << endl;
         if (this->getMethod() == "POST" && _body_size < _content_length) {
-            return -1;//zid 9ra req
+            return -1;
         }
         this->parseBody(_request);
         _received = true;
@@ -1454,7 +1320,7 @@ void RequestProcessor::log() const {
     cout << def << "[";
     print_time();
     cout << "] ";
-    if (_client_socket == -1) {
+    if (_connection == "close") {
         cout << bold << "CONNECTION CLOSED" << def << endl;
         return;
     }

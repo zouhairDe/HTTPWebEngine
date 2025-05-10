@@ -17,7 +17,6 @@
 
 WebServer::WebServer(char *filename)
 {
-	// khas ncheckiw b3da wach kayn error line fl config file
 	ConfigParser config(filename);
 	ifstream file(filename);
 	string line;
@@ -159,7 +158,6 @@ void	WebServer::run(){
 		for (int i = 0; i < event_count; i++) {
 			bool new_connection = false;
 			for (size_t s = 0; s < Servers.size(); s++) {
-				/* hna ancheckiw if dak server 3ndo return (redirectionUrl 9adlo response dialo nichan w sindiga w nafs l haja hta l routes) */
 				Server *server = &Servers[s];
 				if (events[i].data.fd == server->Socket) {
 					int client_socket = handleNewConnection(server->Socket, epoll_fd);
@@ -167,16 +165,13 @@ void	WebServer::run(){
 						cerr << "Error accepting connection" << endl;
 						continue ;
 					}
-					cout << bold << green << "NEW CONNECTION" << def << endl;
 					if (requests.size() >= MAX_CLIENTS) {
-						cerr << "Max clients reached" << endl;//return service unavailable later
+						cerr << "Max clients reached" << endl;
 						close(client_socket);
 						continue ;
 					}
 					requests[client_socket] = RequestProcessor();
-					// myMap.insert(std::pair<std::string, int>(RequestProcessor(), 5));
 					requests[client_socket].setPort(server->getPort());
-
 					requests[client_socket]._server = server;
 					new_connection = true;
 					break ;
@@ -185,24 +180,19 @@ void	WebServer::run(){
 			if (new_connection)
 				continue ;
 			int client_socket = events[i].data.fd;
-			cout << bold << green << "EVENT ON SOCKET: " << client_socket << def << endl;
 			int status = requests[client_socket].receiveRequest(client_socket);
 			if (requests[client_socket].received() || status > 0) {
 				requests[client_socket].sendResponse();
-				// cout << "REQUEST ARRIVED" << endl;
-				// cout << bold << green << "SENT? " << requests[client_socket].responded() << def << endl;
 				if (requests[client_socket].responded() == false) {
 					modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLOUT | EPOLLET);
 				} else {
 					requests[client_socket].log();
 					if (requests[client_socket].getConnection() == "close") {
-						cout << bold << green << "CLOSED" << def << endl;
 						requests[client_socket].clear();
 						deleteSocket(epoll_fd, client_socket);
 						close(client_socket);
 						requests.erase(client_socket);
 					} else {
-						cout << bold << green << "KEEP-ALIVE" << def << endl;
 						modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLET);
 						requests[client_socket].clear();
 					}
@@ -231,8 +221,6 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 		perror("Epoll_ctl client failed");
 		close(client_socket);
 	}
-
-	// cout << bold << green << "NEW CONNECTION" << def << endl;
 
 	return (client_socket);
 }

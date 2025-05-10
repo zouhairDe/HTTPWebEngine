@@ -19,13 +19,11 @@ class File {
 	private:
 		string		_path;
 		size_t		_size;
-		// size_t		_offset;
 		char		*_data;
 		
 	public:
 		File();
 		File(string path);
-		// File(const string &path);
 		File(const File &other);
 		File	&operator=(const File &other);
 		~File();
