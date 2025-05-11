@@ -61,7 +61,7 @@ using namespace std;
 #define TOO_MANY_REQUESTS_STATUS_CODE 429
 
 const int MAX_CLIENTS = 1000;
-const int CGI_TIMEOUT = 10;//to implement later
+const int CGI_TIMEOUT = 3;
 const int MAX_CGI_CALLS = 50;
 
 string generateSessionID();

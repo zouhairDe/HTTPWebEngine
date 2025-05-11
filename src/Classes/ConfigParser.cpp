@@ -1,4 +1,3 @@
-
 #include "ConfigParser.hpp"
 
 bool ConfigParser::isServerEndBlock(const string& line) {
@@ -12,7 +11,7 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 	while (getline(file, line)) {
 		line = trim(line);
 		if (line.empty() || line[0] == '#') continue ;
-		
+
 		if (isServerEndBlock(line)) {
 			server.updateAddress();
 			break;
@@ -35,8 +34,7 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 }
 
 bool ConfigParser::isRouteEndBlock(string line, const string& routeName) {
-	// cerr << "Checking if route end block, line: " << line << endl;
-	// cerr << "Route name: " << routeName << endl;
+
 	line = trim(line);
 	line = cpp11_replace(line, " ", "");
 	line = cpp11_replace(line, "[", "");
@@ -51,7 +49,7 @@ void ConfigParser::parseRouteBlock(ifstream& file, Route& route) {
 	while (getline(file, line)) {
 		line = trim(line);
 		if (line.empty() || line[0] == '#') continue;
-		
+
 		if (isRouteEndBlock(line, route.getRouteName())) break;
 
 		if (!line.empty()) {
@@ -70,7 +68,7 @@ void ConfigParser::displayProgressBar(int current, int total) {
 	const int barWidth = 60;
 	float progress = (float)current / total;
 	int pos = barWidth * progress;
-	usleep(50000); // 50ms delay bach tban lbar w hia kat7rk hhhhhhh
+	usleep(50000); 
 
 	cout << "\r[";
 	for (int i = 0; i < barWidth; ++i) {
@@ -139,7 +137,6 @@ string ConfigParser::getFilePath() const {
 	return ConfigFilePath;
 }
 
-/* if server has same port and host as another server; add it to that server's friends */
 bool	ConfigParser::addServerToFriends(Server& server, vector<Server>& servers) {
 	for (size_t i = 0; i < servers.size(); i++) {
 		if (servers[i].getHostName() == server.getHostName() && servers[i].getPort() == server.getPort()) {
@@ -153,7 +150,7 @@ bool	ConfigParser::addServerToFriends(Server& server, vector<Server>& servers) {
 vector<Server> ConfigParser::parseConfig(const string& filename) {
 	vector<Server> servers;
 	ifstream file(filename.c_str());
-	
+
 	if (!file.is_open())
 		throw runtime_error("\033[31m Cannot open configuration file: " + filename);
 

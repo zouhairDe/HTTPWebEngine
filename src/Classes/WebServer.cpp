@@ -5,7 +5,7 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/04/17 15:32:33 by zouddach          #+#    #+#             */
+/*   Created: 2025/02/06 15:32:33 by zouddach          #+#    #+#             */
 /*   Updated: 2025/04/17 20:52:03 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
@@ -20,7 +20,7 @@ WebServer::WebServer(char *filename)
 	ConfigParser config(filename);
 	ifstream file(filename);
 	string line;
-	int serverCount = 0; // This is to count servers for progress bar
+	int serverCount = 0; 
 	while (getline(file, line))
 	{
 		line = trim(line);
@@ -42,7 +42,7 @@ WebServer::WebServer(char *filename)
 		exit(1);
 	}
 	cout << def << endl
-		 << endl; // Move to the next line after the progress bar is complete
+		 << endl; 
 	changeEmptyValues();
 }
 
@@ -60,7 +60,7 @@ void WebServer::changeEmptyValues()
 		if (server.getPort().empty())
 			throw runtime_error("\033[31m Server: " + cpp11_toString(i + 1) + " must have a Port to listen to");
 		if (server.getClientMaxBodySize() == -1)
-			server.setClientMaxBodySize(10 * 1024 * 1024); // 10MB default li ndiro
+			server.setClientMaxBodySize(10 * 1024 * 1024); 
 	}
 }
 
@@ -134,8 +134,7 @@ void	WebServer::run(){
 		perror("Epoll create failed");
 		return ;
 	}
-	/*  hna cancrew server wahd (socket ....)   */
-	
+
 	for (size_t i = 0; i < Servers.size(); i++) {
 		Server *server = &Servers[i];
 		if (server->init(epoll_fd)) {
@@ -223,9 +222,8 @@ void	WebServer::run(){
     }
 }
 
-
 int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
-	
+
 	struct epoll_event new_event;
 	int client_socket = accept(server_fd, NULL, NULL);
 	if (client_socket == -1) {
@@ -243,7 +241,7 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 	struct timeval timeout;
 	timeout.tv_sec = 10;
 	timeout.tv_usec = 0;
-	
+
 	if (setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) < 0) {
 		cerr << "Error setting socket options" << endl;
 		close(client_socket);

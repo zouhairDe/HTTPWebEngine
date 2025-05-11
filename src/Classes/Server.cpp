@@ -1,3 +1,14 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   WebServer.cpp                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/02/06 15:32:33 by zouddach          #+#    #+#             */
+/*   Updated: 2025/04/17 20:52:03 by zouddach         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "Server.hpp"
 
@@ -31,7 +42,7 @@ int Server::init(int epoll_fd) {
 	int opt;
 	struct sockaddr_in server_addr;
 	struct epoll_event new_event;
-	
+
 	this->Socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->Socket == -1) {
 		cerr << "Error creating socket" << endl;
@@ -71,7 +82,7 @@ int Server::init(int epoll_fd) {
 	}
 	return (0);
 }
-	
+
 string Server::getHostName() const {
 	return HostName;	
 }
@@ -141,32 +152,26 @@ bool	Server::isRouteExist(string route) {
 }
 
 Route *Server::getRouteFromUri(string uri) {
-	// cout << "From getRouteFromUri(): " << uri << endl;
-	// cout << "	URI: " << uri << endl;
-	//hadi 9bl man9ad query string d cgi
-	//if uri ends with /, we need to remove it
+
 	if (uri.empty())
 		return NULL;
 	if (uri[uri.length() - 1] == '/' && uri != "/") 
-		uri = uri.substr(0, uri.length() - 1);/* cout << "	NEW URI: " << uri << endl;*/
+		uri = uri.substr(0, uri.length() - 1);
 
     for (size_t i = 0; i < _Routes.size(); i++) {
-		// cout << "Comaparing " << _Routes[i].getRouteName() << " with " << uri << endl;
+
         if (_Routes[i].getRouteName() == string("\"" + uri + "\"")) {
-            // cerr << "Route found from *Server::getRouteFromUri(): " << _Routes[i].getRouteName() << endl;
+
             return &_Routes[i];
         }
     }
 
-	//Route not found, meanning khouna is trying to access a file
-	//so we need to nfr9o file w path mn uri
 	string fileFromUri = uri.substr(uri.find_last_of('/') + 1);
 	string uriWithoutFile = cpp11_replace(uri, fileFromUri, "");
-	// cout << "Routes isnt found, recursing with: " << uriWithoutFile << endl;
-	//recursive call to check if the file is in a route
-	if (uriWithoutFile == "/")//bzz khas ykon "/" route
+
+	if (uriWithoutFile == "/")
 	{
-		// cout << "Returning default route" << endl;
+
 		return &_Routes[0];
 	}
 	return getRouteFromUri(uriWithoutFile);
@@ -186,7 +191,7 @@ void Server::setProperty(const string &key, string value) {
 	}
 	else if (key == "client_max_body_size") {
 		string size = value.substr(0, value.length()-1);
-		char unit = value[value.length()-1];//if unit is not a number consider it bytes
+		char unit = value[value.length()-1];
 		ClientMaxBodySize = atol(size.c_str());
 		if (unit == 'M') ClientMaxBodySize *= 1024 * 1024;
 		else if (unit == 'K') ClientMaxBodySize *= 1024;
@@ -195,7 +200,7 @@ void Server::setProperty(const string &key, string value) {
 	else if (key == "error_page_403") ErrorPage403 = "/tmp/www/" + value;
 	else if (key == "error_page_500") ErrorPage500 = "/tmp/www/" + value;	
 	else if (key == "return") {
-		//we split the value by , then we check if its string and number or not
+
 		vector<string> parts = split(value, ',');
 		if (parts.size() != 2)
 			throw runtime_error("\033[31m Invalid return value: " + value + "\nExpected format: \"return <url>, <status_code>\"");
@@ -211,7 +216,7 @@ void Server::setProperty(const string &key, string value) {
 	else {
 		throw runtime_error("\033[31m Unknown property: " + key);
 	}
-	
+
 }
 
 void Server::updateAddress() {
@@ -292,12 +297,6 @@ bool Server::serverHasRootRoute() const {
 
 void Server::CheckFiles()
 {
-	//then check the existence of the files bhal err_pages
-	/*
-		Define a directory or a file from where the file should be searched (for example,
-		if url /kapouet is rooted to /tmp/www, url /kapouet/pouic/toto/pouet is
-		/tmp/www/pouic/toto/pouet).
-	*///so i dont think this is the thing
 
 	cout << bold << green << " -------- Files checked for friend " << def << endl;
     string rootPath = "/tmp/www/" + this->getRoot();
@@ -314,23 +313,11 @@ void Server::CheckFiles()
         if (!(s.st_mode & S_IFDIR)) {
             throw runtime_error("\033[31m Path is not a directory: " + rootPath);
         }
-        
+
         if (access(rootPath.c_str(), R_OK) != 0) {
             throw runtime_error("\033[31m No read access to directory");
         }
-		// if (access(string(this->getErrorPage(404)).c_str(), F_OK) != 0)
-		// throw runtime_error("\033[31m 404 error page does not exist");
-		// if (access(string(this->getErrorPage(403)).c_str(), F_OK) != 0)
-		// throw runtime_error("\033[31m 403 error page does not exist");
-		// if (access(string(this->getErrorPage(500)).c_str(), F_OK) != 0)
-		// throw runtime_error("\033[31m 500 error page does not exist");
-		// if (access(string(this->getErrorPage(404)).c_str(), R_OK) != 0)
-		// 	throw runtime_error("\033[31m No read access to 404 error page");
-		// if (access(string(this->getErrorPage(403)).c_str(), R_OK) != 0)
-		// 	throw runtime_error("\033[31m No read access to 403 error page");
-		// if (access(string(this->getErrorPage(500)).c_str(), R_OK) != 0)
-		// 	throw runtime_error("\033[31m No read access to 500 error page");
-        
+
     } else {
         throw runtime_error("\033[31m Folder does not exist: " + rootPath);
     }

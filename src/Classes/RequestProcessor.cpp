@@ -185,15 +185,14 @@ RequestProcessor&    RequestProcessor::operator=(const RequestProcessor &req)
         _formFields = req.getFormFields();
         _fileContentType = req.getFileContentType();
         _fileContent = req.getFileContent();
-		// _fileStream = req._fileStream;
+
         _cgi = req._cgi;
         _file = req._file;
         _server = req._server;
-        _route = req._route;//deep copy
+        _route = req._route;
     }
     return *this;
 }
-
 
 string RequestProcessor::generateHttpHeaders(Server *server, int status_code, long fileSize)
 {
@@ -203,7 +202,7 @@ string RequestProcessor::generateHttpHeaders(Server *server, int status_code, lo
     _Http_headers = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
     _Http_headers += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     _Http_headers += "Content-Type: " + (status_code >= 200 && status_code < 300 ? generateContentType() : "text/html") + "\r\n";
-    // if (fileSize > 0)
+
         _Http_headers += "Content-Length: " + cpp11_toString(fileSize) + "\r\n";
     if (this->getConnection() == "close")
         _Http_headers += "Connection: close\r\n";
@@ -245,7 +244,6 @@ File *RequestProcessor::GetFile(string path) const {
     	return new File(path);
 }
 
-
 string  RequestProcessor::createDirectoryListing(const string& path) const {
     string htmlContent = "<html><head><title>Directory Listing</title></head><body><h1>Directory Listing</h1><ul>";
     DIR* dir = opendir(path.c_str());
@@ -271,13 +269,13 @@ File* RequestProcessor::handleDirectory(const string& path) const {
     ofstream tempFile(tempPath.c_str());
     if (!tempFile.is_open())
         return NULL;
-    
+
     tempFile << htmlContent;
     tempFile.close();
     return new File(tempPath);
 }
 
-string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_code)//should be a global function
+string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_code)
 {
     string error_page_path;
     if (server == NULL)
@@ -326,14 +324,13 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     bool hasRoot = false;
     string basePath;
     if (_route->getRouteRoot().empty()) {
-        basePath = "/tmp/www/" + root + reqUri.substr(1);//Old + Working
+        basePath = "/tmp/www/" + root + reqUri.substr(1);
     }
     else {
-        // cerr << "This Route has a root: " << _route->getRouteRoot() << endl;
-        // cerr << "Requested path: " << requestedPath << endl;
+
         string routeName = _route->getRouteName();
         string uriWithoutRouteName;
-        // cerr << "Route name: " << routeName << endl;
+
         if (routeName != "/")
             uriWithoutRouteName = cpp11_replace(reqUri, cpp11_replace(routeName, "\"", ""), "");
         else
@@ -375,7 +372,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     if (_route->getRedirectUrl().second != -1) {
         string newRouteName = _route->getRedirectUrl().first;
         int newStatusCode = _route->getRedirectUrl().second;
-        //if the path is file and exists return it
+
         string newPath = checkRedirectionFile(newRouteName);
         if (newPath.empty() == false) {
             _status = _route->getRedirectUrl().second;
@@ -421,14 +418,14 @@ void RequestProcessor::debugRequest() const
     cerr << "Host: " << _host << endl;
     cerr << "Content-Type: " << _content_type << endl;
     cerr << "Content-Length: " << _content_length << endl;
-    
+
     if (!_filename.empty())
     {
         cerr << "Uploaded filename: " << _filename << endl;
         cerr << "File content type: " << _fileContentType << endl;
         cerr << "File content length: " << _fileContent.length() << " bytes" << endl;
     }
-    
+
     cerr << "Form fields: " << endl;
     for (map<string, string>::const_iterator it = _formFields.begin(); it != _formFields.end(); ++it)
     {
@@ -453,7 +450,7 @@ void RequestProcessor::parseFormUrlEncoded(const string &body)
 		{
 			string key = pair.substr(0, equalsPos);
 			string value = pair.substr(equalsPos + 1);
-			
+
 			_formFields[key] = value;
 		}
 	}
@@ -465,7 +462,7 @@ RequestProcessor::RequestProcessor(string req, string __port, Server *server)
     _server = server;
     _port = __port;
     _responded = false;
-    
+
     if (this->parseHeaders(req))
         cerr << "Error parsing headers" << endl;
     if (this->parseBody(req))
@@ -482,22 +479,22 @@ int    RequestProcessor::parseHeaders(string req) {
             return (BAD_REQUEST_STATUS_CODE);
         }
     }
-    
+
     string headersSection = req.substr(0, headerEnd);
-    
+
     string normalizedHeaders = headersSection;
     size_t pos = 0;
     while ((pos = normalizedHeaders.find("\r\n", pos)) != string::npos) {
         normalizedHeaders.replace(pos, 2, "\n");
         pos++;
     }
-    
+
     vector<string> headers = split(normalizedHeaders, '\n');
     if (headers.empty()) {
         cerr << "Invalid request: no headers found" << endl;
         return (BAD_REQUEST_STATUS_CODE);
     }
-    
+
     vector<string> requestLine = splitByString(headers[0], " ");
     if (requestLine.size() < 2) {
         for (size_t i = 0; i < headers.size(); i++)
@@ -505,23 +502,23 @@ int    RequestProcessor::parseHeaders(string req) {
         cerr << "Invalid request line format" << endl;
         return (BAD_REQUEST_STATUS_CODE);
     }
-    
+
     _method = requestLine[0];
     _uri = requestLine[1];
-    
+
     size_t queryPos = _uri.find('?');
     if (queryPos != string::npos) {
         _query = _uri.substr(queryPos + 1);
         _uri = _uri.substr(0, queryPos);
     }
-    
+
     for (size_t i = 1; i < headers.size(); i++) {
         string header = headers[i];
         size_t colonPos = header.find(':');
         if (colonPos != string::npos) {
             string key = trim(header.substr(0, colonPos));
             string value = trim(header.substr(colonPos + 1));
-            
+
             if (key == "Host") {
                 size_t portPos = value.find(':');
                 if (portPos != string::npos) {
@@ -631,9 +628,9 @@ int RequestProcessor::parseBody(string req) {
                 return (1);
             }
         }
-        
+
         string headersSection = req.substr(0, headerEnd);
-        
+
         _body = "";
         if (headerEnd + 4 < req.length()) {
             _body = req.substr(headerEnd + 4);
@@ -675,11 +672,11 @@ string RequestProcessor::getFileContentType() const
 bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
     std::string completeBoundary = "--" + boundary;
     std::string endBoundary = "--" + boundary + "--";
-    
+
     size_t pos = 0;
     while (pos < _body.size()) {
         size_t boundaryPos = _body.find(completeBoundary, pos);
-        
+
         if (boundaryPos == std::string::npos) {
             size_t safeReadLimit = _body.size() - completeBoundary.length();
             if (pos < safeReadLimit) {
@@ -690,44 +687,44 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
             }
             break;
         }
-        
+
         if (pos > 0 && _fileStream.is_open()) {
             _fileStream.write(&_body[pos], boundaryPos - pos);
         }
-        
+
         pos = boundaryPos + completeBoundary.length();
-        
+
         if (_body.substr(boundaryPos, endBoundary.length()) == endBoundary) {
             pos = boundaryPos + endBoundary.length();
             break;
         }
-        
+
         if (pos + 2 <= _body.size() && _body[pos] == '\r' && _body[pos+1] == '\n') {
             pos += 2;
         }
-        
+
         std::string filename;
         std::string contentType;
-    
+
         size_t headerEnd = _body.find("\r\n\r\n", pos);
         if (headerEnd == std::string::npos) {
             break;
         }
-        
+
         std::string headers = _body.substr(pos, headerEnd - pos);
         pos = headerEnd + 4;
-        
+
         size_t filenamePos = headers.find("filename=\"");
         if (filenamePos != std::string::npos) {
             filenamePos += 10;
             size_t filenameEnd = headers.find("\"", filenamePos);
             if (filenameEnd != std::string::npos) {
                 filename = headers.substr(filenamePos, filenameEnd - filenamePos);
-                
+
                 if (_fileStream && _fileStream.is_open()) {
                     _fileStream.close();
                 }
-                
+
                 if (_fileStream) {
                     Route *route = _server->getRouteFromUri(getUri());
                     if (filename.empty()) {
@@ -740,7 +737,7 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                 }
             }
         }
-        
+
         size_t nextBoundaryPos = _body.find(completeBoundary, pos);
         if (nextBoundaryPos == std::string::npos) {
             size_t safeReadLimit = _body.size() - completeBoundary.length();
@@ -755,7 +752,7 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                 if (contentEnd >= 2 && _body[contentEnd-2] == '\r' && _body[contentEnd-1] == '\n') {
                     contentEnd -= 2;
                 }
-                
+
                 if (contentEnd > pos) {
                     _fileStream.write(&_body[pos], contentEnd - pos);
                 }
@@ -763,7 +760,7 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
             pos = nextBoundaryPos;
         }
     }
-    
+
     if (pos < _body.size()) {
         _body = _body.substr(pos);
         return false;
@@ -776,11 +773,11 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
 void RequestProcessor::parseTextPlainUpload(const string &body)
 {
     _fileContent = body;
-    
+
     _filename = "upload_" + cpp11_toString(time(NULL)) + ".txt";
-    
+
     _fileContentType = "text/plain";
-    
+
     _formFields["file"] = body;
 }
 
@@ -790,7 +787,6 @@ string RequestProcessor::generateContentType()
 
 	if (_file == nullptr)
 		return "text/html";
-	
 
 	map<string, string> mimeTypes;
 
@@ -831,15 +827,14 @@ string RequestProcessor::generateContentType()
 	}
 
 	return "application/octet-stream";
-    
-}
 
+}
 
 string RequestProcessor::getExtensionFromContentType(const string& contentType) const
 {
     if (contentType.empty())
         return "bin";
-    
+
     if (contentType == "image/jpeg" || contentType == "image/jpg")
         return "jpg";
     if (contentType == "image/png")
@@ -852,7 +847,7 @@ string RequestProcessor::getExtensionFromContentType(const string& contentType) 
         return "webp";
     if (contentType == "image/svg+xml")
         return "svg";
-        
+
     if (contentType == "video/mp4")
         return "mp4";
     if (contentType == "video/mpeg")
@@ -861,7 +856,7 @@ string RequestProcessor::getExtensionFromContentType(const string& contentType) 
         return "webm";
     if (contentType == "video/quicktime")
         return "mov";
-    
+
     if (contentType == "application/pdf")
         return "pdf";
     if (contentType == "application/zip")
@@ -870,9 +865,8 @@ string RequestProcessor::getExtensionFromContentType(const string& contentType) 
         return "tar";
     if (contentType == "application/x-gzip")
         return "gz";
-    return "text/html"; // Default binary extension
+    return "text/html"; 
 }
-
 
 std::ostream &operator<<(std::ostream &os, const RequestProcessor &req)
 {
@@ -962,13 +956,13 @@ void    RequestProcessor::init_dangerousePatterns() {
     dangerousPatterns.push_back("%1c"); dangerousPatterns.push_back("%1d");
     dangerousPatterns.push_back("%1e"); dangerousPatterns.push_back("%1f");
 
-    dangerousPatterns.push_back("%22"); // "
-    dangerousPatterns.push_back("%27"); // '
-    dangerousPatterns.push_back("%3c"); dangerousPatterns.push_back("%3C"); // <
-    dangerousPatterns.push_back("%3e"); dangerousPatterns.push_back("%3E"); // >
-    dangerousPatterns.push_back("%3b"); dangerousPatterns.push_back("%3B"); // ;
-    dangerousPatterns.push_back("%26"); // &
-    dangerousPatterns.push_back("%7c"); dangerousPatterns.push_back("%7C"); // |
+    dangerousPatterns.push_back("%22"); 
+    dangerousPatterns.push_back("%27"); 
+    dangerousPatterns.push_back("%3c"); dangerousPatterns.push_back("%3C"); 
+    dangerousPatterns.push_back("%3e"); dangerousPatterns.push_back("%3E"); 
+    dangerousPatterns.push_back("%3b"); dangerousPatterns.push_back("%3B"); 
+    dangerousPatterns.push_back("%26"); 
+    dangerousPatterns.push_back("%7c"); dangerousPatterns.push_back("%7C"); 
 }
 
 bool RequestProcessor::isUriBad(std::string uri) {
@@ -1032,21 +1026,21 @@ string RequestProcessor::handleCgi(void) {
     envVars.push_back("SERVER_PROTOCOL=HTTP/1.1");
     envVars.push_back("SERVER_SOFTWARE=webserv/1.0.0");
     envVars.push_back("PATH_INFO=" + this->getUri());
-	
+
     _cgi->setBodyData(this->getBody());
-    
+
     std::vector<char*> envp;
     for (size_t i = 0; i < envVars.size(); ++i)
         envp.push_back(const_cast<char*>(envVars[i].c_str()));
     envp.push_back(NULL);
     _cgi->setEnvVars(envp);
-    
+
     if (!_cgi->openInputStream()) {
         std::cerr << "Failed to open input stream for CGI" << std::endl;
         _status = INTERNAL_SERVER_ERROR_STATUS_CODE;
         return ReturnServerErrorPage(_server, _status);
     }
-    
+
     if (!_cgi->openOutputStream()) {
         std::cerr << "Failed to open output stream for CGI" << std::endl;
         _status = INTERNAL_SERVER_ERROR_STATUS_CODE;

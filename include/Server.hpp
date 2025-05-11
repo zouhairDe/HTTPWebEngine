@@ -54,8 +54,6 @@ class Server {
 		~Server();
 		
 		Server &operator=(const Server &server);
-		// Server(const Server &server);
-		// Server				&operator=(const Server &server);
 		
 		int					init(int epoll_fd);
 		void				addRoute(const Route& route);

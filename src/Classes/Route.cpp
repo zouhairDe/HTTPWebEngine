@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   WebServer.cpp                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/02/06 15:32:33 by zouddach          #+#    #+#             */
+/*   Updated: 2025/04/17 20:52:03 by zouddach         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "Route.hpp"
 #include "File.hpp"
 #include "RequestProcessor.hpp"
@@ -9,7 +21,7 @@ string			cpp11_toString(int n);
 
 Route::Route()
 	: RouteDirectoryListing(false), RouteGETMethod(false),
-	  RoutePOSTMethod(false), ClientMaxBodySize(1024 * 1024)//mega default li kidir ngnix
+	  RoutePOSTMethod(false), ClientMaxBodySize(1024 * 1024)
 {
 	_redirectionUrl = make_pair("", -1);
 }
@@ -162,7 +174,7 @@ void Route::setProperty(const string &key, const string &value)
 				throw runtime_error("\033[31m Invalid CGI value: " + parts[i] + "\nExpected format: \"cgi_bin <extention>:<path>\"");
 			if (extention[0] != '.')
 				throw runtime_error("\033[31m Invalid CGI value: " + parts[i] + "\nExpected format: \"cgi_bin <extention>:<path>\"\nExtention should start with a dot");
-			
+
 			CGIs.push_back(make_pair(extention, path));
 		}
 	}
@@ -214,7 +226,7 @@ void Route::CheckFiles(string serverRoot)
 		throw runtime_error("\033[31m Route: " + rName + " must have an Upload Store");
 	if (stat(string("/tmp/www/" + UploadStore).c_str(), &buffer) != 0)
 		throw runtime_error("\033[31m Route: " + rName + " must have a valid Upload Store");
-	//checking cgi files
+
 	for (size_t i = 0; i < CGIs.size(); i++)
 	{
 		cerr << "checking cgi: " << path + CGIs[i].second << endl;
@@ -224,8 +236,7 @@ void Route::CheckFiles(string serverRoot)
 			throw runtime_error("\033[31m Route: " + rName + " must have a valid cgi extention <.cgi | .js>: " + CGIs[i].second);
 		if (stat(string("/tmp/www/" + serverRoot + CGIs[i].second).c_str(), &buffer) != 0)
 			throw runtime_error("\033[31m Route: " + rName + " must have a valid cgi file: " + CGIs[i].second);
-		// if (CGIs[i].first != ".cgi" && CGIs[i].first != ".js")
-		// 	throw runtime_error("\033[31m Route: " + rName + " have an unsupported cgi extention: " + CGIs[i].first);
+
 	}
 }
 

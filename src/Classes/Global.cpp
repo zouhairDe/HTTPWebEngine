@@ -12,7 +12,7 @@
 
 #include "Global.hpp"
 
-IColor::~IColor() {}  // Empty destructor definition hit Interface w cpp98 makatsupportich keywords  bhal default w override w... so darrori khask dir difinition dialo hna
+IColor::~IColor() {}
 
 RedColor red;
 GreenColor green;
