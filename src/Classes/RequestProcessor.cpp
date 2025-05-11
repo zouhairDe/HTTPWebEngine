@@ -299,7 +299,7 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
 
 string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
     for (size_t i = 0; i < indexFiles.size(); i++) {
-        string indexPath = "/tmp/www/" + indexFiles[i];
+        string indexPath = WORKIN_PATH + indexFiles[i];
         if (access(indexPath.c_str(), F_OK) == 0) {
             return indexPath;
         }
@@ -309,7 +309,7 @@ string RequestProcessor::processIndexFiles(vector<string> &indexFiles) const {
 
 string RequestProcessor::checkRedirectionFile(string path) {
     struct stat pathStat;
-    string pathToCheck = "/tmp/www/" + this->_server->getRoot() + path.substr(1);
+    string pathToCheck = WORKIN_PATH + this->_server->getRoot() + path.substr(1);
     if (stat(pathToCheck.c_str(), &pathStat) == -1) {
         return "";
     }
@@ -324,7 +324,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
     bool hasRoot = false;
     string basePath;
     if (_route->getRouteRoot().empty()) {
-        basePath = "/tmp/www/" + root + reqUri.substr(1);
+        basePath = WORKIN_PATH + root + reqUri.substr(1);
     }
     else {
 
@@ -335,7 +335,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
             uriWithoutRouteName = cpp11_replace(reqUri, cpp11_replace(routeName, "\"", ""), "");
         else
             uriWithoutRouteName = reqUri.substr(1);
-        basePath = "/tmp/www/" + root + _route->getRouteRoot() + uriWithoutRouteName;
+        basePath = WORKIN_PATH + root + _route->getRouteRoot() + uriWithoutRouteName;
         hasRoot = true;
         (void)hasRoot;
     }
@@ -359,7 +359,7 @@ File* RequestProcessor::GETResponse(string root, string requestedPath) {
         basePath = processIndexFiles(indexFiles);
         if (basePath.empty() && _route->getRouteDirectoryListing()) {
             _status = 200;
-            return handleDirectory("/tmp/www/" + root);
+            return handleDirectory(WORKIN_PATH + root);
         }
         else if (basePath.empty()) {
             return NULL;
@@ -496,14 +496,14 @@ int    RequestProcessor::parseHeaders(string req) {
     }
 
     vector<string> requestLine = splitByString(headers[0], " ");
-    if (requestLine.size() < 2) {
-        for (size_t i = 0; i < headers.size(); i++)
-            cerr << "part[ " << i <<"] == " << headers[i] << endl;
-        cerr << "Invalid request line format" << endl;
+    if (requestLine.size() < 2 || requestLine.size() > 3) {
         return (BAD_REQUEST_STATUS_CODE);
     }
 
     _method = requestLine[0];
+    if (_method != "GET" && _method != "POST" && _method != "DELETE") {
+        return (NOT_ALLOWED_STATUS_CODE);
+    }
     _uri = requestLine[1];
 
     size_t queryPos = _uri.find('?');
@@ -578,7 +578,7 @@ int    RequestProcessor::parseHeaders(string req) {
 string RequestProcessor::DELETEResponse(string root, string requestedPath)  {
     string routeName = _route->getRouteName();
     string reqUri = this->getUri();
-    string basePath = "/tmp/www/" + root + reqUri.substr(1);
+    string basePath = WORKIN_PATH + root + reqUri.substr(1);
     if (requestedPath == "/") {
         return this->generateHttpHeaders(_server, FORBIDDEN_STATUS_CODE, 0);
     }
@@ -725,14 +725,14 @@ bool RequestProcessor::processMultipartFormData(const std::string& boundary) {
                     _fileStream.close();
                 }
 
-                if (_fileStream) {
+                if (_fileStream && _method == "POST") {
                     Route *route = _server->getRouteFromUri(getUri());
                     if (filename.empty()) {
                         filename = "upload_" + cpp11_toString(time(NULL)) + ".bin";
                     }
                     string store_path = "./body/" + filename;
                     if (!route->getUploadStore().empty())
-                        store_path = "/tmp/www/" + route->getUploadStore() + filename;
+                        store_path = WORKIN_PATH + route->getUploadStore() + filename;
                     _fileStream.open(store_path.c_str(), std::ios::binary);
                 }
             }
@@ -997,7 +997,7 @@ bool    RequestProcessor::cgiInUri() {
         if (this->getUri().find(cgiMethods[i].first) != std::string::npos) {
             _cgi = new CGI();
             _cgi->setUri(this->getUri());
-            string path = "/tmp/www/" + _server->getRoot() + cgiMethods[i].second;
+            string path = WORKIN_PATH + _server->getRoot() + cgiMethods[i].second;
             _cgi->setCgiPath(path);
             return true;
         }
@@ -1064,14 +1064,14 @@ string RequestProcessor::handleCgi(void) {
 }
 
 string RequestProcessor::GenerateCostumeErrorPage(int status_code, string error_message) {
-    string body = "<html><body><h1>" + cpp11_toString(status_code) + " " + error_message + "</h1></body></html>";
+    string newBody = "<html><body><h1>" + cpp11_toString(status_code) + " " + error_message + "</h1></body></html>";
     string response = "HTTP/1.1 " + cpp11_toString(status_code) + getStatusMessage(status_code);
     response += "Server: webserv/1.0.0 (Ubuntu)\r\n";
     response += "Content-Type: text/html\r\n";
-    response += "Content-Length: " + cpp11_toString(body.length()) + "\r\n";
+    response += "Content-Length: " + cpp11_toString(newBody.length()) + "\r\n";
     response += "Connection: close\r\n";
     response += "\r\n";
-    response += body;
+    response += newBody;
     return response;
 }
 
@@ -1158,10 +1158,6 @@ string RequestProcessor::createResponse(void) {
         if (response.empty()) {
             response = this->ReturnServerErrorPage(Server, 404);
         }
-    }
-    else {
-        response = this->GenerateCostumeErrorPage(NOT_ALLOWED_STATUS_CODE, "Method not allowed");
-        _status = NOT_ALLOWED_STATUS_CODE;
     }
     return response;
 }

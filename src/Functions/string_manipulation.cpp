@@ -13,14 +13,9 @@
 #include "Functions.hpp"
 
 string trim(const string& str) {
-    // Find first non-whitespace character (including newlines)
     size_t first = str.find_first_not_of(" \t\r\n");
     if (first == string::npos) return "";
-    
-    // Find last non-whitespace character (including newlines) 
     size_t last = str.find_last_not_of(" \t\r\n");
-    
-    // Return the trimmed substring
     return str.substr(first, (last - first + 1));
 }
 

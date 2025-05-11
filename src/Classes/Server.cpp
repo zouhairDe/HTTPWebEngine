@@ -54,7 +54,6 @@ int Server::init(int epoll_fd) {
 		return (1);
 	}
 
-	cout << "port: " << this->getPort() << endl;
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	int port = atoi(this->getPort().c_str());
@@ -196,9 +195,9 @@ void Server::setProperty(const string &key, string value) {
 		if (unit == 'M') ClientMaxBodySize *= 1024 * 1024;
 		else if (unit == 'K') ClientMaxBodySize *= 1024;
 	}
-	else if (key == "error_page_404") ErrorPage404 = "/tmp/www/" + value;
-	else if (key == "error_page_403") ErrorPage403 = "/tmp/www/" + value;
-	else if (key == "error_page_500") ErrorPage500 = "/tmp/www/" + value;	
+	else if (key == "error_page_404") ErrorPage404 = WORKIN_PATH + value;
+	else if (key == "error_page_403") ErrorPage403 = WORKIN_PATH + value;
+	else if (key == "error_page_500") ErrorPage500 = WORKIN_PATH + value;	
 	else if (key == "return") {
 
 		vector<string> parts = split(value, ',');
@@ -299,7 +298,7 @@ void Server::CheckFiles()
 {
 
 	cout << bold << green << " -------- Files checked for friend " << def << endl;
-    string rootPath = "/tmp/www/" + this->getRoot();
+    string rootPath = WORKIN_PATH + this->getRoot();
     if (serverHasRootRoute() == false) {
 		throw runtime_error("\033[31m Server must have a default route \"/\"");
 	}

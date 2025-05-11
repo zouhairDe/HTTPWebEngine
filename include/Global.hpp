@@ -59,10 +59,13 @@ using namespace std;
 #define REQUEST_ENTITY_TOO_LARGE_STATUS_CODE 413
 #define REQUEST_LENGTH_REQUIRED_STATUS_CODE 411
 #define TOO_MANY_REQUESTS_STATUS_CODE 429
+#define WORKIN_PATH "/tmp/www/"
 
 const int MAX_CLIENTS = 1000;
 const int CGI_TIMEOUT = 3;
 const int MAX_CGI_CALLS = 50;
+const string CONF_EXTENTION = ".conf";
+
 
 string generateSessionID();
 string getCurrentTime();

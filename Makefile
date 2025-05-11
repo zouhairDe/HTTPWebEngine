@@ -7,7 +7,7 @@ HEADER_FILES = Global.hpp ConfigParser.hpp Server.hpp File.hpp WebServer.hpp \
 
 COLOR_HEADERS = IColor.hpp BlueColor.hpp GreenColor.hpp RedColor.hpp DefaultColor.hpp \
 				BoldFont.hpp
-FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp ServerFunctions.cpp
+FUNCTIONS_FILES = string_manipulation.cpp helper_function.cpp
 CLASSES_FILES = Global.cpp ConfigParser.cpp Server.cpp File.cpp WebServer.cpp \
 				Route.cpp RequestProcessor.cpp CGI.cpp \
 
@@ -35,6 +35,7 @@ NAME = webserv
 # ==== RELEASE ==== #
 
 all: $(OBJ_DIR) $(NAME)
+	@mkdir -p body
 
 opt: FLAGS += $(OPTIMIZATION_FLAGS)
 opt: all
@@ -59,6 +60,7 @@ $(OBJ_DIR)%.opp: $(SRC_DIR)%.cpp $(INCLUDES)
 debug: FLAGS += $(DEBUG_FLAGS)
 debug: $(DEBUG_OBJ_DIR) $(NAME_DEBUG)
 d: debug
+	@mkdir -p body
 
 
 $(DEBUG_OBJ_DIR):
@@ -77,45 +79,15 @@ $(DEBUG_OBJ_DIR)%_debug.opp: $(SRC_DIR)%.cpp $(INCLUDES)
 	$(CLANG) $(FLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 
-# ==== Docker ==== #
-
-docker-build:
-	docker build -t my-nginx-webserv .
-
-docker-run:
-	docker run -d -p 8080:80 --name webserv-container my-nginx-webserv
-	docker exec webserv-container cp /var/www/html/index.nginx-debian.html /var/www/html/index.html
-	docker exec -it webserv-container /bin/bash
-
-docker-stop:
-	docker stop webserv-container
-
-docker-clean:
-	docker rm -f webserv-container
-
-docker-all: docker-build docker-run
-
-# ==== CLEAN ==== #
-
-test:
-	@echo "Creating Test Directories and files"
-	exec python3 tests/setConfigFile.py config/server.conf
-	exec cp staticws4cgitesting/* /tmp/www/chatroom/cgiTime/
-	exec cp staticWebsite/* /tmp/www/chatroom/test/
-	mkdir -p /tmp/www/chatroom/cgi/
-	exec cp cpp-cgi/contact.cgi /tmp/www/chatroom/cgi/
-	exec cp cpp-cgi/upload.js /tmp/www/chatroom/cgi/
-	exec cp sessionTest/sessionCGI.js /tmp/www/chatroom/session/
-	exec cp sessions.db /tmp/sessions.db
-	exec cp sessionTest/index.html /tmp/www/chatroom/login/
-	exec cp sessionTest/addUser.js /tmp/www/chatroom/login/
-
 clean:
 	rm -f $(OBJ_FILES)
 	rm -f $(DEBUG_OBJ_FILES)
 
 fclean: clean
 	rm -f $(NAME) $(NAME_DEBUG)
+	rm -rf $(OBJ_DIR)
+	rm -rf $(DEBUG_OBJ_DIR)
+	rm -rf body/
 
 fcln: fclean
 

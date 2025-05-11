@@ -31,7 +31,6 @@ WebServer::WebServer(char *filename)
 			serverCount++;
 		}
 	}
-	cerr << "Server count: " << serverCount << endl;
 	file.close();
 	config.setServerCount(serverCount);
 
@@ -140,8 +139,6 @@ void	WebServer::run(){
 		if (server->init(epoll_fd)) {
 			cerr << "Error initializing server " << i << endl;
 			return ;
-		} else {
-			cout << bold << green << "Server " << i << " initialized" << def << endl;
 		}
 	}
 

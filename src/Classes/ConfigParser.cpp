@@ -68,7 +68,7 @@ void ConfigParser::displayProgressBar(int current, int total) {
 	const int barWidth = 60;
 	float progress = (float)current / total;
 	int pos = barWidth * progress;
-	usleep(50000); 
+	usleep(50000);
 
 	cout << "\r[";
 	for (int i = 0; i < barWidth; ++i) {
@@ -167,6 +167,9 @@ vector<Server> ConfigParser::parseConfig(const string& filename) {
 			displayProgressBar(servers.size(), serverCount);
 		}
 	}
+
+	displayProgressBar(serverCount, serverCount);
+    cout << endl;
 
 	file.close();
 	return servers;
