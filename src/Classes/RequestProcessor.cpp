@@ -1179,8 +1179,6 @@ int    RequestProcessor::sendResponse(void)
         return (-1);
     }
 
-    
-
     if (_responseToSend.empty())
     {
         _responseToSend = this->createResponse();
@@ -1193,9 +1191,6 @@ int    RequestProcessor::sendResponse(void)
 
 			return (-1);
 		} else if (bytesSent == -1) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				return (0);
-			}
 			perror("send");
 			_connection = "close";
 			_status = TOO_MANY_REQUESTS_STATUS_CODE;
@@ -1207,7 +1202,7 @@ int    RequestProcessor::sendResponse(void)
     if (_file)
     {
         if (this->fd == -1)
-            this->fd = open(_file->getPath().c_str(), O_RDONLY);//wtf is going on here
+            this->fd = open(_file->getPath().c_str(), O_RDONLY);
         if (this->fd == -1) {
             perror("open");
             return (-1);
@@ -1235,18 +1230,7 @@ int    RequestProcessor::sendResponse(void)
 			_responded = true;
 			return (-1);
 		} else if (bytesSent == -1) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				_responseToSend.append(buffer, bytesRead);
-				return (0);
-			}
-            perror("send");
-            close(this->fd);
-            this->fd = -1;
-			_connection = "close";
-            _responded = true;
-			_status = TOO_MANY_REQUESTS_STATUS_CODE;
-            return (-1);
-        };
+        }
     } else {
         _responded = true;
     }
@@ -1271,9 +1255,7 @@ int	RequestProcessor::receiveRequest(int client_socket) {
 		_connection = "close";
 		_received = true;
 		return true;
-	} else if (errno == EAGAIN || errno == EWOULDBLOCK) {
 	} else {
-		perror("recv");
 		return false;
 	}
     if (!_headers_parsed && _request.find("\r\n\r\n") != string::npos) {
@@ -1320,7 +1302,7 @@ void RequestProcessor::log() const {
     cout << def << "[";
     print_time();
     cout << "] ";
-    if (_connection == "close") {
+    if (_host.empty()) {
         cout << bold << "CONNECTION CLOSED" << def << endl;
         return;
     }

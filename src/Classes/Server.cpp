@@ -28,7 +28,7 @@ Server &Server::operator=(const Server &server) {
 }
 
 int Server::init(int epoll_fd) {
-	int flags, opt;
+	int opt;
 	struct sockaddr_in server_addr;
 	struct epoll_event new_event;
 	
@@ -37,21 +37,8 @@ int Server::init(int epoll_fd) {
 		cerr << "Error creating socket" << endl;
 		return (1);
 	}
-	flags = fcntl(this->Socket, F_GETFL, 0);
-	if (fcntl(this->Socket, F_SETFL, flags | O_NONBLOCK) == -1) {
-		cerr << "Error setting socket to non-blocking" << endl;
-		return (1);
-	}
 	opt = 1;
 	if (setsockopt(this->Socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-		cerr << "Error setting socket options" << endl;
-		return (1);
-	}
-
-	struct timeval timeout;
-	timeout.tv_sec = 10;
-	timeout.tv_usec = 0;
-	if (setsockopt(this->Socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) < 0) {
 		cerr << "Error setting socket options" << endl;
 		return (1);
 	}
@@ -65,12 +52,18 @@ int Server::init(int epoll_fd) {
 		cerr << "Error binding socket" << endl;
 		return (1);
 	}
-	if (listen(this->Socket, 5) == -1) {
+	if (listen(this->Socket, SOMAXCONN) == -1) {
 		cerr << "Error listening on socket" << endl;
 		return (1);
 	}
+	if (fcntl(Socket, F_SETFD, FD_CLOEXEC) == -1)
+	{
+		std::cerr << "\tWebserv : fcntl: " << strerror(errno) << std::endl;
+		close(Socket);
+		return (-1);
+	}
 
-	new_event.events = EPOLLIN | EPOLLET;
+	new_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP;
 	new_event.data.fd = this->Socket;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, this->Socket, &new_event) == -1) {
 		perror("Epoll ctl failed");

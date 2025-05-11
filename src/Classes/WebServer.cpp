@@ -156,6 +156,28 @@ void	WebServer::run(){
 			perror("Epoll wait failed");
 		}
 		for (int i = 0; i < event_count; i++) {
+			if (events[i].events & EPOLLERR) {
+				deleteSocket(epoll_fd, events[i].data.fd);
+				close(events[i].data.fd);
+				if (requests.find(events[i].data.fd) != requests.end()) {
+					requests.erase(events[i].data.fd);
+				}
+				continue ;
+			} else if (events[i].events & EPOLLHUP) {
+				deleteSocket(epoll_fd, events[i].data.fd);
+				close(events[i].data.fd);
+				if (requests.find(events[i].data.fd) != requests.end()) {
+					requests.erase(events[i].data.fd);
+				}
+				continue ;
+			} else if (events[i].events & EPOLLRDHUP) {
+				deleteSocket(epoll_fd, events[i].data.fd);
+				close(events[i].data.fd);
+				if (requests.find(events[i].data.fd) != requests.end()) {
+					requests.erase(events[i].data.fd);
+				}
+				continue ;
+			}
 			bool new_connection = false;
 			for (size_t s = 0; s < Servers.size(); s++) {
 				Server *server = &Servers[s];
@@ -184,7 +206,7 @@ void	WebServer::run(){
 			if (requests[client_socket].received() || status > 0) {
 				requests[client_socket].sendResponse();
 				if (requests[client_socket].responded() == false) {
-					modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLOUT | EPOLLET);
+					modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLOUT);
 				} else {
 					requests[client_socket].log();
 					if (requests[client_socket].getConnection() == "close") {
@@ -193,12 +215,9 @@ void	WebServer::run(){
 						close(client_socket);
 						requests.erase(client_socket);
 					} else {
-						modifySocket(epoll_fd, client_socket, EPOLLIN | EPOLLET);
 						requests[client_socket].clear();
 					}
 				}
-			} else {
-				modifySocket(epoll_fd, client_socket, EPOLLIN);
 			}
 		}
     }
@@ -213,9 +232,30 @@ int		WebServer::handleNewConnection(int server_fd, int epoll_fd){
 		cerr << "Error accepting connection" << endl;
 		return -1;
 	}
-	int flags = fcntl(client_socket, F_GETFL, 0);
-	fcntl(client_socket, F_SETFL, flags | O_NONBLOCK);
-	new_event.events = EPOLLIN | EPOLLET;
+	fcntl(client_socket, F_SETFL, O_NONBLOCK);
+
+	int opt = 1;
+	if (setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+		cerr << "Error setting socket options" << endl;
+		close(client_socket);
+		return -1;
+	}
+	struct timeval timeout;
+	timeout.tv_sec = 10;
+	timeout.tv_usec = 0;
+	
+	if (setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) < 0) {
+		cerr << "Error setting socket options" << endl;
+		close(client_socket);
+		return -1;
+	}
+	if (setsockopt(client_socket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout)) < 0) {
+		cerr << "Error setting socket options" << endl;
+		close(client_socket);
+		return -1;
+	}
+
+	new_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP;
 	new_event.data.fd = client_socket;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_socket, &new_event) == -1) {
 		perror("Epoll_ctl client failed");
