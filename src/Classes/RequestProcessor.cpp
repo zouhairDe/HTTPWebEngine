@@ -282,7 +282,18 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
         error_page_path = "./error/404.html";
     else
         error_page_path = server->getErrorPage(status_code);
-    if (error_page_path.empty()) {
+    if (!error_page_path.empty()) {
+        if (access(error_page_path.c_str(), F_OK) == -1 || access(error_page_path.c_str(), R_OK) == -1)
+        {
+            if (status_code == 403)
+                error_page_path = "./error/403.html";
+            else if (status_code == 404)
+                error_page_path = "./error/404.html";
+            else if (status_code == 500)
+                error_page_path = "./error/500.html";
+        }
+    }
+    else {
         if (status_code == 403)
             error_page_path = "./error/403.html";
         else if (status_code == 404)
@@ -291,9 +302,13 @@ string     RequestProcessor::ReturnServerErrorPage(Server *server, int status_co
             error_page_path = "./error/500.html";
 
     }
-    File error_page(error_page_path);
-    std::string response = generateHttpHeaders(server, status_code, error_page.getSize());
-    response += error_page.getData();
+    File *error_page = new File(error_page_path);
+    if (!error_page) {
+        return generateHttpHeaders(server, INTERNAL_SERVER_ERROR_STATUS_CODE, 0);
+    }
+    std::string response = generateHttpHeaders(server, status_code, error_page->getSize());
+    response += error_page->getData();
+    delete error_page;
     return response;
 }
 
