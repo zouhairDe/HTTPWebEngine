@@ -14,8 +14,9 @@
 
 pair<string, string> parseKeyValue(const string& line) {
 	size_t pos = line.find("=");
-	if (pos == string::npos) {
+	if (pos == string::npos) {//mimknch tkhilh khawi... todo later
 		throw runtime_error("\033[31m Invalid configuration line: " + line);
+		exit (1);//calling destructers mni nbdaw n alociw
 	}
 	
 	string key = trim(line.substr(0, pos));

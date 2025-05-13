@@ -10,37 +10,19 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-# include "Global.hpp"
 #include "WebServer.hpp"
 #include "Server.hpp"
 
-void f()
-{
-	system("lsof -c webserv");
-}
-
 int main(int ac, char **av)
 {
-	atexit(f);
-    signal(SIGPIPE, SIG_IGN);
     try {
         if (ac != 2) {
             throw runtime_error("\033[31m usage: ./webserv <config_file>");
         }
-        string filename = av[1];
-        for (size_t i = filename.length() - CONF_EXTENTION.length(); i < filename.length(); i++) {
-            if (filename[i] != CONF_EXTENTION[i - (filename.length() - CONF_EXTENTION.length())]) {
-                throw runtime_error("\033[31m Error: config file must end with .conf");
-            }
-        }
-
-        ifstream file(av[1]);
-        if (!file.is_open()) {
-            throw runtime_error("\033[31m Error: config file does not exist");
-        }
 		
 		cout << bold << green << "Parsing config file: " << av[1] << def << endl;
 		WebServer webserv(av[1]);
+		// webserv.printData();
 		webserv.CheckFiles();
 		webserv.run();
     }

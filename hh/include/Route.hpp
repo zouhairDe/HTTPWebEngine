@@ -23,17 +23,13 @@ class RequestProcessor;
 
 class Route {
 	private:
-		string							RouteName;
-		string							RouteRoot;
-		vector<string>					RouteIndexFiles;
-		string							UploadStore;
-		pair<string, int>				_redirectionUrl;
-		bool							RouteDirectoryListing;
-		bool							RouteGETMethod;
-		bool							RoutePOSTMethod;
-		bool							RouteDELETEMethod;
-		size_t							ClientMaxBodySize;
-		vector<pair<string, string> >	CGIs;
+		string			RouteName;
+		vector<string>	RouteIndexFiles;
+		string			UploadStore;
+		bool			RouteDirectoryListing;
+		bool			RouteGETMethod;
+		bool			RoutePOSTMethod;
+		long			ClientMaxBodySize;
 
 	public:
 		Route();
@@ -42,23 +38,19 @@ class Route {
 		~Route();
 		
 		/* getters */
-		vector<string>					getRouteIndexFiles() const;
-		bool							getRouteDirectoryListing() const;
-		bool							getRouteGETMethod() const;
-		bool							getRoutePOSTMethod() const;
-		bool                            getDELETEMethod() const;
-		string							getUploadStore() const;
-		size_t							getClientMaxBodySize() const;
-		string							getRouteName() const;
-		string							getRouteRoot() const;
-		void							CheckFiles(string serverRoot);
-		pair<string, int>				getRedirectUrl() const;
-		vector<pair<string, string> >	getCGIs() const;
+		vector<string>	getRouteIndexFiles() const;
+		bool			getRouteDirectoryListing() const;
+		bool			getRouteGETMethod() const;
+		bool			getRoutePOSTMethod() const;
+		string			getUploadStore() const;
+		long			getClientMaxBodySize() const;
+		string			getRouteName() const;
+		void			CheckFiles() const;
+
+		// ma3rftch ila chi route ma3ndouch root/ wach n3tiwh default ("/var/www/") wla la
 
 		/* setters */
 		void setProperty(const string& key, const string& value);
-		
-
 };
 
 ostream &operator<<(ostream &out, const Route &route);

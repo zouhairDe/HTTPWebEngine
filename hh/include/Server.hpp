@@ -13,7 +13,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-# include "Global.hpp"
 # include "Route.hpp"
 # include "Functions.hpp"
 # include "File.hpp"
@@ -23,6 +22,7 @@
 # include <fcntl.h>
 # include <sys/socket.h>
 # include <netinet/tcp.h>
+
 # include <sys/types.h>
 # include <sys/epoll.h>
 # include <cstring>
@@ -30,21 +30,22 @@
 # include <cstddef>
 
 class Route;
+// class Client;
+
+// TODO: add a vector<Server> _Friends; to the Server class, khas ykono 3ndo ga3 friends li homa servers li mcharkin m3ah fl ip && port
+// TO_UNDO: add a vector<Server> _Friends; to the Server class, khas ykono 3ndo ga3 friends li homa servers li mcharkin m3ah fl ip && port
 
 class Server {
 	private:
-		string								HostName;
-		vector<string>						IndexFiles;
-		string								Port;
-		string								Root;
-		vector<string>						ServerNames;
-		long								ClientMaxBodySize; /* in bytes */
-		string								ErrorPage404;
-		string								ErrorPage403;
-		string								ErrorPage500;
-		pair<string, int>					_redirectionUrl;
-		vector<Route>						_Routes;
-		vector<Server>						_ServerFriends;
+		string				HostName;
+		vector<string>		IndexFiles;
+		string				Port;
+		string				Root;
+		vector<string>		ServerNames;
+		long				ClientMaxBodySize; /* in bytes */
+		string				ErrorPage;
+		vector<Route>		_Routes;
+		vector<Server>		_ServerFriends;
 
 	public:
 		struct sockaddr_in	Address;
@@ -54,6 +55,8 @@ class Server {
 		~Server();
 		
 		Server &operator=(const Server &server);
+		// Server(const Server &server);
+		// Server				&operator=(const Server &server);
 		
 		int					init(int epoll_fd);
 		void				addRoute(const Route& route);
@@ -66,21 +69,19 @@ class Server {
 		vector<string>		getServerNames() const;
 		long				getClientMaxBodySize() const ;
 		vector<Route>		getRoutes() const;
-		string				getErrorPage(int status) const;
+		string				getErrorPage() const;
 		string				getRoot() const;
 		vector<string>		getIndexFiles() const;
 		vector<Server>		getFriends() const;
-		pair<string, int>	getRedirectUrl() const;
-		bool				isRouteExist(string route);
 
 		/* setters */
 		void				setRoot(string root);
+		void				setErrorPage(string pages);
 		void				setClientMaxBodySize(long size);
 		void				setServerNames(vector<string> names);
 		void				setRoutes(vector<Route> routes);
 		void				setProperty(const string& key, string value);
 		void				addFriend(Server& server);
-		bool 				serverHasRootRoute() const;
 		
 		void				CheckFiles();
 

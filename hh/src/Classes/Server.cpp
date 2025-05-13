@@ -1,20 +1,8 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   WebServer.cpp                                      :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: zouddach <zouddach@student.1337.ma>        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/02/06 15:32:33 by zouddach          #+#    #+#             */
-/*   Updated: 2025/04/17 20:52:03 by zouddach         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
 #include "Server.hpp"
 
 Server::Server(string hostname, string port, string root)
-	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(1024*1024), Socket(-1) {
-		_redirectionUrl = make_pair("", -1);
+	: HostName(hostname), Port(port), Root(root), ClientMaxBodySize(-1), Socket(-1) {
 }
 
 Server::~Server() { }
@@ -28,27 +16,35 @@ Server &Server::operator=(const Server &server) {
 		this->Socket = server.Socket;
 		this->IndexFiles = server.IndexFiles;
 		this->ServerNames = server.ServerNames;
-		this->ErrorPage404 = server.ErrorPage404;
-		this->ErrorPage403 = server.ErrorPage403;
-		this->ErrorPage500 = server.ErrorPage500;
+		this->ErrorPage = server.ErrorPage;
 		this->_Routes = server._Routes;
 		this->_ServerFriends = server._ServerFriends;
-		this->_redirectionUrl = server._redirectionUrl;
 	}
 	return (*this);
 }
 
 int Server::init(int epoll_fd) {
-	int opt;
+	int flags, opt;
 	struct sockaddr_in server_addr;
 	struct epoll_event new_event;
-
+	
 	this->Socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->Socket == -1) {
 		cerr << "Error creating socket" << endl;
 		return (1);
 	}
+	flags = fcntl(this->Socket, F_GETFL, 0);
+	if (fcntl(this->Socket, F_SETFL, flags | O_NONBLOCK) == -1) {
+		cerr << "Error setting socket to non-blocking" << endl;
+		return (1);
+	}
+	opt = 1;
+	if (setsockopt(this->Socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+		cerr << "Error setting socket options" << endl;
+		return (1);
+	}
 
+	cout << "port: " << this->getPort() << endl;
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_addr.s_addr = INADDR_ANY;
 	int port = atoi(this->getPort().c_str());
@@ -57,17 +53,12 @@ int Server::init(int epoll_fd) {
 		cerr << "Error binding socket" << endl;
 		return (1);
 	}
-	if (listen(this->Socket, SOMAXCONN) == -1) {
+	if (listen(this->Socket, 5) == -1) {
 		cerr << "Error listening on socket" << endl;
 		return (1);
 	}
-	if (fcntl(Socket, F_SETFD, FD_CLOEXEC) == -1) {
-		std::cerr << "\tWebserv : fcntl: " << strerror(errno) << std::endl;
-		close(Socket);
-		return (-1);
-	}
 
-	new_event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP;
+	new_event.events = EPOLLIN | EPOLLET;
 	new_event.data.fd = this->Socket;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, this->Socket, &new_event) == -1) {
 		perror("Epoll ctl failed");
@@ -75,9 +66,9 @@ int Server::init(int epoll_fd) {
 	}
 	return (0);
 }
-
+	
 string Server::getHostName() const {
-	return HostName;
+	return HostName;	
 }
 
 string Server::getPort() const {
@@ -100,14 +91,8 @@ vector<Route> Server::getRoutes() const {
 	return _Routes;
 }
 
-string Server::getErrorPage(int status) const {
-	if (status == 404)
-		return ErrorPage404;
-	else if (status == 403)
-		return ErrorPage403;
-	else if (status == 500)
-		return ErrorPage500;
-	return "";
+string Server::getErrorPage() const {
+	return ErrorPage;
 }
 
 string	Server::getRoot() const {
@@ -116,6 +101,10 @@ string	Server::getRoot() const {
 
 void	Server::setRoot(string root) {
 	Root = root;
+}
+
+void	Server::setErrorPage(string pages) {
+	ErrorPage = pages;
 }
 
 void	Server::setClientMaxBodySize(long size) {
@@ -132,43 +121,23 @@ void	Server::setRoutes(vector<Route> routes) {
 	_Routes = routes;
 }
 
-pair<string, int>	Server::getRedirectUrl() const {
-	return _redirectionUrl;
-}
-
-bool	Server::isRouteExist(string route) {
-	for (size_t i = 0; i < _Routes.size(); i++) {
-		if (_Routes[i].getRouteName() == "\"" + route + "\"") 
-			return true;
-	}
-	return false;
-}
-
 Route *Server::getRouteFromUri(string uri) {
-
-	if (uri.empty())
-		return NULL;
-	if (uri[uri.length() - 1] == '/' && uri != "/") 
-		uri = uri.substr(0, uri.length() - 1);
-
+	cout << "	URI: " << uri << endl;
     for (size_t i = 0; i < _Routes.size(); i++) {
-
         if (_Routes[i].getRouteName() == string("\"" + uri + "\"")) {
-
             return &_Routes[i];
         }
     }
-
 	string fileFromUri = uri.substr(uri.find_last_of('/') + 1);
-	string uriWithoutFile = cpp11_replace(uri, fileFromUri, "");
-
-	if (uriWithoutFile == "/")
-	{
-
-		return &_Routes[0];
+	string uriWithoutFile = uri.substr(0, uri.find_last_of('/'));
+	if (uriWithoutFile.empty())
+		uriWithoutFile = "/";
+	for (size_t i = 0; i < _Routes.size(); i++) {
+		if (_Routes[i].getRouteName() == string("\"" + uriWithoutFile + "\"")) {
+			return &_Routes[i];
+		}
 	}
-	return getRouteFromUri(uriWithoutFile);
-
+    return NULL;
 }
 
 void Server::setProperty(const string &key, string value) {
@@ -184,32 +153,13 @@ void Server::setProperty(const string &key, string value) {
 	}
 	else if (key == "client_max_body_size") {
 		string size = value.substr(0, value.length()-1);
-		char unit = value[value.length()-1];
+		char unit = value[value.length()-1];//if unit is not a number consider it bytes
 		ClientMaxBodySize = atol(size.c_str());
 		if (unit == 'M') ClientMaxBodySize *= 1024 * 1024;
 		else if (unit == 'K') ClientMaxBodySize *= 1024;
 	}
-	else if (key == "error_page_404") ErrorPage404 = WORKIN_PATH + value;
-	else if (key == "error_page_403") ErrorPage403 = WORKIN_PATH + value;
-	else if (key == "error_page_500") ErrorPage500 = WORKIN_PATH + value;	
-	else if (key == "return") {
-
-		vector<string> parts = split(value, ',');
-		if (parts.size() != 2)
-			throw runtime_error("\033[31m Invalid return value: " + value + "\nExpected format: \"return <url>, <status_code>\"");
-		string url = parts[0];
-		int status_code = atoi(parts[1].c_str());
-		if (status_code < 100 || status_code > 599)
-			throw runtime_error("\033[31m Invalid status code: " + parts[1]);
-		if (url.find("http://") != string::npos || url.find("https://") != string::npos)
-			_redirectionUrl = make_pair(url, status_code);
-		else
-			throw runtime_error("\033[31m Invalid URL: " + url + "\nRedirection URL should be a valid URL, e.g: http://example.com");
-	}
-	else {
-		throw runtime_error("\033[31m Unknown property: " + key);
-	}
-
+	else if (key == "error_page_404") ErrorPage = "/tmp/www/" + value;
+	
 }
 
 void Server::updateAddress() {
@@ -249,24 +199,7 @@ ostream &operator<<(ostream &out, const Server &server) {
 		out << "    Upload store: " << route.getUploadStore() << endl;
 		out << "    Client max body size: " << route.getClientMaxBodySize() << endl;
 	}
-	out << "Redirection URL: " << server.getRedirectUrl().first << ", status code: " << server.getRedirectUrl().second << endl;
-	out << "Server names: ";
-	vector<string> serverNames = server.getServerNames();
-	for (size_t i = 0; i < serverNames.size(); i++) {
-		out << serverNames[i];
-		if (i < serverNames.size() - 1) out << ", ";
-	}
-	out << endl;
-	out << "Index files: ";
-	vector<string> indexFiles = server.getIndexFiles();
-	for (size_t i = 0; i < indexFiles.size(); i++) {
-		out << indexFiles[i];
-		if (i < indexFiles.size() - 1) out << ", ";
-	}
-	out << endl;
-	out << "Error page 404:" << server.getErrorPage(404) << endl;
-	out << "Error page 403:" << server.getErrorPage(403) << endl;
-	out << "Error page 500:" << server.getErrorPage(500) << endl;
+	out << "Error pages:" << server.getErrorPage() << endl;
 	return out;
 }
 
@@ -278,39 +211,26 @@ vector<Server> Server::getFriends() const {
 	return _ServerFriends;
 }
 
-bool Server::serverHasRootRoute() const {
-	for (size_t i = 0; i < _Routes.size(); i++) {
-		string RouteName = _Routes[i].getRouteName();
-		if (RouteName == "\"/\"") {
-			return true;
-		}
-	}
-	return false;
-}
-
 void Server::CheckFiles()
 {
-
-	cout << bold << green << " -------- Files checked for friend " << def << endl;
-    string rootPath = WORKIN_PATH + this->getRoot();
-    if (serverHasRootRoute() == false) {
-		throw runtime_error("\033[31m Server must have a default route \"/\"");
-	}
-	vector<Route> routes = this->getRoutes();
-	for (size_t k = 0; k < routes.size(); k++)
-	{
-		routes[k].CheckFiles(this->getRoot());
-	}
+    string rootPath = "/tmp/www/" + this->getRoot();
+    
     struct stat s;
     if (stat(rootPath.c_str(), &s) == 0) {
         if (!(s.st_mode & S_IFDIR)) {
             throw runtime_error("\033[31m Path is not a directory: " + rootPath);
         }
-
+        
         if (access(rootPath.c_str(), R_OK) != 0) {
             throw runtime_error("\033[31m No read access to directory");
         }
-
+		
+		if (this->getErrorPage().empty())
+			throw runtime_error("\033[31m Server must have an 404 error page");//TA NRUNNI NGNIX W NCHOFO HADI WACH S7I7A
+			
+		if (access(string(this->getErrorPage()).c_str(), R_OK) != 0)
+			throw runtime_error("\033[31m No read access to 404 error page");
+        
     } else {
         throw runtime_error("\033[31m Folder does not exist: " + rootPath);
     }

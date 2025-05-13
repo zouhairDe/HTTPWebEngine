@@ -1,21 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Global.cpp                                         :+:      :+:    :+:   */
+/*   IColor.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/23 00:02:39 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 01:00:00 by zouddach         ###   ########.fr       */
+/*   Created: 2025/01/22 23:58:34 by zouddach          #+#    #+#             */
+/*   Updated: 2025/01/23 00:58:33 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Global.hpp"
+#ifndef COLOR_HPP
+#define COLOR_HPP
 
-IColor::~IColor() {}
+#include <iostream>
 
-RedColor red;
-GreenColor green;
-BlueColor blue;
-DefaultColor def;
-BoldFont bold;
+class IColor
+{
+public:
+    virtual ~IColor();
+    virtual void applyColor(std::ostream& os) const = 0;
+	
+	friend std::ostream& operator<<(std::ostream& os, const IColor& color) {
+        color.applyColor(os);
+        return os;
+    }
+};
+
+#endif

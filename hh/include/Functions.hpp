@@ -21,7 +21,6 @@ string					cpp11_replace(string  &str, string toReplace, string replacement);
 vector<string>			split(string str, char delimiter);
 string					trim(const string& str);
 pair<string, string>	parseKeyValue(const string& line);
-string					generateHttpHeaders(const File& file, int status_code);
 string                  getStatusMessage(int code);
 
 #endif

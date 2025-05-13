@@ -1,3 +1,4 @@
+
 #include "File.hpp"
 #include <fstream>
 #include <cstring>
@@ -17,23 +18,17 @@ File::File(string path) : _path(path), _size(0), _data(nullptr) {
 		cerr << "Failed to open the file.\n";
 		return ;
 	}
-	file.read(this->_data, this->_size);
+	file.read(this->_data, this->_size);//hm manprotectiwch hna  azeggaf? if (read fails...)
 	this->_data[this->_size] = '\0';
-
 }
 
-File::File() {
-	this->_path = "";
-	this->_size = 0;
-	this->_data = nullptr;
-
-}
+File::File() {}//huh?
 
 File::File(const File &other) {
 	this->_path = other._path;
 	this->_size = other._size;
 	this->_data = new char[this->_size + 1];
-
+	/* THIS FUNCTION IS (MAYBE) NOT ALLOWED */
 	memcpy(this->_data, other._data, this->_size);
 	this->_data[this->_size] = '\0';
 }
@@ -70,18 +65,26 @@ string	File::getPath() const {
 	return (this->_path);
 }
 
-void	File::setData(string Data, size_t size) {
-	if (this->_data != nullptr)
-		delete[] this->_data;
-	this->_data = new char[size + 1];
-	memcpy(this->_data, Data.c_str(), size);
-	this->_data[size] = '\0';
-	this->_size = size;
+// void	File::setOffset(size_t offset) {
+// 	this->_offset = offset;
+// }
+
+// size_t	File::getOffset() const {
+// 	return (this->_offset);
+// }
+
+void	File::trimOldData(size_t pos)
+{
+	char	*newData = new char[this->_size - pos + 1];
+	memcpy(newData, this->_data + pos, this->_size - pos);
+	newData[this->_size - pos] = '\0';
+	delete[] this->_data;
+	this->_data = newData;
+	this->_size -= pos;
+	return ;
 }
 
-ostream &operator<<(ostream &os, const File &file) {
-	os << "File path: " << file.getPath() << endl;
-	os << "File size: " << file.getSize() << endl;
-	os << "File data: " << file.getData() << endl;
-	return (os);
+void	File::clear() {
+	delete[] this->_data;
+	this->_data = nullptr;
 }

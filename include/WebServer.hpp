@@ -28,7 +28,6 @@ class WebServer {
 		void	CheckFiles();
 		void	run();
 		int 	handleNewConnection(int server_fd, int epoll_fd);
-			
 };
 
 #endif

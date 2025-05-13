@@ -24,6 +24,7 @@ class File {
 	public:
 		File();
 		File(string path);
+		// File(const string &path);
 		File(const File &other);
 		File	&operator=(const File &other);
 		~File();
@@ -33,10 +34,9 @@ class File {
 		char		*getData() const;
 		string		getPath() const;
 		bool		exists() const;
-		void		setData(string Data, size_t size);
+		void		trimOldData(size_t pos);
 
+		void		clear();
 };
-
-ostream &operator<<(ostream &os, const File &file);
 
 #endif

@@ -1,3 +1,4 @@
+
 #include "ConfigParser.hpp"
 
 bool ConfigParser::isServerEndBlock(const string& line) {
@@ -10,8 +11,8 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 	string line; 
 	while (getline(file, line)) {
 		line = trim(line);
-		if (line.empty() || line[0] == '#') continue ;
-
+		if (line.empty() || line[0] == '#') continue;
+		
 		if (isServerEndBlock(line)) {
 			server.updateAddress();
 			break;
@@ -23,7 +24,7 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 				route.setProperty("name", routeName);
 			parseRouteBlock(file, route);
 			server.addRoute(route);
-			continue ;
+			continue;
 		}
 
 		if (!line.empty()) {
@@ -34,7 +35,6 @@ void ConfigParser::parseServerBlock(ifstream& file, Server& server) {
 }
 
 bool ConfigParser::isRouteEndBlock(string line, const string& routeName) {
-
 	line = trim(line);
 	line = cpp11_replace(line, " ", "");
 	line = cpp11_replace(line, "[", "");
@@ -49,7 +49,7 @@ void ConfigParser::parseRouteBlock(ifstream& file, Route& route) {
 	while (getline(file, line)) {
 		line = trim(line);
 		if (line.empty() || line[0] == '#') continue;
-
+		
 		if (isRouteEndBlock(line, route.getRouteName())) break;
 
 		if (!line.empty()) {
@@ -68,7 +68,7 @@ void ConfigParser::displayProgressBar(int current, int total) {
 	const int barWidth = 60;
 	float progress = (float)current / total;
 	int pos = barWidth * progress;
-	usleep(50000);
+	usleep(50000); // 50ms delay bach tban lbar w hia kat7rk hhhhhhh
 
 	cout << "\r[";
 	for (int i = 0; i < barWidth; ++i) {
@@ -85,24 +85,8 @@ ConfigParser::ConfigParser(const char* filename) {
 	this->ConfigFilePath = string(filename);
 	this->lineCount = 0;
 	this->serverCount = 0;
-	struct stat s;
-	cout << bold ;
-	if (stat(filename, &s) == -1)
-		throw runtime_error("\033[31m Cannot open configuration file: " + ConfigFileName);
-	if (!fileExists(filename))
-		throw runtime_error("\033[31m Configuration file does not exist: " + ConfigFileName);
-	if (s.st_size == 0)
-		throw runtime_error("\033[31m Configuration file is empty: " + ConfigFileName);
-	if (s.st_mode & S_IFDIR)
-		throw runtime_error("\033[31m Configuration file is a directory: " + ConfigFileName);
-	if (s.st_mode & S_IFREG)
-	{
-		if (s.st_size == 0)
-			throw runtime_error("\033[31m Configuration file is empty: " + ConfigFileName);
-	}
-	else
-		throw runtime_error("\033[31m Configuration file is not a regular file: " + ConfigFileName);
-	cout << def;
+	if (!fileExists(ConfigFilePath))
+		throw runtime_error("\033[31m Configuration file does not exist");
 }
 
 ConfigParser::~ConfigParser() { };
@@ -137,6 +121,7 @@ string ConfigParser::getFilePath() const {
 	return ConfigFilePath;
 }
 
+/* if server has same port and host as another server; add it to that server's friends */
 bool	ConfigParser::addServerToFriends(Server& server, vector<Server>& servers) {
 	for (size_t i = 0; i < servers.size(); i++) {
 		if (servers[i].getHostName() == server.getHostName() && servers[i].getPort() == server.getPort()) {
@@ -150,7 +135,7 @@ bool	ConfigParser::addServerToFriends(Server& server, vector<Server>& servers) {
 vector<Server> ConfigParser::parseConfig(const string& filename) {
 	vector<Server> servers;
 	ifstream file(filename.c_str());
-
+	
 	if (!file.is_open())
 		throw runtime_error("\033[31m Cannot open configuration file: " + filename);
 
@@ -167,9 +152,6 @@ vector<Server> ConfigParser::parseConfig(const string& filename) {
 			displayProgressBar(servers.size(), serverCount);
 		}
 	}
-
-	displayProgressBar(serverCount, serverCount);
-    cout << endl;
 
 	file.close();
 	return servers;

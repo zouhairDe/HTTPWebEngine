@@ -1,21 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Global.cpp                                         :+:      :+:    :+:   */
+/*   BlueColor.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: zouddach <zouddach@1337.student.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/01/23 00:02:39 by zouddach          #+#    #+#             */
-/*   Updated: 2025/01/23 01:00:00 by zouddach         ###   ########.fr       */
+/*   Created: 2025/01/23 00:00:16 by zouddach          #+#    #+#             */
+/*   Updated: 2025/01/23 00:41:17 by zouddach         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Global.hpp"
 
-IColor::~IColor() {}
+#ifndef BLUECOLOR_HPP
+#define BLUECOLOR_HPP
 
-RedColor red;
-GreenColor green;
-BlueColor blue;
-DefaultColor def;
-BoldFont bold;
+#include "IColor.hpp"
+
+class BlueColor : public IColor
+{
+public:
+    void applyColor(std::ostream& os) const
+    {
+        os << "\033[34m"; // Blue text
+    }
+	
+	virtual ~BlueColor() {}
+};
+
+#endif

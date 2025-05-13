@@ -40,37 +40,19 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <fstream>
-#include <stdlib.h>
-#include <sys/wait.h>
-# include <fcntl.h>
-
 
 using namespace std;
 
 #define nullptr NULL
-#define FORBIDDEN_STATUS_CODE 403
-#define NOT_FOUND_STATUS_CODE 404
-#define OK_STATUS_CODE 200
-#define BAD_REQUEST_STATUS_CODE 400
-#define INTERNAL_SERVER_ERROR_STATUS_CODE 500
-#define MOVED_PERMANENTLY_STATUS_CODE 301
-#define FOUND_STATUS_CODE 302
-#define NOT_ALLOWED_STATUS_CODE 405
-#define REQUEST_ENTITY_TOO_LARGE_STATUS_CODE 413
-#define REQUEST_LENGTH_REQUIRED_STATUS_CODE 411
-#define TOO_MANY_REQUESTS_STATUS_CODE 429
-#define WORKIN_PATH "/tmp/www/"
 
-const int MAX_CLIENTS = 1000;
-const int CGI_TIMEOUT = 3;
-const int MAX_CGI_CALLS = 50;
-const string CONF_EXTENTION = ".conf";
+// #include "functions.hpp"
+// #include "Route.hpp"
+// #include "Server.hpp"
+// #include "File.hpp"
+// #include "ConfigParser.hpp"
+// #include "WebServer.hpp"
 
-
-string generateSessionID();
-string getCurrentTime();
-
-
+/* Color interface (IColor.hpp) and concrete classes (*Color.hpp) */
 #include "Interfaces/Colors/IColor.hpp"
 #include "Interfaces/Colors/RedColor.hpp"
 #include "Interfaces/Colors/GreenColor.hpp"
